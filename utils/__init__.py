@@ -21,8 +21,8 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-hash_encode = lambda x: x[::-1].encode('hex')
-hash_decode = lambda x: x.decode('hex')[::-1]
+# hash_encode = lambda x: x[::-1].encode('hex')
+# hash_decode = lambda x: x.decode('hex')[::-1]
 hmac_sha_512 = lambda x, y: hmac.new(x, y, hashlib.sha512).digest()
 TESTNET = False
 NOLNET = False

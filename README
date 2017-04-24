@@ -1,0 +1,14 @@
+## electrumq
+
+
+### 环境配置
+
+因为在准备electrum的时候使用的是miniconda 2（主要是因为electrum使用的是老版本的pyqt4，而默认的很多包管理安装起来比较麻烦），所以这个项目也沿用这个
+
+环境安装见
+
+https://conda.io/docs/using/envs.html#create-an-environment
+
+启动虚拟环境
+
+source activate electrumq
