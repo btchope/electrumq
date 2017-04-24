@@ -5,7 +5,8 @@ from datetime import datetime
 import logging
 from tornado import gen
 
-from db.mem.blockstore import BlockStore
+# from db.mem.blockstore import BlockStore
+from db.sqlite.block import BlockStore
 from network import NetWorkManager
 from utils import Singleton
 

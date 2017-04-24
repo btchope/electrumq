@@ -101,6 +101,9 @@ def hash_to_integer(hash_str=''):
 def double_sha256(s):
     return SHA256.new(SHA256.new(s).digest()).digest()
 
+def Hash(x):
+    if type(x) is unicode: x=x.encode('utf-8')
+    return double_sha256(x)
 
 def reverse_hex_str(hex_str):
     return hex_str.decode('hex')[::-1].encode('hex')

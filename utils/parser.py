@@ -34,6 +34,36 @@ def read_compact_size(content, offset=0):
         offset += 8
     return size, offset
 
+
+def write_uint16(num):
+    return struct.pack('<H', num)
+
+
+def write_uint32(num):
+    return struct.pack('<I', num)
+
+
+def write_uint64(num):
+    return struct.pack('<Q', num)
+
+
+def write_compact_size(size):
+    if size < 0:
+        raise EOFError("attempt to write size < 0")
+    elif size < 253:
+        return chr(size)
+    elif size < 2 ** 16:
+        return '\xfd' + write_uint16(size)
+    elif size < 2 ** 32:
+        return '\xfe' + write_uint32(size)
+    elif size < 2 ** 64:
+        return '\xff' + write_uint64(size)
+    else:
+        raise EOFError("attempt to write size > int64")
+
+def int_to_hex(size):
+    return write_compact_size(size).encode('hex')
+
 def parse_TxIn(reader):
     d = {}
     d['start'] = reader.read_cursor
@@ -190,10 +220,12 @@ def extract_script_pub_key(script):
     # [OP_PUSHDATA4, OP_PUSHDATA4, OP_PUSHDATA4, OP_3, OP_CHECKMULTISIG]]
     multisigs = [[x, ] + y for x in first for y in left]
     if pattern in multisigs:
-        return "[" + ','.join([public_key_to_bc_address(decoded[i][1]) for i in range(1, len(decoded) - 2)]) + "]" \
+        return "[" + ','.join(
+            [public_key_to_bc_address(decoded[i][1]) for i in range(1, len(decoded) - 2)]) + "]" \
             , chr(len(decoded) - 3) + ''.join([decoded[i][1] for i in xrange(1, len(decoded) - 2)])
 
     return None, None
+
 
 def extract_script_pub_key2(script):
     decoded = parse_script(script)
@@ -271,7 +303,8 @@ def extract_script_pub_key_full(byte):
             if e[1] is None:
                 isNone = True
         # return None, None
-        return "[" + ','.join([public_key_to_bc_address(decoded[i][1]) for i in range(1, len(decoded) - 2)]) + "]" \
+        return "[" + ','.join(
+            [public_key_to_bc_address(decoded[i][1]) for i in range(1, len(decoded) - 2)]) + "]" \
             , chr(len(decoded) - 3) + ''.join([decoded[i][1] for i in xrange(1, len(decoded) - 2)])
 
     if len(pattern) > 20:
@@ -363,7 +396,8 @@ def extract_script_pub_key_full(byte):
         # a4bfa8ab6435ae5f25dae9d89e4eb67dfa94283ca751f393c1ddc5a837bbc31b
         return 'unknown', None
 
-    if pattern == [OP_PUSHDATA4, OP_DROP, OP_DUP, OP_HASH160, OP_PUSHDATA4, OP_EQUALVERIFY, OP_CHECKSIG]:
+    if pattern == [OP_PUSHDATA4, OP_DROP, OP_DUP, OP_HASH160, OP_PUSHDATA4, OP_EQUALVERIFY,
+                   OP_CHECKSIG]:
         # c0b2cf75b47d1e7f48cdb4287109ff1dd5bcf146d5f77a9e8784c0c9c0ef02ad
         # 010000000127478b07dae63322d1999419115cf287c69ff0f11de3f96d46df6926de61143c010000006b483045022100cca50bfed991240a7603eea19340f6e24102b29db2dfcc56fdfe549dacddcc6402207eefe2688670d349615ed184d1f84ac54365afd258524e55266c992ce2d68b7f012102ff9d6e0c33fb3cfc677857d2cd654db91fe051811433654d25442ee0182dac52000000000180969800000000001976a914751e76e8199196d454941c45d1b3a323f1433bd688accc500300 OP_DROP OP_DUP OP_HASH160 fb99bed1a4ea8d1d01d879581fce07b27ab5357f OP_EQUALVERIFY OP_CHECKSIG spent by 30450221008e03c31c35c151be8ffd865c9e411346562797c267a956a8177239beaceb70a102207aa18e8ff22c69a00b616d91bdd3b2e9b0777d06c17165ad650399f8fb1e0b5701 028f2bb71ec2c796cab46d5b61c28ad6cde73dacacf60f18943788053d6040eacd
         # 2bf4ff04b40d03ff71570877d8267aed91d3595d172737d096241d08277135e2
@@ -373,18 +407,27 @@ def extract_script_pub_key_full(byte):
         # 220fb62341d3cc95ac4080daf9b953b68f75647a8b39587c2b712d65dedd2b2a
         return 'unknown', None
 
-    if pattern == [OP_IF, OP_HASH160, OP_PUSHDATA4, OP_EQUALVERIFY, OP_HASH160, OP_PUSHDATA4, OP_EQUALVERIFY,
-                   OP_HASH160, OP_PUSHDATA4, OP_EQUAL, OP_ELSE, OP_PUSHDATA4, OP_CHECKSIG, OP_ENDIF]:
+    if pattern == [OP_IF, OP_HASH160, OP_PUSHDATA4, OP_EQUALVERIFY, OP_HASH160, OP_PUSHDATA4,
+                   OP_EQUALVERIFY,
+                   OP_HASH160, OP_PUSHDATA4, OP_EQUAL, OP_ELSE, OP_PUSHDATA4, OP_CHECKSIG,
+                   OP_ENDIF]:
         # 002d2eabd145d13ed20a6a005b77a35d4041ae3c868a10c173b90e6383ff6dbf
         return 'unknown', None
 
-    if pattern == [OP_DEPTH, OP_NOP8, OP_DUP, OP_TOALTSTACK, OP_DUP, OP_3, OP_NOP, OP_EQUAL, OP_IF, OP_DROP, OP_HASH256,
-                   OP_PUSHDATA4, OP_EQUALVERIFY, OP_NOP1, OP_ELSE, OP_7, OP_NOP7, OP_EQUAL, OP_NOTIF, OP_RETURN,
-                   OP_RESERVED, OP_VER, OP_RESERVED1, OP_RESERVED2, OP_ENDIF, OP_NEGATE, OP_3, OP_ADD, OP_NOP2, OP_ABS,
-                   OP_2, OP_SUB, OP_2, OP_EQUALVERIFY, OP_NOP6, OP_NOP9, OP_FROMALTSTACK, OP_DUP, OP_3, OP_ADD,
-                   OP_TOALTSTACK, OP_SWAP, OP_NEGATE, OP_2, OP_SUB, OP_NOP10, OP_ABS, OP_MIN, OP_5, OP_EQUALVERIFY,
-                   OP_FROMALTSTACK, OP_DUP, OP_TOALTSTACK, OP_1SUB, OP_6, OP_NOP4, OP_SUB, OP_EQUALVERIFY, OP_ADD,
-                   OP_NOP5, OP_4, OP_EQUALVERIFY, OP_ENDIF, OP_DUP, OP_HASH160, OP_PUSHDATA4, OP_NOP3, OP_EQUALVERIFY,
+    if pattern == [OP_DEPTH, OP_NOP8, OP_DUP, OP_TOALTSTACK, OP_DUP, OP_3, OP_NOP, OP_EQUAL, OP_IF,
+                   OP_DROP, OP_HASH256,
+                   OP_PUSHDATA4, OP_EQUALVERIFY, OP_NOP1, OP_ELSE, OP_7, OP_NOP7, OP_EQUAL,
+                   OP_NOTIF, OP_RETURN,
+                   OP_RESERVED, OP_VER, OP_RESERVED1, OP_RESERVED2, OP_ENDIF, OP_NEGATE, OP_3,
+                   OP_ADD, OP_NOP2, OP_ABS,
+                   OP_2, OP_SUB, OP_2, OP_EQUALVERIFY, OP_NOP6, OP_NOP9, OP_FROMALTSTACK, OP_DUP,
+                   OP_3, OP_ADD,
+                   OP_TOALTSTACK, OP_SWAP, OP_NEGATE, OP_2, OP_SUB, OP_NOP10, OP_ABS, OP_MIN, OP_5,
+                   OP_EQUALVERIFY,
+                   OP_FROMALTSTACK, OP_DUP, OP_TOALTSTACK, OP_1SUB, OP_6, OP_NOP4, OP_SUB,
+                   OP_EQUALVERIFY, OP_ADD,
+                   OP_NOP5, OP_4, OP_EQUALVERIFY, OP_ENDIF, OP_DUP, OP_HASH160, OP_PUSHDATA4,
+                   OP_NOP3, OP_EQUALVERIFY,
                    OP_CHECKSIG, OP_PUSHDATA4, OP_DROP]:
         # dd754e98867fc8eab853d721d32a160418acca020e6dddeb27592c7628177486
         # OP_DEPTH OP_NOP8 OP_DUP OP_TOALTSTACK OP_DUP OP_3 OP_NOP OP_EQUAL OP_IF OP_DROP OP_HASH256 7a73cf250e33244910bd6316b57dbadfcb7a8deb63e5b3b148d0c7b8465cfcc2 OP_EQUALVERIFY OP_NOP1 OP_ELSE OP_7 OP_NOP7 OP_EQUAL OP_NOTIF OP_RETURN OP_RESERVED OP_VER OP_RESERVED1 OP_RESERVED2 OP_ENDIF OP_NEGATE OP_3 OP_ADD OP_NOP2 OP_ABS OP_2 OP_SUB OP_2 OP_EQUALVERIFY OP_NOP6 OP_NOP9 OP_FROMALTSTACK OP_DUP OP_3 OP_ADD OP_TOALTSTACK OP_SWAP OP_NEGATE OP_2 OP_SUB OP_NOP10 OP_ABS OP_MIN OP_5 OP_EQUALVERIFY OP_FROMALTSTACK OP_DUP OP_TOALTSTACK OP_1SUB OP_6 OP_NOP4 OP_SUB OP_EQUALVERIFY OP_ADD OP_NOP5 OP_4 OP_EQUALVERIFY OP_ENDIF OP_DUP OP_HASH160 3df74edff637d4c649e16ad96d8b45a71bc8daf9 OP_NOP3 OP_EQUALVERIFY OP_CHECKSIG 20706f7574696e652f667265656e6f646520 OP_DROP can spent by 3044022062df12f33c8abf30cdb73625a1d0e3c507640f0f7cce650b96da6304a9b7797502203975fc2e197198d57483d7815a32b097c01ed6b542f62f6e4cb91409ca1e8e7601 0330c6eb121ba4e2defe7a56101c52623cec4d34142975b8fcb1483b710dbfd5e2 OP_3 OP_1 OP_3 OP_3 OP_7
@@ -400,8 +443,10 @@ def extract_script_pub_key_full(byte):
         # 8ff89472c457f97c30d5013382377107dd204bc734c1c6003cda9fceecd09842
         return 'unknown', None
 
-    if pattern == [OP_SIZE, OP_PUSHDATA4, OP_PUSHDATA4, OP_WITHIN, OP_SWAP, OP_SHA256, OP_PUSHDATA4, OP_EQUAL,
-                   OP_BOOLAND, OP_SWAP, OP_PUSHDATA4, OP_CHECKSIGVERIFY, OP_SWAP, OP_PUSHDATA4, OP_CHECKSIG, OP_BOOLOR]:
+    if pattern == [OP_SIZE, OP_PUSHDATA4, OP_PUSHDATA4, OP_WITHIN, OP_SWAP, OP_SHA256, OP_PUSHDATA4,
+                   OP_EQUAL,
+                   OP_BOOLAND, OP_SWAP, OP_PUSHDATA4, OP_CHECKSIGVERIFY, OP_SWAP, OP_PUSHDATA4,
+                   OP_CHECKSIG, OP_BOOLOR]:
         # 9837a637931f74df1cb52b1045e479e4d7065f72db4d449d732211eb0e5cfd4c
         return 'unknown', None
 
@@ -421,6 +466,7 @@ def extract_script_sig(byte):
         return public_key_to_bc_address(decoded[1][1]), decoded[1][1]
 
     return None, None
+
 
 def extract_script_sig2(byte):
     decoded = parse_script(byte)
@@ -468,9 +514,11 @@ def extract_script_sig_full(byte):
         return None, None
 
     p1 = [OP_FALSE, ]
-    p2s = [[OP_PUSHDATA4, OP_CODESEPARATOR, OP_1], [OP_PUSHDATA4, OP_PUSHDATA4, OP_CODESEPARATOR, OP_2]
+    p2s = [[OP_PUSHDATA4, OP_CODESEPARATOR, OP_1],
+           [OP_PUSHDATA4, OP_PUSHDATA4, OP_CODESEPARATOR, OP_2]
         , [OP_PUSHDATA4, OP_PUSHDATA4, OP_PUSHDATA4, OP_CODESEPARATOR, OP_3]]
-    p3s = [[OP_PUSHDATA4, OP_1], [OP_PUSHDATA4, OP_PUSHDATA4, OP_2], [OP_PUSHDATA4, OP_PUSHDATA4, OP_PUSHDATA4, OP_3]]
+    p3s = [[OP_PUSHDATA4, OP_1], [OP_PUSHDATA4, OP_PUSHDATA4, OP_2],
+           [OP_PUSHDATA4, OP_PUSHDATA4, OP_PUSHDATA4, OP_3]]
     p4 = [OP_CHECKMULTISIG, ]
     odds_multisigs = [p1 + p2 + p3 + p4 for p2 in p2s for p3 in p3s]
     if pattern in odds_multisigs:
@@ -507,7 +555,8 @@ def extract_script_sig_full(byte):
         # 13378d03853777510f071657c838fdca09f10b615c959b424ff3a3ea01eb0b49 can spent [OP_HASH160 fc7f6a8a9df76e0fa8e3fc1d519509fdfc4ad259 OP_EQUAL ]
         return 'unknown', None
 
-    if pattern == [OP_FALSE, OP_PUSHDATA4, OP_PUSHDATA4, OP_FALSE, OP_PUSHDATA4, OP_PUSHDATA4, OP_PUSHDATA4]:
+    if pattern == [OP_FALSE, OP_PUSHDATA4, OP_PUSHDATA4, OP_FALSE, OP_PUSHDATA4, OP_PUSHDATA4,
+                   OP_PUSHDATA4]:
         # [OP_FALSE, OP_PUSHDATA4, OP_PUSHDATA4, OP_FALSE, OP_PUSHDATA4, OP_PUSHDATA4, OP_PUSHDATA4] can spent OP_HASH160 82e3fbe1795234de2bdfe8525a7be1b7f62ee219 OP_EQUAL
         # 37f0880ded42171a5f3dcc471f35c79027233ff0fe3178bebcb071729c75e5a3
         # 3b6ffb563fb32b9782cc183acd8694b74cee483f2443fe86c550de102c8972ae
@@ -519,7 +568,8 @@ def extract_script_sig_full(byte):
         return 'unknown', None
 
     if pattern == [OP_1, ] or pattern == [OP_1, OP_2, ] or pattern == [OP_0, OP_NOT] \
-            or pattern == [OP_FALSE, OP_FALSE, OP_FALSE, OP_CHECKMULTISIG] or pattern == [OP_1, OP_NOP1] \
+            or pattern == [OP_FALSE, OP_FALSE, OP_FALSE, OP_CHECKMULTISIG] or pattern == [OP_1,
+                                                                                          OP_NOP1] \
             or pattern == [OP_PUSHDATA4, OP_PUSHDATA4, OP_PUSHDATA4, OP_1, OP_PUSHDATA4] \
             or pattern == [OP_1, OP_PUSHDATA4]:
         # 08e1026eaf044127d7103415570afd564dfac3131d7a5e4b645f591cd349bb2c
@@ -620,7 +670,6 @@ def parse_sig(sig_bytes):
         return r, s
     else:
         return None, None
-
 
 # def parse_r_from_in_script(in_script):
 #     decoded = parse_script(in_script)

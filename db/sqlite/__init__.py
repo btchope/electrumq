@@ -7,8 +7,10 @@ __author__ = 'zhouqi'
 
 sqlite_path = 'data/tx.sqlite'
 
+
 class BaseItem(object):
     pass
+
 
 class BlockItem(BaseItem):
     block_no = -1
@@ -21,6 +23,7 @@ class BlockItem(BaseItem):
     block_prev = ''
     is_main = 0
 
+
 class TxItem(BaseItem):
     tx_hash = ''
     tx_ver = -1
@@ -28,6 +31,7 @@ class TxItem(BaseItem):
     tx_time = -1
     block_no = -1
     source = -1
+
 
 class InItem(BaseItem):
     tx_hash = ''
@@ -37,6 +41,7 @@ class InItem(BaseItem):
     in_signature = ''
     in_sequence = -1
 
+
 class _outItem(BaseItem):
     tx_hash = ''
     out_sn = -1
@@ -45,64 +50,66 @@ class _outItem(BaseItem):
     out_status = -1
     out_address = ''
 
+
 class AddressTxItem(BaseItem):
     address = ''
     tx_hash = ''
 
 
 blocks_sql = '''
-create table if not exists blocks
-    (block_no integer not null
-    , block_hash text not null primary key
-    , block_root text not null
-    , block_ver integer not null
-    , block_bits integer not null
-    , block_nonce integer not null
-    , block_time integer not null
-    , block_prev text
-    , is_main integer not null);
+CREATE TABLE IF NOT EXISTS blocks
+    (block_no INTEGER NOT NULL
+    , block_hash TEXT NOT NULL PRIMARY KEY
+    , block_root TEXT NOT NULL
+    , block_ver INTEGER NOT NULL
+    , block_bits INTEGER NOT NULL
+    , block_nonce INTEGER NOT NULL
+    , block_time INTEGER NOT NULL
+    , block_prev TEXT
+    , is_main INTEGER NOT NULL);
 '''
 
-index_blocks_block_no_sql = 'create index idx_blocks_block_no on blocks (block_no);'
-index_blocks_block_prev_sql = 'create index idx_blocks_block_prev on blocks (block_prev);'
+index_blocks_block_no_sql = 'CREATE INDEX idx_blocks_block_no ON blocks (block_no);'
+index_blocks_block_prev_sql = 'CREATE INDEX idx_blocks_block_prev ON blocks (block_prev);'
 txs_sql = '''
-create table if not exists txs 
-    (tx_hash text primary key
-    , tx_ver integer
-    , tx_locktime integer
-    , tx_time integer
-    , block_no integer
-    , source integer);
+CREATE TABLE IF NOT EXISTS txs
+    (tx_hash TEXT PRIMARY KEY
+    , tx_ver INTEGER
+    , tx_locktime INTEGER
+    , tx_time INTEGER
+    , block_no INTEGER
+    , source INTEGER);
 '''
-index_txs_block_no_sql = 'create index idx_tx_block_no on txs (block_no);'
+index_txs_block_no_sql = 'CREATE INDEX idx_tx_block_no ON txs (block_no);'
 addresses_txs_sql = '''
-create table if not exists addresses_txs
-    (address text not null
-    , tx_hash text not null
-    , primary key (address, tx_hash));
+CREATE TABLE IF NOT EXISTS addresses_txs
+    (address TEXT NOT NULL
+    , tx_hash TEXT NOT NULL
+    , PRIMARY KEY (address, tx_hash));
 '''
 ins_sql = '''
-create table if not exists ins
-    (tx_hash text not null
-    , in_sn integer not null
-    , prev_tx_hash text
-    , prev_out_sn integer
-    , in_signature text
-    , in_sequence integer
-    , primary key (tx_hash, in_sn));
+CREATE TABLE IF NOT EXISTS ins
+    (tx_hash TEXT NOT NULL
+    , in_sn INTEGER NOT NULL
+    , prev_tx_hash TEXT
+    , prev_out_sn INTEGER
+    , in_signature TEXT
+    , in_sequence INTEGER
+    , PRIMARY KEY (tx_hash, in_sn));
 '''
-index_ins_prev_tx_hash_sql = 'create index idx_in_prev_tx_hash on ins (prev_tx_hash);'
+index_ins_prev_tx_hash_sql = 'CREATE INDEX idx_in_prev_tx_hash ON ins (prev_tx_hash);'
 outs_sql = '''
-create table if not exists outs
-    (tx_hash text not null
-    , out_sn integer not null
-    , out_script text not null
-    , out_value integer not null
-    , out_status integer not null
-    , out_address text
-    , primary key (tx_hash, out_sn));
+CREATE TABLE IF NOT EXISTS outs
+    (tx_hash TEXT NOT NULL
+    , out_sn INTEGER NOT NULL
+    , out_script TEXT NOT NULL
+    , out_value INTEGER NOT NULL
+    , out_status INTEGER NOT NULL
+    , out_address TEXT
+    , PRIMARY KEY (tx_hash, out_sn));
 '''
-index_outs_outAddress_sql = 'create index idx_out_out_address on outs (out_address);'
+index_outs_outAddress_sql = 'CREATE INDEX idx_out_out_address ON outs (out_address);'
+
 
 def init():
     if not os.path.exists(sqlite_path):
@@ -116,3 +123,26 @@ def init():
             c.execute(sql)
         conn.commit()
         conn.close()
+
+
+def drop():
+    if os.path.exists(sqlite_path):
+        os.remove(sqlite_path)
+
+
+class Connection():
+    @classmethod
+    def gen_db(cls):
+        return sqlite3.connect(sqlite_path)
+
+
+def execute_one(sql):
+    conn = Connection.gen_db()
+    res = conn.execute(sql)
+    return res.fetchone()
+
+
+def execute_all(sql):
+    conn = Connection.gen_db()
+    res = conn.execute(sql)
+    return res.fetchall()

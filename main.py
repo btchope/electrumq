@@ -64,7 +64,7 @@ if __name__ == '__main__':
     # network.client.add_subscribe(headers_subscribe([]), callback=prt1, subscribe=prt2)  # do not have id
     #
     BlockChain().init_header()
-    SimpleWallet('1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm').init()
+    # SimpleWallet('1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm').init()
     # network.init_header(BlockChain().init_header_callback)
 
     # network.client.add_message(GetChunk([0,]), Block().connect_chunk2)
