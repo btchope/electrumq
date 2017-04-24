@@ -31,8 +31,8 @@ class SimpleWallet(BaseWallet):
     def history_callback(self, msg_id, msg, param):
         for each in param:
             TxStore().add(msg['params'][0], each['tx_hash'], each['height'])
-        # for tx, height in TxStore().unverify_tx_list:
-        #     NetWorkManager().client.add_message(GetMerkle([tx, height]), self.get_merkle_callback)
+        for tx, height in TxStore().unverify_tx_list:
+            NetWorkManager().client.add_message(GetMerkle([tx, height]), self.get_merkle_callback)
         for tx in TxStore().unfetch_tx:
             NetWorkManager().client.add_message(Get([tx]), self.get_tx_callback)
 
