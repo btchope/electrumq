@@ -39,6 +39,15 @@ class BlockStore():
                 print ex.message
                 traceback.print_exc()
 
+    def save_block_item_batch(self, block_item_list):
+        sql = 'INSERT INTO blocks(block_no, block_hash, block_root, block_ver, block_bits, block_nonce, block_time, block_prev, is_main) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);'
+        with Connection.gen_db() as conn:
+            c = conn.cursor()
+            c.executemany(sql, [(block.block_no, block.block_hash, block.block_root,
+                      block.block_ver, block.block_bits, block.block_nonce,
+                      block.block_time, block.block_prev, block.is_main) for block in block_item_list ])
+
+
     def save_header(self, header):
         data = self.serialize_header_hex(header)
         assert len(data) == 80
@@ -331,7 +340,7 @@ class BlockStore():
         for idx, block in enumerate(chunk):
             block.block_no = index * 2016 + idx
             block.is_main = 1
-            self.save_block_item(block)
+        self.save_block_item_batch(chunk)
         # if index * 2016 + 2016 - len(self._chained_headers) > 0:
         #     self._chained_headers.extend(
         #         [None, ] * (index * 2016 + 2016 - len(self._chained_headers)))
