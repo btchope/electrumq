@@ -2,10 +2,12 @@
 import logging
 import traceback
 
+from datetime import datetime, timedelta
+
 from db.sqlite import execute_one, BlockItem, Connection
 from utils import Singleton
 from utils.base58 import reverse_hex_str, Hash, double_sha256
-from utils.parser import int_to_hex, write_compact_size, write_uint32
+from utils.parser import int_to_hex, write_compact_size, write_uint32, read_uint32
 
 __author__ = 'zhouqi'
 
@@ -159,16 +161,26 @@ class BlockStore():
         return h
 
     def deserialize_block_item(self, s):
+        sum_d1, sum_d2, sum_d3 = timedelta(0), timedelta(0), timedelta(0)
         block = BlockItem()
-        hex_to_int = lambda s: int('0x' + s[::-1].encode('hex'), 16)
+        # hex_to_int = lambda s: int('0x' + s[::-1].encode('hex'), 16)
         # h = {}
-        block.block_ver = hex_to_int(s[0:4])
+        d = datetime.now()
+        block.block_ver = read_uint32(s[0:4])
+        sum_d1 += datetime.now() - d
+        d = datetime.now()
         block.block_prev = s[4:36][::-1].encode('hex')
         block.block_root = s[36:68][::-1].encode('hex')
-        block.block_time = hex_to_int(s[68:72])
-        block.block_bits = hex_to_int(s[72:76])
-        block.block_nonce = hex_to_int(s[76:80])
+        sum_d2 += datetime.now() - d
+        d = datetime.now()
+        block.block_time = read_uint32(s[68:72])
+        block.block_bits = read_uint32(s[72:76])
+        block.block_nonce = read_uint32(s[76:80])
+        sum_d1 += datetime.now() - d
+        d = datetime.now()
         block.block_hash = double_sha256(s)[::-1].encode('hex')
+        sum_d3 += datetime.now() - d
+        # print sum_d1, sum_d2, sum_d3
         return block
 
     def verify_header(self, header, prev_header, bits, target):
@@ -319,14 +331,20 @@ class BlockStore():
             prev_header = self.read_header(index * 2016 - 1)
         bits, target = self.get_target2(index)
         result = []
+        sum_d1, sum_d2 = timedelta(0), timedelta(0)
         for i in range(num):
             raw_header = data[i * 80:(i + 1) * 80]
+            d = datetime.now()
             block = self.deserialize_block_item(raw_header)
+            sum_d1 += datetime.now() - d
+            d = datetime.now()
             verified = self.verify_header2(block, prev_header, bits, target)
+            sum_d2 += datetime.now() - d
             if not verified:
                 return []
             prev_header = block
             result.append(block)
+        print sum_d1, sum_d2
         return result
 
     def save_chunk(self, index, chunk):
