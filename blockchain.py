@@ -47,8 +47,8 @@ class BlockChain():
     @gen.coroutine
     def recieve_header(self, params):
         for h in params:
-            pass
-            # BlockStore().connect_header(h, h['block_height'])
+            block = BlockStore().header_dict_to_block_item(h)
+            BlockStore().connect_header(block, h['block_height'])
 
     @gen.coroutine
     def catch_up(self, msg_id, msg, result):
@@ -73,12 +73,12 @@ class BlockChain():
 
     @gen.coroutine
     def get_header_callback(self, msg_id, msg, header):
-        pass
-        # BlockStore().connect_header(header, header['block_height'])
+        block = BlockStore().header_dict_to_block_item(header)
+        BlockStore().connect_header(block, header['block_height'])
 
     @gen.coroutine
     def get_trunc_callback(self, msg_id, msg, data):
-        BlockStore().connect_chunk(msg['params'][0], data)
+        BlockStore().connect_chunk(msg['params'][0], data.decode('hex'))
 
     # def get_header(self, height):
     #     return BlockStore().read_header(height)

@@ -27,7 +27,18 @@ class BlockStore():
     @property
     def height(self):
         # return len(self._chained_headers) - 1
-        return execute_one('select ifnull(max(block_no),-1) from blocks')
+        return execute_one('select ifnull(max(block_no),-1) from blocks')[0]
+
+    def header_dict_to_block_item(self, header):
+        block = BlockItem()
+        block.block_ver = header['version']
+        block.block_prev = header['prev_block_hash']
+        block.block_root = header['merkle_root']
+        block.block_ver = header['timestamp']
+        block.block_ver = header['bits']
+        block.block_ver = header['nonce']
+        block.block_hash = double_sha256(self.serialize_header_hex(header))[::-1].encode('hex')
+        return block
 
     def save_block_item(self, block_item):
         sql = 'INSERT INTO blocks(block_no, block_hash, block_root, block_ver, block_bits, block_nonce, block_time, block_prev, is_main) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);'
@@ -45,9 +56,13 @@ class BlockStore():
         sql = 'INSERT INTO blocks(block_no, block_hash, block_root, block_ver, block_bits, block_nonce, block_time, block_prev, is_main) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);'
         with Connection.gen_db() as conn:
             c = conn.cursor()
-            c.executemany(sql, [(block.block_no, block.block_hash, block.block_root,
-                      block.block_ver, block.block_bits, block.block_nonce,
-                      block.block_time, block.block_prev, block.is_main) for block in block_item_list ])
+            params = [(block.block_no, block.block_hash, block.block_root,
+                                 block.block_ver, block.block_bits, block.block_nonce,
+                                 block.block_time, block.block_prev, block.is_main) for block in
+                                block_item_list
+                                if c.execute('SELECT count(0) FROM blocks WHERE block_hash=?',
+                                             (block.block_hash,)).fetchone() == (0,)]
+            c.executemany(sql, params)
 
 
     def save_header(self, header):
