@@ -40,9 +40,9 @@ class SimpleWallet(BaseWallet):
     def get_merkle_callback(self, msg_id, msg, param):
         tx_hash = msg['params'][0]
         height = msg['params'][1]
-        header = BlockChain().get_header(height)
-        if header is not None:
-            result = TxStore().verify_merkle(tx_hash, param, header)
+        block_root = BlockChain().get_block_root(height)
+        if block_root is not None:
+            result = TxStore().verify_merkle(tx_hash, param, block_root)
             if result:
                 TxStore().verified_tx(tx_hash)
 

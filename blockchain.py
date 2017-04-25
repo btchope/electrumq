@@ -32,8 +32,9 @@ class BlockChain():
             if len(result) > len(result) / (80 * 2016) * (80 * 2016):
                 for idx in xrange((len(result) - (len(result) / (80 * 2016) * (80 * 2016))) / 80):
                     height = len(result) / (80 * 2016) * 2016 + idx
-                    header = BlockStore().deserialize_header(result[(len(result) / (80 * 2016) * 2016 + idx) * 80:(len(result) / (80 * 2016) * 2016 + idx) * 80 + 80])
-                    BlockStore().connect_header(header, height)
+                    # header = BlockStore().deserialize_header(result[(len(result) / (80 * 2016) * 2016 + idx) * 80:(len(result) / (80 * 2016) * 2016 + idx) * 80 + 80])
+                    block_item = BlockStore().deserialize_block_item(result[(len(result) / (80 * 2016) * 2016 + idx) * 80:(len(result) / (80 * 2016) * 2016 + idx) * 80 + 80])
+                    BlockStore().connect_block_item(block_item, height)
                     print height
             print datetime.now() - dt
             from message.all import headers_subscribe
@@ -46,7 +47,8 @@ class BlockChain():
     @gen.coroutine
     def recieve_header(self, params):
         for h in params:
-            BlockStore().connect_header(h, h['block_height'])
+            pass
+            # BlockStore().connect_header(h, h['block_height'])
 
     @gen.coroutine
     def catch_up(self, msg_id, msg, result):
@@ -71,11 +73,15 @@ class BlockChain():
 
     @gen.coroutine
     def get_header_callback(self, msg_id, msg, header):
-        BlockStore().connect_header(header, header['block_height'])
+        pass
+        # BlockStore().connect_header(header, header['block_height'])
 
     @gen.coroutine
     def get_trunc_callback(self, msg_id, msg, data):
         BlockStore().connect_chunk(msg['params'][0], data)
 
-    def get_header(self, height):
-        return BlockStore().read_header(height)
+    # def get_header(self, height):
+    #     return BlockStore().read_header(height)
+
+    def get_block_root(self, height):
+        return BlockStore().get_block_root(height)

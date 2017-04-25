@@ -28,7 +28,7 @@ class TxStore():
         if tx not in self.verified_tx_list:
             self.unverify_tx_list.add((tx, block_height))
 
-    def verify_merkle(self, tx, merkle, header):
+    def verify_merkle(self, tx, merkle, block_root):
         # if r.get('error'):
         #     # self.print_error('received an error:', r)
         #     return
@@ -43,7 +43,7 @@ class TxStore():
         pos = merkle.get('pos')
         merkle_root = self.hash_merkle_root(merkle['merkle'], tx_hash, pos)
         # header = self.network.get_header(tx_height)
-        if not header or header.get('merkle_root') != merkle_root:
+        if not block_root or block_root != merkle_root:
             # FIXME: we should make a fresh connection to a server to
             # recover from this, as this TX will now never verify
             # self.print_error("merkle verification failed for", tx_hash)

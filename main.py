@@ -6,7 +6,7 @@ from tornado import gen
 
 from blockchain import BlockChain
 from db.mem.blockstore import BlockStore
-from db.sqlite import init
+from db.sqlite import init, drop
 from network import NetWorkManager
 from wallet import SimpleWallet
 
@@ -18,6 +18,7 @@ from message.all import *
 if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
 
+    drop()
     init()
 
     network = NetWorkManager()
