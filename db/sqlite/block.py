@@ -306,6 +306,7 @@ class BlockStore():
         # header = BlockStore().deserialize_header(data)
         # header['block_height'] = height
         block_item.block_no = height
+        block_item.is_main = 1
         previous_height = block_item.block_no - 1
         if self.height < previous_height or self.read_header(previous_height) is None:
             # self._unchain_headers.append((height, self.serialize_header_hex(header)))
