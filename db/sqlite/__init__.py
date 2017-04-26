@@ -2,6 +2,10 @@
 import os
 
 import sqlite3
+from datetime import datetime, timedelta
+
+from utils.base58 import double_sha256
+from utils.parser import read_uint32, write_uint32
 
 __author__ = 'zhouqi'
 
@@ -11,6 +15,18 @@ sqlite_path = 'data/tx.sqlite'
 class BaseItem(object):
     pass
 
+
+def header_dict_to_block_item(header):
+    block = BlockItem()
+    block.block_ver = header['version']
+    block.block_prev = header['prev_block_hash']
+    block.block_root = header['merkle_root']
+    block.block_ver = header['timestamp']
+    block.block_ver = header['bits']
+    block.block_ver = header['nonce']
+    block.block_no = header['block_height']
+    block.block_hash = double_sha256(block.serialize())[::-1].encode('hex')
+    return block
 
 class BlockItem(BaseItem):
     block_no = -1
@@ -23,6 +39,24 @@ class BlockItem(BaseItem):
     block_prev = ''
     is_main = 0
 
+    def __init__(self, raw=None):
+        if raw is not None:
+            self.block_ver = read_uint32(raw[0:4])
+            self.block_prev = raw[4:36][::-1].encode('hex')
+            self.block_root = raw[36:68][::-1].encode('hex')
+            self.block_time = read_uint32(raw[68:72])
+            self.block_bits = read_uint32(raw[72:76])
+            self.block_nonce = read_uint32(raw[76:80])
+            self.block_hash = double_sha256(raw)[::-1].encode('hex')
+
+    def serialize(self):
+        s = write_uint32(self.block_ver) \
+            + self.block_prev.decode('hex')[::-1] \
+            + self.block_root.decode('hex')[::-1] \
+            + write_uint32(self.block_time) \
+            + write_uint32(self.block_bits) \
+            + write_uint32(self.block_nonce)
+        return s
 
 class TxItem(BaseItem):
     tx_hash = ''
@@ -136,9 +170,10 @@ class Connection():
         return sqlite3.connect(sqlite_path)
 
 
-def execute_one(sql):
+def execute_one(sql, params=None):
+    if params is None: params = ()
     conn = Connection.gen_db()
-    res = conn.execute(sql)
+    res = conn.execute(sql, params)
     return res.fetchone()
 
 
