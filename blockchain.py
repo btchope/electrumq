@@ -6,6 +6,8 @@ import logging
 from tornado import gen
 
 # from db.mem.blockstore import BlockStore
+from tornado.concurrent import Future
+
 from db.sqlite import header_dict_to_block_item
 from db.sqlite.block import BlockStore
 from network import NetWorkManager

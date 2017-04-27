@@ -171,13 +171,18 @@ class Connection():
 
 
 def execute_one(sql, params=None):
-    if params is None: params = ()
     conn = Connection.gen_db()
-    res = conn.execute(sql, params)
+    if params is None:
+        res = conn.execute(sql)
+    else:
+        res = conn.execute(sql, params)
     return res.fetchone()
 
 
-def execute_all(sql):
+def execute_all(sql, params = None):
     conn = Connection.gen_db()
-    res = conn.execute(sql)
+    if params is None:
+        res = conn.execute(sql)
+    else:
+        res = conn.execute(sql, params)
     return res.fetchall()

@@ -99,8 +99,9 @@ class Transaction:
             return
         d = deserialize(self.raw)
         self._inputs = d['inputs']
-        self._outputs = [(x['type'], x['address'], x['value']) for x in d['outputs']]
+        self._outputs = [(x['type'], x['address'], x['value'], x['scriptPubKey']) for x in d['outputs']]
         self.locktime = d['lockTime']
+        self.tx_ver = d['version']
         return d
 
     @classmethod

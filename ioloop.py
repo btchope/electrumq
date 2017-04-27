@@ -41,7 +41,9 @@ class IOLoop(threading.Thread):
             pass
         if callback is None:
             callback = nothing
-        self._features.append((feature, callback))
+        else:
+            feature.add_done_callback(callback)
+        self._features.append((feature, nothing))
 
 
     def add_periodic(self, feature, interval=1000):

@@ -3,7 +3,7 @@ from tornado import gen
 
 from blockchain import BlockChain
 from db.mem.tx import Transaction
-from db.mem.txstore import TxStore
+from db.sqlite.tx import TxStore
 from message.blockchain.address import GetHistory
 from message.blockchain.transaction import GetMerkle, Get
 from network import NetWorkManager

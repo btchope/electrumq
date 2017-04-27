@@ -56,11 +56,16 @@ class NetWorkManager():
 
     @gen.coroutine
     def init(self):
-        import random
-        response = yield AsyncHTTPClient().fetch(
-            'http://127.0.0.1:8866/files/blockchain_headers?id=%d' % random.randint(1, 1000))
-        # print response.body
-        raise gen.Return(response.body)
+        retry = 5
+        while retry > 0:
+            try:
+                response = yield AsyncHTTPClient().fetch('http://127.0.0.1:8866/files/blockchain_headers')
+            except Exception as ex:
+                print ex.message
+                retry -= 1
+            else:
+                raise gen.Return(response.body)
+
 
 
 class RPCClient():

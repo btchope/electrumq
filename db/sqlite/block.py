@@ -159,15 +159,15 @@ class BlockStore():
             # todo store unchain
             logger.debug('save header to unchain %d' % height)
         else:
-            previous_header = BlockStore().get_block(previous_height)
+            prev_block = BlockStore().get_block(previous_height)
             #
             # # Missing header, request it
-            if not previous_header:
+            if not prev_block:
                 # todo store unchain
                 logger.debug('save header to unchain %d' % height)
             #
             # # Does it connect to my chain?
-            prev_hash = BlockStore().get_block(previous_header).block_hash
+            prev_hash = prev_block.block_hash
             if prev_hash != block_item.block_prev:
                 # todo store unchain
                 logger.debug('save header to unchain %d' % height)
