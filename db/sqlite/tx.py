@@ -45,13 +45,6 @@ class TxStore():
         #     self.unverify_tx_list.add((tx, block_height))
 
     def verify_merkle(self, tx, merkle, block_root):
-        # if r.get('error'):
-        #     # self.print_error('received an error:', r)
-        #     return
-
-        # params = r['params']
-        # merkle = r['result']
-
         # Verify the hash of the server-provided merkle branch to a
         # transaction matches the merkle root of its block
         tx_hash = tx
@@ -64,11 +57,6 @@ class TxStore():
             # recover from this, as this TX will now never verify
             # self.print_error("merkle verification failed for", tx_hash)
             return False
-
-        # # we passed all the tests
-        # self.merkle_roots[tx_hash] = merkle_root
-        # self.print_error("verified %s" % tx_hash)
-        # self.wallet.add_verified_tx(tx_hash, (tx_height, header.get('timestamp'), pos))
         return True
 
 
@@ -93,8 +81,6 @@ class TxStore():
         with Connection.gen_db() as conn:
             c = conn.cursor()
             c.execute('UPDATE txs SET source=1 WHERE tx_hash=?', (tx,))
-        # self.unverify_tx_list.remove(tx)
-        # self.verified_tx_list.add(tx)
 
     def add_tx_detail(self, tx_hash, tx_detail):
         with Connection.gen_db() as conn:
