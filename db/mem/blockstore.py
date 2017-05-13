@@ -13,6 +13,7 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado import gen
 
 from network import NetWorkManager
+from utils import Parameter
 from utils import Singleton, hash_encode, Hash, int_to_hex, rev_hex
 
 __author__ = 'zhouqi'
@@ -101,7 +102,7 @@ class BlockStore():
         if prev_hash != header.get('prev_block_hash'):
             logger.warning("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
             return False
-        # if bitcoin.TESTNET or bitcoin.NOLNET: return
+        if Parameter().TESTNET or Parameter().NOLNET: return
         if bits != header.get('bits'):
             logger.warning("bits mismatch: %s vs %s" % (bits, header.get('bits')))
             return False

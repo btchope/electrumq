@@ -8,6 +8,7 @@ from blockchain import BlockChain
 from db.mem.blockstore import BlockStore
 from db.sqlite import init, drop
 from network import NetWorkManager
+from utils.parameter import set_testnet
 from wallet import SimpleWallet
 
 __author__ = 'zhouqi'
@@ -16,6 +17,7 @@ __author__ = 'zhouqi'
 from message.all import *
 
 if __name__ == '__main__':
+    set_testnet()
     logging.config.fileConfig('logging.conf')
 
     # drop()
@@ -49,10 +51,10 @@ if __name__ == '__main__':
     #
     # network.client.add_message(address_subscribe(["1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm"]))
     network.client.add_message(GetHistory(["1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm"]))
-    # network.client.add_message(GetMempool(["1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm"]))
-    # network.client.add_message(GetBalance(["1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm"]))
+    network.client.add_message(GetMempool(["1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm"]))
+    network.client.add_message(GetBalance(["1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm"]))
     # network.client.add_message(GetProof(["1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm"])) # not implemented
-    # network.client.add_message(Listunspent(["1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm"]))
+    network.client.add_message(Listunspent(["1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm"]))
     # network.client.add_message(GetAddress(["50d958904e0ab7bac04cbc7f81e27d14143306ba2ad04f3770bf36dfa388e059", 0]))
     # network.client.add_message(GetHeader([461358]))
     # network.client.add_message(GetChunk([461358 / 2016]))
@@ -64,8 +66,8 @@ if __name__ == '__main__':
     # network.client.add_subscribe(numblocks_subscribe([]), callback=prt1, subscribe=prt2)  # do not have id
     # network.client.add_subscribe(headers_subscribe([]), callback=prt1, subscribe=prt2)  # do not have id
     #
-    # BlockChain().init_header()
-    SimpleWallet('1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm').init()
+    BlockChain().init_header()
+    # SimpleWallet('1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm').init()
     # network.init_header(BlockChain().init_header_callback)
 
     # network.client.add_message(GetChunk([0,]), Block().connect_chunk2)

@@ -17,6 +17,7 @@ from tornado.tcpclient import TCPClient
 
 from ioloop import IOLoop
 from utils import Singleton
+from utils.parameter import Parameter
 
 __author__ = 'zhouqi'
 
@@ -59,7 +60,7 @@ class NetWorkManager():
         retry = 5
         while retry > 0:
             try:
-                response = yield AsyncHTTPClient().fetch('http://127.0.0.1:8866/files/blockchain_headers')
+                response = yield AsyncHTTPClient().fetch(Parameter().HEADERS_URL)
             except Exception as ex:
                 print ex.message
                 retry -= 1

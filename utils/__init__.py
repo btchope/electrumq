@@ -9,6 +9,8 @@ import sys
 import ecdsa
 import pyaes
 
+from utils.parameter import Parameter
+
 __author__ = 'zhouqi'
 
 
@@ -24,14 +26,14 @@ class Singleton(type):
 # hash_encode = lambda x: x[::-1].encode('hex')
 # hash_decode = lambda x: x.decode('hex')[::-1]
 hmac_sha_512 = lambda x, y: hmac.new(x, y, hashlib.sha512).digest()
-TESTNET = False
-NOLNET = False
-ADDRTYPE_P2PKH = 0
-ADDRTYPE_P2SH = 5
-ADDRTYPE_P2WPKH = 6
-XPRV_HEADER = 0x0488ade4
-XPUB_HEADER = 0x0488b21e
-HEADERS_URL = "https://headers.electrum.org/blockchain_headers"
+# TESTNET = False
+# NOLNET = False
+# ADDRTYPE_P2PKH = 0
+# ADDRTYPE_P2SH = 5
+# ADDRTYPE_P2WPKH = 6
+# XPRV_HEADER = 0x0488ade4
+# XPUB_HEADER = 0x0488b21e
+# HEADERS_URL = "https://headers.electrum.org/blockchain_headers"
 
 
 def sha256(x):
@@ -63,7 +65,7 @@ def hash_160(public_key):
 
 def hash_160_to_bc_address(h160, addrtype, witness_program_version=1):
     s = chr(addrtype)
-    if addrtype == ADDRTYPE_P2WPKH:
+    if addrtype == Parameter().ADDRTYPE_P2WPKH:
         s += chr(witness_program_version) + chr(0)
     s += h160
     return base_encode(s+Hash(s)[0:4], base=58)
@@ -73,16 +75,16 @@ def bc_address_to_hash_160(addr):
     return ord(bytes[0]), bytes[1:21]
 
 def hash160_to_p2pkh(h160):
-    return hash_160_to_bc_address(h160, ADDRTYPE_P2PKH)
+    return hash_160_to_bc_address(h160, Parameter().ADDRTYPE_P2PKH)
 
 def hash160_to_p2sh(h160):
-    return hash_160_to_bc_address(h160, ADDRTYPE_P2SH)
+    return hash_160_to_bc_address(h160, Parameter().ADDRTYPE_P2SH)
 
 def public_key_to_p2pkh(public_key):
     return hash160_to_p2pkh(hash_160(public_key))
 
 def public_key_to_p2wpkh(public_key):
-    return hash_160_to_bc_address(hash_160(public_key), ADDRTYPE_P2WPKH)
+    return hash_160_to_bc_address(hash_160(public_key), Parameter().ADDRTYPE_P2WPKH)
 
 
 __b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
@@ -219,54 +221,54 @@ def point_to_ser(P, comp=True ):
 
 
 # Bitcoin network constants
-TESTNET = False
-NOLNET = False
-ADDRTYPE_P2PKH = 0
-ADDRTYPE_P2SH = 5
-ADDRTYPE_P2WPKH = 6
-XPRV_HEADER = 0x0488ade4
-XPUB_HEADER = 0x0488b21e
-HEADERS_URL = "https://headers.electrum.org/blockchain_headers"
+# TESTNET = False
+# NOLNET = False
+# ADDRTYPE_P2PKH = 0
+# ADDRTYPE_P2SH = 5
+# ADDRTYPE_P2WPKH = 6
+# XPRV_HEADER = 0x0488ade4
+# XPUB_HEADER = 0x0488b21e
+# HEADERS_URL = "https://headers.electrum.org/blockchain_headers"
 
-def set_testnet():
-    global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, ADDRTYPE_P2WPKH
-    global XPRV_HEADER, XPUB_HEADER
-    global TESTNET, HEADERS_URL
-    TESTNET = True
-    ADDRTYPE_P2PKH = 111
-    ADDRTYPE_P2SH = 196
-    ADDRTYPE_P2WPKH = 3
-    XPRV_HEADER = 0x04358394
-    XPUB_HEADER = 0x043587cf
-    HEADERS_URL = "https://headers.electrum.org/testnet_headers"
-
-def set_nolnet():
-    global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, ADDRTYPE_P2WPKH
-    global XPRV_HEADER, XPUB_HEADER
-    global NOLNET, HEADERS_URL
-    NOLNET = True
-    ADDRTYPE_P2PKH = 0
-    ADDRTYPE_P2SH = 5
-    ADDRTYPE_P2WPKH = 6
-    XPRV_HEADER = 0x0488ade4
-    XPUB_HEADER = 0x0488b21e
-    HEADERS_URL = "https://headers.electrum.org/nolnet_headers"
+# def set_testnet():
+#     global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, ADDRTYPE_P2WPKH
+#     global XPRV_HEADER, XPUB_HEADER
+#     global TESTNET, HEADERS_URL
+#     TESTNET = True
+#     ADDRTYPE_P2PKH = 111
+#     ADDRTYPE_P2SH = 196
+#     ADDRTYPE_P2WPKH = 3
+#     XPRV_HEADER = 0x04358394
+#     XPUB_HEADER = 0x043587cf
+#     HEADERS_URL = "https://headers.electrum.org/testnet_headers"
+#
+# def set_nolnet():
+#     global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, ADDRTYPE_P2WPKH
+#     global XPRV_HEADER, XPUB_HEADER
+#     global NOLNET, HEADERS_URL
+#     NOLNET = True
+#     ADDRTYPE_P2PKH = 0
+#     ADDRTYPE_P2SH = 5
+#     ADDRTYPE_P2WPKH = 6
+#     XPRV_HEADER = 0x0488ade4
+#     XPUB_HEADER = 0x0488b21e
+#     HEADERS_URL = "https://headers.electrum.org/nolnet_headers"
 
 
 
 ################################## transactions
+#
+# FEE_STEP = 10000
+# MAX_FEE_RATE = 300000
+# FEE_TARGETS = [25, 10, 5, 2]
+#
+# COINBASE_MATURITY = 100
+# COIN = 100000000
 
-FEE_STEP = 10000
-MAX_FEE_RATE = 300000
-FEE_TARGETS = [25, 10, 5, 2]
-
-COINBASE_MATURITY = 100
-COIN = 100000000
-
-# supported types of transction outputs
-TYPE_ADDRESS = 0
-TYPE_PUBKEY  = 1
-TYPE_SCRIPT  = 2
+# # supported types of transction outputs
+# TYPE_ADDRESS = 0
+# TYPE_PUBKEY  = 1
+# TYPE_SCRIPT  = 2
 
 # AES encryption
 # try:
@@ -456,7 +458,7 @@ def hash_160(public_key):
 
 def hash_160_to_bc_address(h160, addrtype, witness_program_version=1):
     s = chr(addrtype)
-    if addrtype == ADDRTYPE_P2WPKH:
+    if addrtype == Parameter().ADDRTYPE_P2WPKH:
         s += chr(witness_program_version) + chr(0)
     s += h160
     return base_encode(s+Hash(s)[0:4], base=58)
@@ -466,16 +468,16 @@ def bc_address_to_hash_160(addr):
     return ord(bytes[0]), bytes[1:21]
 
 def hash160_to_p2pkh(h160):
-    return hash_160_to_bc_address(h160, ADDRTYPE_P2PKH)
+    return hash_160_to_bc_address(h160, Parameter().ADDRTYPE_P2PKH)
 
 def hash160_to_p2sh(h160):
-    return hash_160_to_bc_address(h160, ADDRTYPE_P2SH)
+    return hash_160_to_bc_address(h160, Parameter().ADDRTYPE_P2SH)
 
 def public_key_to_p2pkh(public_key):
     return hash160_to_p2pkh(hash_160(public_key))
 
 def public_key_to_p2wpkh(public_key):
-    return hash_160_to_bc_address(hash_160(public_key), ADDRTYPE_P2WPKH)
+    return hash_160_to_bc_address(hash_160(public_key), Parameter().ADDRTYPE_P2WPKH)
 
 
 
@@ -558,13 +560,13 @@ def PrivKeyToSecret(privkey):
 
 
 def SecretToASecret(secret, compressed=False):
-    addrtype = ADDRTYPE_P2PKH
+    addrtype = Parameter().ADDRTYPE_P2PKH
     vchIn = chr((addrtype+128)&255) + secret
     if compressed: vchIn += '\01'
     return EncodeBase58Check(vchIn)
 
 def ASecretToSecret(key):
-    addrtype = ADDRTYPE_P2PKH
+    addrtype = Parameter().ADDRTYPE_P2PKH
     vch = DecodeBase58Check(key)
     if vch and vch[0] == chr((addrtype+128)&255):
         return vch[1:]
@@ -618,19 +620,19 @@ def is_address(addr):
         addrtype, h = bc_address_to_hash_160(addr)
     except Exception:
         return False
-    if addrtype not in [ADDRTYPE_P2PKH, ADDRTYPE_P2SH]:
+    if addrtype not in [Parameter().ADDRTYPE_P2PKH, Parameter().ADDRTYPE_P2SH]:
         return False
     return addr == hash_160_to_bc_address(h, addrtype)
 
 def is_p2pkh(addr):
     if is_address(addr):
         addrtype, h = bc_address_to_hash_160(addr)
-        return addrtype == ADDRTYPE_P2PKH
+        return addrtype == Parameter().ADDRTYPE_P2PKH
 
 def is_p2sh(addr):
     if is_address(addr):
         addrtype, h = bc_address_to_hash_160(addr)
-        return addrtype == ADDRTYPE_P2SH
+        return addrtype == Parameter().ADDRTYPE_P2SH
 
 def is_private_key(key):
     try:
@@ -933,10 +935,10 @@ def _CKD_pub(cK, c, s):
 
 
 def xprv_header(xtype):
-    return ("%08x"%(XPRV_HEADER + xtype)).decode('hex')
+    return ("%08x"%(Parameter().XPRV_HEADER + xtype)).decode('hex')
 
 def xpub_header(xtype):
-    return ("%08x"%(XPUB_HEADER + xtype)).decode('hex')
+    return ("%08x"%(Parameter().XPUB_HEADER + xtype)).decode('hex')
 
 def serialize_xprv(xtype, c, k, depth=0, fingerprint=chr(0)*4, child_number=chr(0)*4):
     xprv = xprv_header(xtype) + chr(depth) + fingerprint + child_number + c + chr(0) + k
@@ -954,9 +956,9 @@ def deserialize_xkey(xkey, prv):
     fingerprint = xkey[5:9]
     child_number = xkey[9:13]
     c = xkey[13:13+32]
-    header = XPRV_HEADER if prv else XPUB_HEADER
+    header = Parameter().XPRV_HEADER if prv else Parameter().XPUB_HEADER
     xtype = int('0x' + xkey[0:4].encode('hex'), 16) - header
-    if xtype not in ([0, 1] if TESTNET else [0]):
+    if xtype not in ([0, 1] if Parameter().TESTNET else [0]):
         raise BaseException('Invalid header')
     n = 33 if prv else 32
     K_or_k = xkey[13+n:]

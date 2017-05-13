@@ -8,15 +8,6 @@ __author__ = 'zhouqi'
 class TxStore():
     __metaclass__ = Singleton
 
-    # address_tx_dict = {}
-    # verified_tx_list = set([])
-    # unverify_tx_list = set([])
-    # tx_detail = {}
-    # unfetch_tx = set([])
-
-    # unspent_out = []
-    # all_ins = set([])
-
     def __init__(self):
         pass
 

@@ -5,6 +5,7 @@ import traceback
 from datetime import datetime, timedelta
 
 from db.sqlite import execute_one, BlockItem, Connection, header_dict_to_block_item
+from utils import Parameter
 from utils import Singleton
 from utils.base58 import reverse_hex_str, Hash, double_sha256
 from utils.parser import int_to_hex, write_compact_size, write_uint32, read_uint32
@@ -109,7 +110,7 @@ class BlockStore():
         if prev_hash != header.block_prev:
             logger.warning("prev hash mismatch: %s vs %s" % (prev_hash, header.block_prev))
             return False
-        # if bitcoin.TESTNET or bitcoin.NOLNET: return
+        if Parameter().TESTNET or Parameter().NOLNET: return True
         if bits != header.block_bits:
             logger.warning("bits mismatch: %s vs %s" % (bits, header.block_bits))
             return False
