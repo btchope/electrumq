@@ -809,11 +809,11 @@ def push_script(x):
 
 def get_scriptPubKey(addr):
     addrtype, hash_160 = bc_address_to_hash_160(addr)
-    if addrtype == ADDRTYPE_P2PKH:
+    if addrtype == Parameter().ADDRTYPE_P2PKH:
         script = '76a9'                                      # op_dup, op_hash_160
         script += push_script(hash_160.encode('hex'))
         script += '88ac'                                     # op_equalverify, op_checksig
-    elif addrtype == ADDRTYPE_P2SH:
+    elif addrtype == Parameter().ADDRTYPE_P2SH:
         script = 'a9'                                        # op_hash_160
         script += push_script(hash_160.encode('hex'))
         script += '87'                                       # op_equal

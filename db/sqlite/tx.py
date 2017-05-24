@@ -92,3 +92,7 @@ class TxStore():
 
     def get_balance(self, address):
         return execute_one('select ifnull(sum(out_value),0) from outs WHERE out_status=0 AND out_address=?', address)[0]
+
+    def get_unspend_outs(self, address):
+        res = execute_all('select tx_hash,out_sn,out_script,out_value,out_address from outs WHERE out_status=0 and out_address=?', (address,))
+        return res

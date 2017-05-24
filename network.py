@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
+import random
+import socket
 from collections import deque
 
 import time
@@ -49,8 +51,43 @@ class NetWorkManager():
             self.ioloop.quit()
 
     def start_client(self, ip=None, port=None):
+        ip, port, _ = self.deserialize_server(self.pick_random_server())
+        print ip, port
+        port = int(port)
+        try:
+            l = socket.getaddrinfo(ip, port, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            ip, port = l[0][-1]
+        except socket.gaierror:
+            self.print_error("cannot resolve hostname")
+        # ip, port = '176.9.108.141', 50001
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
         self.ioloop.add_feature(self.client.connect())
+
+    def filter_protocol(self, hostmap, protocol='s'):
+        '''Filters the hostmap for those implementing protocol.
+        The result is a list in serialized form.'''
+        eligible = []
+        for host, portmap in hostmap.items():
+            port = portmap.get(protocol)
+            if port:
+                eligible.append(self.serialize_server(host, port, protocol))
+        return eligible
+
+
+    def pick_random_server(self, hostmap=None, protocol='t', exclude_set=set()):
+        if hostmap is None:
+            hostmap = Parameter().DEFAULT_SERVERS
+        eligible = list(set(self.filter_protocol(hostmap, protocol)) - exclude_set)
+        return random.choice(eligible) if eligible else None
+
+    def serialize_server(self, host, port, protocol):
+        return str(':'.join([host, port, protocol]))
+
+    def deserialize_server(self, server_str):
+        host, port, protocol = str(server_str).split(':')
+        assert protocol in 'st'
+        int(port)  # Throw if cannot be converted to int
+        return host, port, protocol
 
     def init_header(self, callback=None):
         self.ioloop.add_feature(self.init(), callback)
