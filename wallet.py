@@ -11,10 +11,10 @@ from db.sqlite.tx import TxStore
 from message.blockchain.address import GetHistory
 from message.blockchain.transaction import GetMerkle, Get
 from network import NetWorkManager
-from utils import coinchooser
+from utils import coinchooser, public_key_to_p2pkh, hash160_to_p2sh, hash_160
 from utils import is_address
 from utils.key import KeyStore
-from utils.parameter import TYPE_ADDRESS, COINBASE_MATURITY
+from utils.parameter import TYPE_ADDRESS, COINBASE_MATURITY, Parameter
 
 __author__ = 'zhouqi'
 
@@ -27,7 +27,18 @@ class BaseWallet():
         self.use_change = True#storage.get('use_change', True)
         self.multiple_change = False #storage.get('multiple_change', False)
         self.frozen_addresses = []
+        self.keystore = None
         pass
+
+    @property
+    def is_segwit(self):
+        if self.keystore is not None:
+            return self.keystore.is_segwit()
+        else:
+            return False
+
+    def get_keystores(self):
+        return [self.keystore]
 
     def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None):
         # check outputs
@@ -104,7 +115,7 @@ class BaseWallet():
         # if any([(isinstance(k, Hardware_KeyStore) and k.can_sign(tx)) for k in self.get_keystores()]):
         #     self.add_hw_info(tx)
         # sign
-        for k in [KeyStore()]:#self.get_keystores():
+        for k in self.get_keystores():
             try:
                 if k.can_sign(tx):
                     k.sign_transaction(tx, password)
@@ -133,15 +144,42 @@ class BaseWallet():
             self.add_input_sig_info(txin, address)
 
     def add_input_sig_info(self, txin, address):
-        # if not self.keystore.can_import():
-        #     derivation = self.get_address_index(address)
-        #     x_pubkey = self.keystore.get_xpubkey(*derivation)
-        # else:
-        # todo:
-        x_pubkey = '0256b328b30c8bf5839e24058747879408bdb36241dc9c2e7c619faa12b2920967'
+        if not self.keystore.can_import():
+            derivation = self.get_address_index(address)
+            x_pubkey = self.keystore.get_xpubkey(*derivation)
+        else:
+            x_pubkey = self.get_public_key(address)
         txin['x_pubkeys'] = [x_pubkey]
         txin['signatures'] = [None]
         txin['num_sig'] = 1
+
+    def get_address_index(self, address):
+        if self.keystore.can_import():
+            for pubkey in self.keystore.keypairs.keys():
+                if self.pubkeys_to_address(pubkey) == address:
+                    return pubkey
+        # elif address in self.receiving_addresses:
+        #     return False, self.receiving_addresses.index(address)
+        # if address in self.change_addresses:
+        #     return True, self.change_addresses.index(address)
+        raise Exception("Address not found", address)
+
+    def get_public_key(self, address):
+        if self.keystore.can_import():
+            pubkey = self.get_address_index(address)
+        else:
+            sequence = self.get_address_index(address)
+            pubkey = self.get_pubkey(*sequence)
+        return pubkey
+
+    def pubkeys_to_address(self, pubkey):
+        if not self.is_segwit:
+            return public_key_to_p2pkh(pubkey.decode('hex'))
+        elif Parameter().TESTNET:
+            redeem_script = self.pubkeys_to_redeem_script(pubkey)
+            return hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
+        else:
+            raise NotImplementedError()
 
     def is_mine(self, address):
         return address in self.get_addresses()

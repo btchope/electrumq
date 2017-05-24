@@ -60,6 +60,13 @@ class KeyStore():
     def is_segwit(self):
         return False
 
+    def get_private_key(self, pubkey, password):
+        pk = pw_decode(self.keypairs[pubkey], password)
+        # this checks the password
+        if pubkey != public_key_from_private_key(pk):
+            raise InvalidPassword()
+        return pk
+
     def sign_transaction(self, tx, password):
         if self.is_watching_only():
             return
@@ -69,7 +76,7 @@ class KeyStore():
         keypairs = self.get_tx_derivations(tx)
         for k, v in keypairs.items():
             # todo:
-            keypairs[k] = SecretToASecret('\x09'*32, True)  #self.get_private_key(v, password)
+            keypairs[k] = self.get_private_key(v, password)
         # Sign
         if keypairs:
             tx.sign(keypairs)

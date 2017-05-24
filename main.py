@@ -23,11 +23,11 @@ if __name__ == '__main__':
     set_testnet()
 
     keystore = Imported_KeyStore({})
-    pubkey = keystore.import_key(SecretToASecret('\x09'*32, True), None)
+    pubkey = keystore.import_key(SecretToASecret('\x20\x12\x10\x09' + '\x09'*28, True), None)
     address = public_key_to_p2pkh(pubkey.decode('hex'))
 
-    # pubkey = keystore.import_key(SecretToASecret('\x08' * 32, True), None)
-    # address = public_key_to_p2pkh(pubkey.decode('hex'))
+    pubkey2 = Imported_KeyStore({}).import_key(SecretToASecret('\x20\x14\x12\x05' + '\x09' * 28, True), None)
+    address2 = public_key_to_p2pkh(pubkey2.decode('hex'))
 
     logging.config.fileConfig('logging.conf')
 
@@ -84,20 +84,21 @@ if __name__ == '__main__':
     # network.client.add_message(GetChunk([0,]), Block().connect_chunk2)
     # print Block().headers[200 * 2016]
 
-    network.client.add_message(GetHistory(["mpuq4rcmKJdEFbiFTHwe4GnroJZHEWf8Fq"]))
-    network.client.add_message(GetMempool(["mpuq4rcmKJdEFbiFTHwe4GnroJZHEWf8Fq"]))
-    network.client.add_message(GetBalance(["mpuq4rcmKJdEFbiFTHwe4GnroJZHEWf8Fq"]))
-    # network.client.add_message(GetProof(["mpuq4rcmKJdEFbiFTHwe4GnroJZHEWf8Fq"])) # not implemented
-    network.client.add_message(Listunspent(["mpuq4rcmKJdEFbiFTHwe4GnroJZHEWf8Fq"]))
-    network.client.add_message(address_subscribe(["mpuq4rcmKJdEFbiFTHwe4GnroJZHEWf8Fq"])) # 'mmXqJTLjjyD6Xp2tJ7syCeZTcwvRjcojLz'
-    wallet = SimpleWallet('mpuq4rcmKJdEFbiFTHwe4GnroJZHEWf8Fq')
+    network.client.add_message(GetHistory(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.client.add_message(GetMempool(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.client.add_message(GetBalance(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    # network.client.add_message(GetProof(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'])) # not implemented
+    network.client.add_message(Listunspent(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.client.add_message(address_subscribe(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'])) # 'mmXqJTLjjyD6Xp2tJ7syCeZTcwvRjcojLz'
+    wallet = SimpleWallet('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj')
     wallet.init()
+    wallet.keystore = keystore
 
     inputs = [
         {'prevout_hash': e[0], 'prevout_n': e[1], 'scriptSig': e[2], 'value': e[3], 'address': e[4], 'coinbase': False,
-         'height': 10000} for e in TxStore().get_unspend_outs('mpuq4rcmKJdEFbiFTHwe4GnroJZHEWf8Fq')]
+         'height': 10000} for e in TxStore().get_unspend_outs('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj')]
     outputs = []
-    outputs.append((TYPE_ADDRESS, 'miAGdhYgZd4dR1P5bRE4PtvsZpMp199is4', 100000))
+    outputs.append((TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000))
     tx = wallet.make_unsigned_transaction(inputs, outputs, {})
     wallet.sign_transaction(tx, None)
     # SecretToASecret('\x11'*16, True)
