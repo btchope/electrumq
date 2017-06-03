@@ -6,7 +6,7 @@ from functools import partial
 from tornado import gen
 
 from blockchain import BlockChain
-from db.mem.tx import Transaction
+from utils.tx import Transaction
 from db.sqlite.tx import TxStore
 from message.blockchain.address import GetHistory
 from message.blockchain.transaction import GetMerkle, Get

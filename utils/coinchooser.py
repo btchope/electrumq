@@ -36,7 +36,7 @@ from math import floor, log10
 # so if sending twice from the same UTXO set we choose the same UTXOs
 # to spend.  This prevents attacks on users by malicious or stale
 # servers.
-from db.mem.tx import Transaction
+from utils.tx import Transaction
 from utils import sha256
 from utils.parameter import COIN, TYPE_ADDRESS
 

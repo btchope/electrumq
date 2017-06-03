@@ -10,7 +10,7 @@ from db.sqlite import init, drop
 from db.sqlite.tx import TxStore
 from network import NetWorkManager
 from utils import SecretToASecret, public_key_to_p2pkh
-from utils.key import Imported_KeyStore
+from utils.key import ImportedKeyStore
 from utils.parameter import set_testnet, TYPE_ADDRESS
 from wallet import SimpleWallet
 
@@ -22,11 +22,11 @@ from message.all import *
 if __name__ == '__main__':
     set_testnet()
 
-    keystore = Imported_KeyStore({})
+    keystore = ImportedKeyStore({})
     pubkey = keystore.import_key(SecretToASecret('\x20\x12\x10\x09' + '\x09'*28, True), None)
     address = public_key_to_p2pkh(pubkey.decode('hex'))
 
-    pubkey2 = Imported_KeyStore({}).import_key(SecretToASecret('\x20\x14\x12\x05' + '\x09' * 28, True), None)
+    pubkey2 = ImportedKeyStore({}).import_key(SecretToASecret('\x20\x14\x12\x05' + '\x09' * 28, True), None)
     address2 = public_key_to_p2pkh(pubkey2.decode('hex'))
 
     logging.config.fileConfig('logging.conf')

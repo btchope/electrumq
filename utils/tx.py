@@ -9,6 +9,7 @@ import exceptions
 import ecdsa
 
 from utils import *
+from utils.key import xpubkey_to_pubkey, xpubkey_to_address
 
 __author__ = 'zhouqi'
 
@@ -409,6 +410,7 @@ class Transaction:
         print_error(priority, threshold)
 
         return priority < threshold
+
 class EnumException(exceptions.Exception):
     pass
 
@@ -506,7 +508,7 @@ def decode_script(bytes):
         if len(result) > 0: result += " "
         if opcode <= opcodes.OP_PUSHDATA4:
             result += "%d:"%(opcode,)
-            result += short_hex(vch)
+            result += vch.encode('hex')
         else:
             result += script_GetOpName(opcode)
     return result
@@ -514,7 +516,7 @@ def decode_script(bytes):
 
 def match_decoded(decoded, to_match):
     if len(decoded) != len(to_match):
-        return False;
+        return False
     for i in range(len(decoded)):
         if to_match[i] == opcodes.OP_PUSHDATA4 and decoded[i][0] <= opcodes.OP_PUSHDATA4 and decoded[i][0]>0:
             continue  # Opcodes below OP_PUSHDATA4 all just push data onto stack, and are equivalent.
@@ -833,34 +835,3 @@ def multisig_script(public_keys, m):
     op_n = format(opcodes.OP_1 + n - 1, 'x')
     keylist = [op_push(len(k)/2) + k for k in public_keys]
     return op_m + ''.join(keylist) + op_n + 'ae'
-
-
-def xpubkey_to_pubkey(x_pubkey):
-    pubkey, address = xpubkey_to_address(x_pubkey)
-    return pubkey
-
-def xpubkey_to_address(x_pubkey):
-    if x_pubkey[0:2] == 'fd':
-        addrtype = ord(x_pubkey[2:4].decode('hex'))
-        hash160 = x_pubkey[4:].decode('hex')
-        address = hash_160_to_bc_address(hash160, addrtype)
-        return x_pubkey, address
-    if x_pubkey[0:2] in ['02','03','04']:
-        pubkey = x_pubkey
-    # elif x_pubkey[0:2] == 'ff':
-    #     xpub, s = BIP32_KeyStore.parse_xpubkey(x_pubkey)
-    #     pubkey = BIP32_KeyStore.get_pubkey_from_xpub(xpub, s)
-    # elif x_pubkey[0:2] == 'fe':
-    #     mpk, s = Old_KeyStore.parse_xpubkey(x_pubkey)
-    #     pubkey = Old_KeyStore.get_pubkey_from_mpk(mpk, s[0], s[1])
-    else:
-        raise BaseException("Cannot parse pubkey")
-    if pubkey:
-        address = public_key_to_p2pkh(pubkey.decode('hex'))
-    return pubkey, address
-
-def short_hex(bytes):
-    t = bytes.encode('hex_codec')
-    if len(t) < 11:
-        return t
-    return t[0:4]+"..."+t[-4:]
