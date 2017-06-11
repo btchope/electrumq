@@ -67,6 +67,12 @@ class BaseWallet(AbstractWallet):
         self.frozen_addresses = []
         self.keystore = None
 
+    def can_import(self):
+        if self.keystore is None:
+            return True
+        else:
+            return self.keystore.can_import()
+
     @property
     def is_segwit(self):
         if self.keystore is not None:
@@ -181,7 +187,7 @@ class BaseWallet(AbstractWallet):
             self.add_input_sig_info(txin, address)
 
     def add_input_sig_info(self, txin, address):
-        if not self.keystore.can_import():
+        if not self.can_import():
             derivation = self.get_address_index(address)
             x_pubkey = self.keystore.get_xpubkey(*derivation)
         else:
@@ -191,7 +197,7 @@ class BaseWallet(AbstractWallet):
         txin['num_sig'] = 1
 
     def get_address_index(self, address):
-        if self.keystore.can_import():
+        if self.can_import():
             for pubkey in self.keystore.keypairs.keys():
                 if self.pubkeys_to_address(pubkey) == address:
                     return pubkey
@@ -202,7 +208,7 @@ class BaseWallet(AbstractWallet):
         raise Exception("Address not found", address)
 
     def get_public_key(self, address):
-        if self.keystore.can_import():
+        if self.can_import():
             pubkey = self.get_address_index(address)
         else:
             sequence = self.get_address_index(address)
@@ -307,8 +313,9 @@ class SimpleWallet(BaseWallet):
 
     def __init__(self, wallet_config):
         BaseWallet.__init__(self, wallet_config)
-        self.keystore = load_keystore(self.storage, 'keystore')
-        self._address = self.storage.get('address', None)
+        if self.storage.get('keystore', None) is not None:
+            self.keystore = load_keystore(self.storage, 'keystore')
+            self._address = self.storage.get('address', None)
         # keystore = self.storage.get('key_store', None)
         # if keystore is None:
         #     self.keystore = None
@@ -322,7 +329,7 @@ class SimpleWallet(BaseWallet):
     #     self._address = address
 
     def init_key_store(self, key_store):
-        if key_store is not None:
+        if self.keystore is not None:
             raise Exception()
         if key_store is None:
             raise Exception()
@@ -375,7 +382,28 @@ class HDWallet(BaseWallet):
     pass
 
 
-class WatchOnlySimpleWallet(BaseWallet):
+class WatchOnlySimpleWallet(SimpleWallet):
+
+    # def init_key_store(self, key_store):
+    #     if key_store is not None:
+    #         raise Exception()
+    #     if key_store is None:
+    #         raise Exception()
+    #     self.keystore = key_store
+    #     self._address = public_key_to_p2pkh(self.keystore.pub_key.decode('hex'))
+    #     self.storage.put('keystore', self.keystore.dump())
+    #     self.storage.put('address', self._address)
+    #     self.storage.write()
+
+    def init_address(self, address):
+        if self._address is not None:
+            raise Exception()
+        self.storage.put('address', address)
+        self.storage.write()
+        self._address = address
+
+
+class ColdSimpleWallet(SimpleWallet):
     pass
 
 

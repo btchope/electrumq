@@ -245,6 +245,95 @@ class SimpleKeyStore(SoftwareKeyStore):
         self.encrypt_priv_key = pw_encode(b, new_password)
             # self.keypairs[k] = c
 
+
+class WatchOnlySimpleKeyStore(SimpleKeyStore):
+    def __init__(self, d):
+        SoftwareKeyStore.__init__(self)
+        self.pub_key = d.get('pub_key', None)
+        # self.encrypt_priv_key = d.get('encrypt_priv_key', None)
+        # self.keypairs = d.get('keypairs', {})
+
+    @property
+    def keypairs(self):
+        return {self.pub_key: None}
+
+    def is_deterministic(self):
+        return False
+
+    def can_change_password(self):
+        return True
+
+    def get_master_public_key(self):
+        return None
+
+    def dump(self):
+        return {
+            'type': 'watchonly',
+            'pub_key':self.pub_key,
+            # 'encrypt_priv_key': self.encrypt_priv_key,
+            # 'keypairs': self.keypairs,
+        }
+
+    def can_import(self):
+        return True
+
+    def check_password(self, password):
+        return True
+        # pubkey = self.pub_key
+        # self.get_private_key(pubkey, password)
+
+    # def import_key(self, sec, password):
+    #     try:
+    #         pubkey = public_key_from_private_key(sec)
+    #     except Exception:
+    #         traceback.print_exc()
+    #         raise BaseException('Invalid private key')
+    #     # allow overwrite
+    #     self.keypairs[pubkey] = pw_encode(sec, password)
+    #     return pubkey
+
+    @classmethod
+    def create(cls, sec, password):
+        try:
+            pubkey = public_key_from_private_key(sec)
+        except Exception:
+            traceback.print_exc()
+            raise BaseException('Invalid private key')
+        # allow overwrite
+        # self.keypairs[pubkey] = pw_encode(sec, password)
+        return WatchOnlySimpleKeyStore({'type': 'simple', 'pub_key': pubkey})
+
+    # def delete_imported_key(self, key):
+    #     self.keypairs.pop(key)
+
+    def get_private_key(self, pubkey, password):
+        return None
+        # pk = pw_decode(self.encrypt_priv_key, password)
+        # # this checks the password
+        # if pubkey != public_key_from_private_key(pk):
+        #     raise InvalidPassword()
+        # return pk
+
+    def get_pubkey_derivation(self, x_pubkey):
+        if x_pubkey[0:2] in ['02', '03', '04']:
+            if x_pubkey == self.pub_key:
+                return x_pubkey
+        elif x_pubkey[0:2] == 'fd':
+            # fixme: this assumes p2pkh
+            _, addr = xpubkey_to_address(x_pubkey)
+            if public_key_to_p2pkh(self.pub_key.decode('hex')) == addr:
+                return self.pub_key
+
+    def update_password(self, old_password, new_password):
+        pass
+        # self.check_password(old_password)
+        # if new_password == '':
+        #     new_password = None
+        # # for k, v in self.keypairs.items():
+        # b = pw_decode(self.encrypt_priv_key, old_password)
+        # self.encrypt_priv_key = pw_encode(b, new_password)
+            # self.keypairs[k] = c
+
 class Deterministic_KeyStore(SoftwareKeyStore):
     pass
 
@@ -374,6 +463,8 @@ def load_keystore(storage, name):
         k = ImportedKeyStore(d)
     elif t == 'simple':
         k = SimpleKeyStore(d)
+    elif t == 'watchonly':
+        k = WatchOnlySimpleKeyStore(d)
     elif t == 'bip32':
         k = BIP32_KeyStore(d)
     elif t == 'hardware':

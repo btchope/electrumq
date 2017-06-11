@@ -10,31 +10,29 @@ from db.sqlite import init, drop
 from db.sqlite.tx import TxStore
 from network import NetWorkManager
 from utils import SecretToASecret, public_key_to_p2pkh
-from utils.key import ImportedKeyStore, SimpleKeyStore
+from utils.key import ImportedKeyStore, SimpleKeyStore, WatchOnlySimpleKeyStore
 from utils.parameter import set_testnet, TYPE_ADDRESS
-from wallet import SimpleWallet, WalletConfig
+from wallet import SimpleWallet, WalletConfig, WatchOnlySimpleWallet, ColdSimpleWallet
 
 __author__ = 'zhouqi'
 
 
 from message.all import *
 
-if __name__ == '__main__':
-    set_testnet()
 
+def test_simple_wallet():
+    global network, wallet
+    set_testnet()
     keystore = ImportedKeyStore({})
     keystore = ImportedKeyStore(keystore.dump())
-    pubkey = keystore.import_key(SecretToASecret('\x20\x12\x10\x09' + '\x09'*28, True), None)
+    pubkey = keystore.import_key(SecretToASecret('\x20\x12\x10\x09' + '\x09' * 28, True), None)
     address = public_key_to_p2pkh(pubkey.decode('hex'))
-
-    pubkey2 = ImportedKeyStore({}).import_key(SecretToASecret('\x20\x14\x12\x05' + '\x09' * 28, True), None)
+    pubkey2 = ImportedKeyStore({}).import_key(
+        SecretToASecret('\x20\x14\x12\x05' + '\x09' * 28, True), None)
     address2 = public_key_to_p2pkh(pubkey2.decode('hex'))
-
     logging.config.fileConfig('logging.conf')
-
     # drop()
     init()
-
     network = NetWorkManager()
     network.start_ioloop()
     network.start_client()
@@ -46,7 +44,6 @@ if __name__ == '__main__':
         print 'hahahaha'
         print 'hahahaha'
         print 'hahahaha'
-
 
     @gen.coroutine
     def prt2(params):
@@ -81,24 +78,23 @@ if __name__ == '__main__':
     # BlockChain().init_header()
     # SimpleWallet('1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm').init()
     # network.init_header(BlockChain().init_header_callback)
-
     # network.client.add_message(GetChunk([0,]), Block().connect_chunk2)
     # print Block().headers[200 * 2016]
-
     network.client.add_message(GetHistory(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
     network.client.add_message(GetMempool(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
     network.client.add_message(GetBalance(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
     # network.client.add_message(GetProof(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'])) # not implemented
     network.client.add_message(Listunspent(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
-    network.client.add_message(address_subscribe(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'])) # 'mmXqJTLjjyD6Xp2tJ7syCeZTcwvRjcojLz'
+    network.client.add_message(address_subscribe(
+        ['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))  # 'mmXqJTLjjyD6Xp2tJ7syCeZTcwvRjcojLz'
     wallet = SimpleWallet(WalletConfig(store_path='wallet.json'))
     # wallet.add_address('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj')
     # wallet.add_key_store(SimpleKeyStore.create(SecretToASecret('\x20\x12\x10\x09' + '\x09'*28, True), None))
     wallet.init()
     # wallet.keystore = keystore
-
     inputs = [
-        {'prevout_hash': e[0], 'prevout_n': e[1], 'scriptSig': e[2], 'value': e[3], 'address': e[4], 'coinbase': False,
+        {'prevout_hash': e[0], 'prevout_n': e[1], 'scriptSig': e[2], 'value': e[3], 'address': e[4],
+         'coinbase': False,
          'height': 10000} for e in TxStore().get_unspend_outs('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj')]
     outputs = []
     outputs.append((TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000))
@@ -106,4 +102,49 @@ if __name__ == '__main__':
     wallet.sign_transaction(tx, None)
     # SecretToASecret('\x11'*16, True)
     print tx
+
+
+def test_cold_hot_wallet():
+    global network, wallet
+    set_testnet()
+    logging.config.fileConfig('logging.conf')
+    # drop()
+    init()
+    network = NetWorkManager()
+    network.start_ioloop()
+    network.start_client()
+
+
+
+    network.client.add_message(Version(["2.8.2", "0.10"]))
+
+    network.client.add_message(GetHistory(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.client.add_message(GetMempool(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.client.add_message(GetBalance(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.client.add_message(Listunspent(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.client.add_message(address_subscribe(
+        ['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))  # 'mmXqJTLjjyD6Xp2tJ7syCeZTcwvRjcojLz'
+    wallet = WatchOnlySimpleWallet(WalletConfig(store_path='watch_only_simple_wallet.json'))
+    if wallet.keystore is None:
+        wallet.init_key_store(
+            WatchOnlySimpleKeyStore.create(SecretToASecret('\x20\x12\x10\x09' + '\x09' * 28, True),
+                                           None))
+    wallet.init()
+    inputs = [
+        {'prevout_hash': e[0], 'prevout_n': e[1], 'scriptSig': e[2], 'value': e[3], 'address': e[4],
+         'coinbase': False,
+         'height': 10000} for e in TxStore().get_unspend_outs('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj')]
+    outputs = []
+    outputs.append((TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000))
+    tx = wallet.make_unsigned_transaction(inputs, outputs, {})
+    print tx
+    cold_wallet = ColdSimpleWallet(WalletConfig(store_path='cold_simple_wallet.json'))
+    if cold_wallet.keystore is None:
+        cold_wallet.init_key_store(SimpleKeyStore.create(SecretToASecret('\x20\x12\x10\x09' + '\x09' * 28, True), None))
+    cold_wallet.sign_transaction(tx, None)
+    # SecretToASecret('\x11'*16, True)
+    print tx
+
+if __name__ == '__main__':
+    test_cold_hot_wallet()
     time.sleep(10000000)
