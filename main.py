@@ -10,9 +10,9 @@ from db.sqlite import init, drop
 from db.sqlite.tx import TxStore
 from network import NetWorkManager
 from utils import SecretToASecret, public_key_to_p2pkh
-from utils.key import ImportedKeyStore
+from utils.key import ImportedKeyStore, SimpleKeyStore
 from utils.parameter import set_testnet, TYPE_ADDRESS
-from wallet import SimpleWallet
+from wallet import SimpleWallet, WalletConfig
 
 __author__ = 'zhouqi'
 
@@ -23,6 +23,7 @@ if __name__ == '__main__':
     set_testnet()
 
     keystore = ImportedKeyStore({})
+    keystore = ImportedKeyStore(keystore.dump())
     pubkey = keystore.import_key(SecretToASecret('\x20\x12\x10\x09' + '\x09'*28, True), None)
     address = public_key_to_p2pkh(pubkey.decode('hex'))
 
@@ -90,9 +91,11 @@ if __name__ == '__main__':
     # network.client.add_message(GetProof(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'])) # not implemented
     network.client.add_message(Listunspent(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
     network.client.add_message(address_subscribe(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'])) # 'mmXqJTLjjyD6Xp2tJ7syCeZTcwvRjcojLz'
-    wallet = SimpleWallet('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj')
+    wallet = SimpleWallet(WalletConfig(store_path='wallet.json'))
+    # wallet.add_address('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj')
+    # wallet.add_key_store(SimpleKeyStore.create(SecretToASecret('\x20\x12\x10\x09' + '\x09'*28, True), None))
     wallet.init()
-    wallet.keystore = keystore
+    # wallet.keystore = keystore
 
     inputs = [
         {'prevout_hash': e[0], 'prevout_n': e[1], 'scriptSig': e[2], 'value': e[3], 'address': e[4], 'coinbase': False,

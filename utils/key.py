@@ -3,7 +3,9 @@ import traceback
 
 from utils import InvalidPassword, public_key_from_private_key, pw_decode, pw_encode, \
     public_key_to_p2pkh, regenerate_key, is_compressed, bip32_public_derivation, \
-    hash_160_to_bc_address
+    hash_160_to_bc_address, rev_hex, EncodeBase58Check, DecodeBase58Check, int_to_hex, CKD_pub, \
+    deserialize_xpub
+from utils import Parameter
 
 __author__ = 'zhouqi'
 
@@ -158,6 +160,90 @@ class ImportedKeyStore(SoftwareKeyStore):
             c = pw_encode(b, new_password)
             self.keypairs[k] = c
 
+class SimpleKeyStore(SoftwareKeyStore):
+    def __init__(self, d):
+        SoftwareKeyStore.__init__(self)
+        self.pub_key = d.get('pub_key', None)
+        self.encrypt_priv_key = d.get('encrypt_priv_key', None)
+        # self.keypairs = d.get('keypairs', {})
+
+    @property
+    def keypairs(self):
+        return {self.pub_key: self.encrypt_priv_key}
+
+    def is_deterministic(self):
+        return False
+
+    def can_change_password(self):
+        return True
+
+    def get_master_public_key(self):
+        return None
+
+    def dump(self):
+        return {
+            'type': 'simple',
+            'pub_key':self.pub_key,
+            'encrypt_priv_key': self.encrypt_priv_key,
+            # 'keypairs': self.keypairs,
+        }
+
+    def can_import(self):
+        return True
+
+    def check_password(self, password):
+        pubkey = self.pub_key
+        self.get_private_key(pubkey, password)
+
+    # def import_key(self, sec, password):
+    #     try:
+    #         pubkey = public_key_from_private_key(sec)
+    #     except Exception:
+    #         traceback.print_exc()
+    #         raise BaseException('Invalid private key')
+    #     # allow overwrite
+    #     self.keypairs[pubkey] = pw_encode(sec, password)
+    #     return pubkey
+
+    @classmethod
+    def create(cls, sec, password):
+        try:
+            pubkey = public_key_from_private_key(sec)
+        except Exception:
+            traceback.print_exc()
+            raise BaseException('Invalid private key')
+        # allow overwrite
+        # self.keypairs[pubkey] = pw_encode(sec, password)
+        return SimpleKeyStore({'type': 'simple', 'pub_key': pubkey, 'encrypt_priv_key': pw_encode(sec, password)})
+
+    # def delete_imported_key(self, key):
+    #     self.keypairs.pop(key)
+
+    def get_private_key(self, pubkey, password):
+        pk = pw_decode(self.encrypt_priv_key, password)
+        # this checks the password
+        if pubkey != public_key_from_private_key(pk):
+            raise InvalidPassword()
+        return pk
+
+    def get_pubkey_derivation(self, x_pubkey):
+        if x_pubkey[0:2] in ['02', '03', '04']:
+            if x_pubkey == self.pub_key:
+                return x_pubkey
+        elif x_pubkey[0:2] == 'fd':
+            # fixme: this assumes p2pkh
+            _, addr = xpubkey_to_address(x_pubkey)
+            if public_key_to_p2pkh(self.pub_key.decode('hex')) == addr:
+                return self.pub_key
+
+    def update_password(self, old_password, new_password):
+        self.check_password(old_password)
+        if new_password == '':
+            new_password = None
+        # for k, v in self.keypairs.items():
+        b = pw_decode(self.encrypt_priv_key, old_password)
+        self.encrypt_priv_key = pw_encode(b, new_password)
+            # self.keypairs[k] = c
 
 class Deterministic_KeyStore(SoftwareKeyStore):
     pass
@@ -184,39 +270,39 @@ class Xpub:
                 self.xpub_receive = xpub
         return self.get_pubkey_from_xpub(xpub, (n,))
 
-    # @classmethod
-    # def get_pubkey_from_xpub(self, xpub, sequence):
-    #     _, _, _, _, c, cK = deserialize_xpub(xpub)
-    #     for i in sequence:
-    #         cK, c = CKD_pub(cK, c, i)
-    #     return cK.encode('hex')
-    #
-    # def get_xpubkey(self, c, i):
-    #     s = ''.join(map(lambda x: bitcoin.int_to_hex(x, 2), (c, i)))
-    #     return 'ff' + bitcoin.DecodeBase58Check(self.xpub).encode('hex') + s
-    #
-    # @classmethod
-    # def parse_xpubkey(self, pubkey):
-    #     assert pubkey[0:2] == 'ff'
-    #     pk = pubkey.decode('hex')
-    #     pk = pk[1:]
-    #     xkey = bitcoin.EncodeBase58Check(pk[0:78])
-    #     dd = pk[78:]
-    #     s = []
-    #     while dd:
-    #         n = int(bitcoin.rev_hex(dd[0:2].encode('hex')), 16)
-    #         dd = dd[2:]
-    #         s.append(n)
-    #     assert len(s) == 2
-    #     return xkey, s
-    #
-    # def get_pubkey_derivation(self, x_pubkey):
-    #     if x_pubkey[0:2] != 'ff':
-    #         return
-    #     xpub, derivation = self.parse_xpubkey(x_pubkey)
-    #     if self.xpub != xpub:
-    #         return
-    #     return derivation
+    @classmethod
+    def get_pubkey_from_xpub(self, xpub, sequence):
+        _, _, _, _, c, cK = deserialize_xpub(xpub)
+        for i in sequence:
+            cK, c = CKD_pub(cK, c, i)
+        return cK.encode('hex')
+
+    def get_xpubkey(self, c, i):
+        s = ''.join(map(lambda x: int_to_hex(x, 2), (c, i)))
+        return 'ff' + DecodeBase58Check(self.xpub).encode('hex') + s
+
+    @classmethod
+    def parse_xpubkey(self, pubkey):
+        assert pubkey[0:2] == 'ff'
+        pk = pubkey.decode('hex')
+        pk = pk[1:]
+        xkey = EncodeBase58Check(pk[0:78])
+        dd = pk[78:]
+        s = []
+        while dd:
+            n = int(rev_hex(dd[0:2].encode('hex')), 16)
+            dd = dd[2:]
+            s.append(n)
+        assert len(s) == 2
+        return xkey, s
+
+    def get_pubkey_derivation(self, x_pubkey):
+        if x_pubkey[0:2] != 'ff':
+            return
+        xpub, derivation = self.parse_xpubkey(x_pubkey)
+        if self.xpub != xpub:
+            return
+        return derivation
 
 
 class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
@@ -255,3 +341,43 @@ def xpubkey_to_address(x_pubkey):
 def xpubkey_to_pubkey(x_pubkey):
     pubkey, address = xpubkey_to_address(x_pubkey)
     return pubkey
+
+
+def bip44_derivation(account_id):
+    if Parameter().TESTNET:
+        return "m/44'/1'/%d'"% int(account_id)
+    else:
+        return "m/44'/0'/%d'"% int(account_id)
+
+
+hw_keystores = {}
+
+def register_keystore(hw_type, constructor):
+    hw_keystores[hw_type] = constructor
+
+def hardware_keystore(d):
+    hw_type = d['hw_type']
+    if hw_type in hw_keystores:
+        constructor = hw_keystores[hw_type]
+        return constructor(d)
+    raise BaseException('unknown hardware type', hw_type)
+
+def load_keystore(storage, name):
+    w = storage.get('wallet_type', 'standard')
+    d = storage.get(name, {})
+    t = d.get('type')
+    if not t:
+        raise BaseException('wallet format requires update')
+    if t == 'old':
+        k = Old_KeyStore(d)
+    elif t == 'imported':
+        k = ImportedKeyStore(d)
+    elif t == 'simple':
+        k = SimpleKeyStore(d)
+    elif t == 'bip32':
+        k = BIP32_KeyStore(d)
+    elif t == 'hardware':
+        k = hardware_keystore(d)
+    else:
+        raise BaseException('unknown wallet type', t)
+    return k
