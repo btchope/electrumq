@@ -165,7 +165,7 @@ class SimpleKeyStore(SoftwareKeyStore):
         SoftwareKeyStore.__init__(self)
         self.pub_key = d.get('pub_key', None)
         self.encrypt_priv_key = d.get('encrypt_priv_key', None)
-        # self.keypairs = d.get('keypairs', {})
+        self.address = d.get('address', None)
 
     @property
     def keypairs(self):
@@ -183,8 +183,9 @@ class SimpleKeyStore(SoftwareKeyStore):
     def dump(self):
         return {
             'type': 'simple',
-            'pub_key':self.pub_key,
+            'pub_key': self.pub_key,
             'encrypt_priv_key': self.encrypt_priv_key,
+            'address': self.address
             # 'keypairs': self.keypairs,
         }
 
@@ -214,7 +215,9 @@ class SimpleKeyStore(SoftwareKeyStore):
             raise BaseException('Invalid private key')
         # allow overwrite
         # self.keypairs[pubkey] = pw_encode(sec, password)
-        return SimpleKeyStore({'type': 'simple', 'pub_key': pubkey, 'encrypt_priv_key': pw_encode(sec, password)})
+        return SimpleKeyStore(
+            {'type': 'simple', 'pub_key': pubkey, 'encrypt_priv_key': pw_encode(sec, password),
+             'address': public_key_to_p2pkh(pubkey.decode('hex'))})
 
     # def delete_imported_key(self, key):
     #     self.keypairs.pop(key)
@@ -250,6 +253,7 @@ class WatchOnlySimpleKeyStore(SimpleKeyStore):
     def __init__(self, d):
         SoftwareKeyStore.__init__(self)
         self.pub_key = d.get('pub_key', None)
+        self.address = d.get('address', None)
         # self.encrypt_priv_key = d.get('encrypt_priv_key', None)
         # self.keypairs = d.get('keypairs', {})
 
@@ -269,9 +273,8 @@ class WatchOnlySimpleKeyStore(SimpleKeyStore):
     def dump(self):
         return {
             'type': 'watchonly',
-            'pub_key':self.pub_key,
-            # 'encrypt_priv_key': self.encrypt_priv_key,
-            # 'keypairs': self.keypairs,
+            'pub_key': self.pub_key,
+            'address': self.address,
         }
 
     def can_import(self):
@@ -301,7 +304,8 @@ class WatchOnlySimpleKeyStore(SimpleKeyStore):
             raise BaseException('Invalid private key')
         # allow overwrite
         # self.keypairs[pubkey] = pw_encode(sec, password)
-        return WatchOnlySimpleKeyStore({'type': 'simple', 'pub_key': pubkey})
+        return WatchOnlySimpleKeyStore({'type': 'simple', 'pub_key': pubkey,
+                                        'address': public_key_to_p2pkh(pubkey.decode('hex'))})
 
     # def delete_imported_key(self, key):
     #     self.keypairs.pop(key)

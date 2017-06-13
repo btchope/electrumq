@@ -309,13 +309,10 @@ class BaseWallet(AbstractWallet):
 
 
 class SimpleWallet(BaseWallet):
-    _address = None
-
     def __init__(self, wallet_config):
         BaseWallet.__init__(self, wallet_config)
         if self.storage.get('keystore', None) is not None:
             self.keystore = load_keystore(self.storage, 'keystore')
-            self._address = self.storage.get('address', None)
         # keystore = self.storage.get('key_store', None)
         # if keystore is None:
         #     self.keystore = None
@@ -334,16 +331,18 @@ class SimpleWallet(BaseWallet):
         if key_store is None:
             raise Exception()
         self.keystore = key_store
-        self._address = public_key_to_p2pkh(self.keystore.pub_key.decode('hex'))
         self.storage.put('keystore', self.keystore.dump())
-        self.storage.put('address', self._address)
         self.storage.write()
 
+    @property
+    def address(self):
+        return self.keystore.address
+
     def init(self):
-        NetWorkManager().client.add_message(GetHistory([self._address]), self.history_callback)
+        NetWorkManager().client.add_message(GetHistory([self.address]), self.history_callback)
 
     def get_receiving_addresses(self):
-        return [self._address,]
+        return [self.address,]
 
     @gen.coroutine
     def history_callback(self, msg_id, msg, param):
@@ -371,7 +370,7 @@ class SimpleWallet(BaseWallet):
         try:
             tx.deserialize()
             TxStore().add_tx_detail(tx_hash, tx)
-            print self._address, 'balance', TxStore().get_balance(self._address)
+            print self.address, 'balance', TxStore().get_balance(self.address)
         except Exception:
             self.print_msg("cannot deserialize transaction, skipping", tx_hash)
             return
@@ -383,24 +382,7 @@ class HDWallet(BaseWallet):
 
 
 class WatchOnlySimpleWallet(SimpleWallet):
-
-    # def init_key_store(self, key_store):
-    #     if key_store is not None:
-    #         raise Exception()
-    #     if key_store is None:
-    #         raise Exception()
-    #     self.keystore = key_store
-    #     self._address = public_key_to_p2pkh(self.keystore.pub_key.decode('hex'))
-    #     self.storage.put('keystore', self.keystore.dump())
-    #     self.storage.put('address', self._address)
-    #     self.storage.write()
-
-    def init_address(self, address):
-        if self._address is not None:
-            raise Exception()
-        self.storage.put('address', address)
-        self.storage.write()
-        self._address = address
+    pass
 
 
 class ColdSimpleWallet(SimpleWallet):
