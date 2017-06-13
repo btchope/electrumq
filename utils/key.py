@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 import traceback
 
+import ecdsa
+from ecdsa import SECP256k1
+from ecdsa.util import string_to_number
+
 from utils import InvalidPassword, public_key_from_private_key, pw_decode, pw_encode, \
     public_key_to_p2pkh, regenerate_key, is_compressed, bip32_public_derivation, \
     hash_160_to_bc_address, rev_hex, EncodeBase58Check, DecodeBase58Check, int_to_hex, CKD_pub, \
     deserialize_xpub
 from utils import Parameter
+from utils.base58 import Hash
 
 __author__ = 'zhouqi'
 
@@ -160,6 +165,7 @@ class ImportedKeyStore(SoftwareKeyStore):
             c = pw_encode(b, new_password)
             self.keypairs[k] = c
 
+
 class SimpleKeyStore(SoftwareKeyStore):
     def __init__(self, d):
         SoftwareKeyStore.__init__(self)
@@ -186,7 +192,6 @@ class SimpleKeyStore(SoftwareKeyStore):
             'pub_key': self.pub_key,
             'encrypt_priv_key': self.encrypt_priv_key,
             'address': self.address
-            # 'keypairs': self.keypairs,
         }
 
     def can_import(self):
@@ -196,16 +201,6 @@ class SimpleKeyStore(SoftwareKeyStore):
         pubkey = self.pub_key
         self.get_private_key(pubkey, password)
 
-    # def import_key(self, sec, password):
-    #     try:
-    #         pubkey = public_key_from_private_key(sec)
-    #     except Exception:
-    #         traceback.print_exc()
-    #         raise BaseException('Invalid private key')
-    #     # allow overwrite
-    #     self.keypairs[pubkey] = pw_encode(sec, password)
-    #     return pubkey
-
     @classmethod
     def create(cls, sec, password):
         try:
@@ -213,14 +208,9 @@ class SimpleKeyStore(SoftwareKeyStore):
         except Exception:
             traceback.print_exc()
             raise BaseException('Invalid private key')
-        # allow overwrite
-        # self.keypairs[pubkey] = pw_encode(sec, password)
         return SimpleKeyStore(
             {'type': 'simple', 'pub_key': pubkey, 'encrypt_priv_key': pw_encode(sec, password),
              'address': public_key_to_p2pkh(pubkey.decode('hex'))})
-
-    # def delete_imported_key(self, key):
-    #     self.keypairs.pop(key)
 
     def get_private_key(self, pubkey, password):
         pk = pw_decode(self.encrypt_priv_key, password)
@@ -246,7 +236,6 @@ class SimpleKeyStore(SoftwareKeyStore):
         # for k, v in self.keypairs.items():
         b = pw_decode(self.encrypt_priv_key, old_password)
         self.encrypt_priv_key = pw_encode(b, new_password)
-            # self.keypairs[k] = c
 
 
 class WatchOnlySimpleKeyStore(SimpleKeyStore):
@@ -254,12 +243,10 @@ class WatchOnlySimpleKeyStore(SimpleKeyStore):
         SoftwareKeyStore.__init__(self)
         self.pub_key = d.get('pub_key', None)
         self.address = d.get('address', None)
-        # self.encrypt_priv_key = d.get('encrypt_priv_key', None)
-        # self.keypairs = d.get('keypairs', {})
 
     @property
     def keypairs(self):
-        return {self.pub_key: None}
+        return {self.pub_key: self}
 
     def is_deterministic(self):
         return False
@@ -282,18 +269,6 @@ class WatchOnlySimpleKeyStore(SimpleKeyStore):
 
     def check_password(self, password):
         return True
-        # pubkey = self.pub_key
-        # self.get_private_key(pubkey, password)
-
-    # def import_key(self, sec, password):
-    #     try:
-    #         pubkey = public_key_from_private_key(sec)
-    #     except Exception:
-    #         traceback.print_exc()
-    #         raise BaseException('Invalid private key')
-    #     # allow overwrite
-    #     self.keypairs[pubkey] = pw_encode(sec, password)
-    #     return pubkey
 
     @classmethod
     def create(cls, sec, password):
@@ -302,21 +277,11 @@ class WatchOnlySimpleKeyStore(SimpleKeyStore):
         except Exception:
             traceback.print_exc()
             raise BaseException('Invalid private key')
-        # allow overwrite
-        # self.keypairs[pubkey] = pw_encode(sec, password)
         return WatchOnlySimpleKeyStore({'type': 'simple', 'pub_key': pubkey,
                                         'address': public_key_to_p2pkh(pubkey.decode('hex'))})
 
-    # def delete_imported_key(self, key):
-    #     self.keypairs.pop(key)
-
     def get_private_key(self, pubkey, password):
         return None
-        # pk = pw_decode(self.encrypt_priv_key, password)
-        # # this checks the password
-        # if pubkey != public_key_from_private_key(pk):
-        #     raise InvalidPassword()
-        # return pk
 
     def get_pubkey_derivation(self, x_pubkey):
         if x_pubkey[0:2] in ['02', '03', '04']:
@@ -330,13 +295,7 @@ class WatchOnlySimpleKeyStore(SimpleKeyStore):
 
     def update_password(self, old_password, new_password):
         pass
-        # self.check_password(old_password)
-        # if new_password == '':
-        #     new_password = None
-        # # for k, v in self.keypairs.items():
-        # b = pw_decode(self.encrypt_priv_key, old_password)
-        # self.encrypt_priv_key = pw_encode(b, new_password)
-            # self.keypairs[k] = c
+
 
 class Deterministic_KeyStore(SoftwareKeyStore):
     pass
@@ -399,11 +358,39 @@ class Xpub:
 
 
 class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
-    pass
+    def __init__(self, d):
+        super(BIP32_KeyStore, self).__init__()
 
 
 class Old_KeyStore(Deterministic_KeyStore):
-    pass
+    def __init__(self, d):
+        super(Old_KeyStore, self).__init__()
+
+    @classmethod
+    def get_sequence(self, mpk, for_change, n):
+        return string_to_number(Hash("%d:%d:" % (n, for_change) + mpk.decode('hex')))
+
+    @classmethod
+    def parse_xpubkey(self, x_pubkey):
+        assert x_pubkey[0:2] == 'fe'
+        pk = x_pubkey[2:]
+        mpk = pk[0:128]
+        dd = pk[128:]
+        s = []
+        while dd:
+            n = int(rev_hex(dd[0:4]), 16)
+            dd = dd[4:]
+            s.append(n)
+        assert len(s) == 2
+        return mpk, s
+
+    @classmethod
+    def get_pubkey_from_mpk(self, mpk, for_change, n):
+        z = self.get_sequence(mpk, for_change, n)
+        master_public_key = ecdsa.VerifyingKey.from_string(mpk.decode('hex'), curve=SECP256k1)
+        pubkey_point = master_public_key.pubkey.point + z * SECP256k1.generator
+        public_key2 = ecdsa.VerifyingKey.from_public_point(pubkey_point, curve=SECP256k1)
+        return '04' + public_key2.to_string().encode('hex')
 
 
 class Hardware_KeyStore(KeyStore, Xpub):
@@ -411,6 +398,7 @@ class Hardware_KeyStore(KeyStore, Xpub):
 
 
 def xpubkey_to_address(x_pubkey):
+    address = None
     if x_pubkey[0:2] == 'fd':
         addrtype = ord(x_pubkey[2:4].decode('hex'))
         hash160 = x_pubkey[4:].decode('hex')
@@ -438,15 +426,17 @@ def xpubkey_to_pubkey(x_pubkey):
 
 def bip44_derivation(account_id):
     if Parameter().TESTNET:
-        return "m/44'/1'/%d'"% int(account_id)
+        return "m/44'/1'/%d'" % int(account_id)
     else:
-        return "m/44'/0'/%d'"% int(account_id)
+        return "m/44'/0'/%d'" % int(account_id)
 
 
 hw_keystores = {}
 
+
 def register_keystore(hw_type, constructor):
     hw_keystores[hw_type] = constructor
+
 
 def hardware_keystore(d):
     hw_type = d['hw_type']
@@ -454,6 +444,7 @@ def hardware_keystore(d):
         constructor = hw_keystores[hw_type]
         return constructor(d)
     raise BaseException('unknown hardware type', hw_type)
+
 
 def load_keystore(storage, name):
     w = storage.get('wallet_type', 'standard')

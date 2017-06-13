@@ -6,8 +6,8 @@ from functools import partial
 from tornado import gen
 
 from blockchain import BlockChain
-from utils.storage import AbstractStorage, WalletStorage
-from utils.tx import Transaction
+from utils.storage import AbstractStorage, WalletStorage, multisig_type
+from utils.tx import Transaction, segwit_script, multisig_script
 from db.sqlite.tx import TxStore
 from message.blockchain.address import GetHistory
 from message.blockchain.transaction import GetMerkle, Get
@@ -24,6 +24,7 @@ __author__ = 'zhouqi'
 wallet is the interface to other module
 '''
 
+
 class WalletConfig(object):
     use_change = True
     multiple_change = False
@@ -34,6 +35,7 @@ class WalletConfig(object):
         for k in fields:
             if k in kwargs:
                 self.__setattr__(k, kwargs[k])
+
 
 class AbstractWallet(object):
     def __init__(self, wallet_config):
@@ -54,7 +56,6 @@ class AbstractWallet(object):
         pass
 
 
-
 class BaseWallet(AbstractWallet):
     max_change_outputs = 3
 
@@ -62,8 +63,8 @@ class BaseWallet(AbstractWallet):
         super(BaseWallet, self).__init__(wallet_config)
         self.storage = WalletStorage(self.wallet_confg.store_path)
         self.gap_limit_for_change = 6
-        self.use_change = True#storage.get('use_change', True)
-        self.multiple_change = False #storage.get('multiple_change', False)
+        self.use_change = True  # storage.get('use_change', True)
+        self.multiple_change = False  # storage.get('multiple_change', False)
         self.frozen_addresses = []
         self.keystore = None
 
@@ -98,9 +99,9 @@ class BaseWallet(AbstractWallet):
 
         # Avoid index-out-of-range with inputs[0] below
         if not inputs:
-            raise Exception() #NotEnoughFunds()
+            raise Exception()  # NotEnoughFunds()
 
-        if fixed_fee is None and False:#config.fee_per_kb() is None:
+        if fixed_fee is None and False:  # config.fee_per_kb() is None:
             raise BaseException('Dynamic fee estimates not available')
 
         for item in inputs:
@@ -135,7 +136,7 @@ class BaseWallet(AbstractWallet):
             tx = coin_chooser.make_tx(inputs, outputs, change_addrs[:max_change],
                                       fee_estimator, self.dust_threshold())
         else:
-            sendable = sum(map(lambda x:x['value'], inputs))
+            sendable = sum(map(lambda x: x['value'], inputs))
             _type, data, value = outputs[i_max]
             outputs[i_max] = (_type, data, 0)
             tx = Transaction.from_io(inputs, outputs[:])
@@ -175,12 +176,13 @@ class BaseWallet(AbstractWallet):
         return fee
 
     def add_input_info(self, txin):
-        txin['type'] = 'p2pkh' #self.txin_type
+        txin['type'] = 'p2pkh'  # self.txin_type
         # Add address for utxo that are in wallet
         if txin.get('scriptSig') == '':
             coins = self.get_spendable_coins()
             for item in coins:
-                if txin.get('prevout_hash') == item.get('prevout_hash') and txin.get('prevout_n') == item.get('prevout_n'):
+                if txin.get('prevout_hash') == item.get('prevout_hash') and txin.get(
+                        'prevout_n') == item.get('prevout_n'):
                     txin['address'] = item.get('address')
         address = txin['address']
         if self.is_mine(address):
@@ -244,12 +246,12 @@ class BaseWallet(AbstractWallet):
 
     def get_local_height(self):
         """ return last known height if we are offline """
-        return 0# self.network.get_local_height() if self.network else self.stored_height
+        return 0  # self.network.get_local_height() if self.network else self.stored_height
 
-    def get_spendable_coins(self, domain = None):
+    def get_spendable_coins(self, domain=None):
         return self.get_utxos(domain, exclude_frozen=True, mature=True)
 
-    def get_utxos(self, domain = None, exclude_frozen = False, mature = False):
+    def get_utxos(self, domain=None, exclude_frozen=False, mature=False):
         coins = []
         if domain is None:
             domain = self.get_addresses()
@@ -258,7 +260,8 @@ class BaseWallet(AbstractWallet):
         for addr in domain:
             utxos = self.get_addr_utxo(addr)
             for x in utxos:
-                if mature and x['coinbase'] and x['height'] + COINBASE_MATURITY > self.get_local_height():
+                if mature and x['coinbase'] and x[
+                    'height'] + COINBASE_MATURITY > self.get_local_height():
                     continue
                 coins.append(x)
                 continue
@@ -271,7 +274,7 @@ class BaseWallet(AbstractWallet):
     def relayfee(self):
         RELAY_FEE = 5000
         MAX_RELAY_FEE = 50000
-        f = RELAY_FEE#self.network.relay_fee if self.network and self.network.relay_fee else RELAY_FEE
+        f = RELAY_FEE  # self.network.relay_fee if self.network and self.network.relay_fee else RELAY_FEE
         return min(f, MAX_RELAY_FEE)
 
     def get_addr_utxo(self, address):
@@ -283,12 +286,12 @@ class BaseWallet(AbstractWallet):
             tx_height, value, is_cb = v
             prevout_hash, prevout_n = txo.split(':')
             x = {
-                'address':address,
-                'value':value,
-                'prevout_n':int(prevout_n),
-                'prevout_hash':prevout_hash,
-                'height':tx_height,
-                'coinbase':is_cb
+                'address': address,
+                'value': value,
+                'prevout_n': int(prevout_n),
+                'prevout_hash': prevout_hash,
+                'height': tx_height,
+                'coinbase': is_cb
             }
             out.append(x)
         return out
@@ -300,7 +303,7 @@ class BaseWallet(AbstractWallet):
         for tx_hash, height in h:
             l = self.txo.get(tx_hash, {}).get(address, [])
             for n, v, is_cb in l:
-                received[tx_hash + ':%d'%n] = (height, v, is_cb)
+                received[tx_hash + ':%d' % n] = (height, v, is_cb)
         for tx_hash, height in h:
             l = self.txi.get(tx_hash, {}).get(address, [])
             for txi, v in l:
@@ -313,12 +316,12 @@ class SimpleWallet(BaseWallet):
         BaseWallet.__init__(self, wallet_config)
         if self.storage.get('keystore', None) is not None:
             self.keystore = load_keystore(self.storage, 'keystore')
-        # keystore = self.storage.get('key_store', None)
-        # if keystore is None:
-        #     self.keystore = None
-        # else:
-        #     self.keystore = SimpleKeyStore(keystore)
-        #     self._address = public_key_to_p2pkh(self.keystore.pub_key.decode('hex'))
+            # keystore = self.storage.get('key_store', None)
+            # if keystore is None:
+            #     self.keystore = None
+            # else:
+            #     self.keystore = SimpleKeyStore(keystore)
+            #     self._address = public_key_to_p2pkh(self.keystore.pub_key.decode('hex'))
 
     # def add_address(self, address):
     #     self.storage.put('address', address)
@@ -342,7 +345,7 @@ class SimpleWallet(BaseWallet):
         NetWorkManager().client.add_message(GetHistory([self.address]), self.history_callback)
 
     def get_receiving_addresses(self):
-        return [self.address,]
+        return [self.address, ]
 
     @gen.coroutine
     def history_callback(self, msg_id, msg, param):
@@ -376,7 +379,6 @@ class SimpleWallet(BaseWallet):
             return
 
 
-
 class HDWallet(BaseWallet):
     pass
 
@@ -391,7 +393,6 @@ class ColdSimpleWallet(SimpleWallet):
 
 class WatchOnlyHDWallet(BaseWallet):
     pass
-
 
 
 class Imported_Wallet(BaseWallet):
@@ -479,10 +480,7 @@ class Imported_Wallet(BaseWallet):
         txin['signatures'] = [None]
 
 
-
-
 class Deterministic_Wallet(BaseWallet):
-
     def __init__(self, storage):
         BaseWallet.__init__(self, storage)
         self.gap_limit = storage.get('gap_limit', 20)
@@ -526,7 +524,7 @@ class Deterministic_Wallet(BaseWallet):
     def num_unused_trailing_addresses(self, addresses):
         k = 0
         for a in addresses[::-1]:
-            if self.history.get(a):break
+            if self.history.get(a): break
             k = k + 1
         return k
 
@@ -562,7 +560,7 @@ class Deterministic_Wallet(BaseWallet):
             if len(addresses) < limit:
                 self.create_new_address(for_change)
                 continue
-            if map(lambda a: self.address_is_old(a), addresses[-limit:] ) == limit*[False]:
+            if map(lambda a: self.address_is_old(a), addresses[-limit:]) == limit * [False]:
                 break
             else:
                 self.create_new_address(for_change)
@@ -600,10 +598,7 @@ class Deterministic_Wallet(BaseWallet):
         return self.get_master_public_key()
 
 
-
-
 class Simple_Wallet(BaseWallet):
-
     """ Wallet with a single pubkey per address """
 
     def load_keystore(self):
@@ -638,7 +633,6 @@ class Simple_Wallet(BaseWallet):
 
 
 class Simple_Deterministic_Wallet(Deterministic_Wallet, Simple_Wallet):
-
     def __init__(self, storage):
         Deterministic_Wallet.__init__(self, storage)
 
@@ -700,13 +694,12 @@ class Simple_Deterministic_Wallet(Deterministic_Wallet, Simple_Wallet):
 
 
 class P2SH:
-
     def pubkeys_to_redeem_script(self, pubkeys):
         raise NotImplementedError()
 
     def pubkeys_to_address(self, pubkey):
         redeem_script = self.pubkeys_to_redeem_script(pubkey)
-        return bitcoin.hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
+        return hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
 
 
 class Standard_Wallet(Simple_Deterministic_Wallet):
@@ -714,19 +707,16 @@ class Standard_Wallet(Simple_Deterministic_Wallet):
 
     def pubkeys_to_redeem_script(self, pubkey):
         if self.is_segwit:
-            return transaction.segwit_script(pubkey)
+            return segwit_script(pubkey)
 
     def pubkeys_to_address(self, pubkey):
         if not self.is_segwit:
-            return bitcoin.public_key_to_p2pkh(pubkey.decode('hex'))
-        elif bitcoin.TESTNET:
+            return public_key_to_p2pkh(pubkey.decode('hex'))
+        elif Parameter().TESTNET:
             redeem_script = self.pubkeys_to_redeem_script(pubkey)
-            return bitcoin.hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
+            return hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
         else:
             raise NotImplementedError()
-
-
-
 
 
 class Multisig_Wallet(Deterministic_Wallet, P2SH):
@@ -744,10 +734,10 @@ class Multisig_Wallet(Deterministic_Wallet, P2SH):
 
     def redeem_script(self, c, i):
         pubkeys = self.get_pubkeys(c, i)
-        return transaction.multisig_script(sorted(pubkeys), self.m)
+        return multisig_script(sorted(pubkeys), self.m)
 
     def pubkeys_to_redeem_script(self, pubkeys):
-        return transaction.multisig_script(sorted(pubkeys), self.m)
+        return multisig_script(sorted(pubkeys), self.m)
 
     def derive_pubkeys(self, c, i):
         return [k.derive_pubkey(c, i) for k in self.get_keystores()]
@@ -755,7 +745,7 @@ class Multisig_Wallet(Deterministic_Wallet, P2SH):
     def load_keystore(self):
         self.keystores = {}
         for i in range(self.n):
-            name = 'x%d/'%(i+1)
+            name = 'x%d/' % (i + 1)
             self.keystores[name] = load_keystore(self.storage, name)
         self.keystore = self.keystores['x1/']
 
