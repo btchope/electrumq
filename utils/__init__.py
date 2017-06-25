@@ -10,6 +10,7 @@ import ecdsa
 import pyaes
 
 from utils.parameter import Parameter
+import version
 
 __author__ = 'zhouqi'
 
@@ -383,12 +384,11 @@ hash_decode = lambda x: x.decode('hex')[::-1]
 hmac_sha_512 = lambda x,y: hmac.new(x, y, hashlib.sha512).digest()
 
 def is_new_seed(x, prefix=None):
-    # if prefix is None: prefix = version.SEED_PREFIX
-    pass
-    # import mnemonic
-    # x = mnemonic.normalize_text(x)
-    # s = hmac_sha_512("Seed version", x.encode('utf8')).encode('hex')
-    # return s.startswith(prefix)
+    if prefix is None: prefix = version.SEED_PREFIX
+    import mnemonic
+    x = mnemonic.normalize_text(x)
+    s = hmac_sha_512("Seed version", x.encode('utf8')).encode('hex')
+    return s.startswith(prefix)
 
 
 def is_old_seed(seed):
@@ -409,15 +409,15 @@ def is_old_seed(seed):
 
 
 def seed_type(x):
-    # if is_old_seed(x):
-    #     return 'old'
-    # elif is_new_seed(x):
-    #     return 'standard'
-    # elif TESTNET and is_new_seed(x, version.SEED_PREFIX_SW):
-    #     return 'segwit'
-    # elif is_new_seed(x, version.SEED_PREFIX_2FA):
-    #     return '2fa'
-    return ''
+    if is_old_seed(x):
+        return 'old'
+    elif is_new_seed(x):
+        return 'standard'
+    elif Parameter().TESTNET and is_new_seed(x, version.SEED_PREFIX_SW):
+        return 'segwit'
+    elif is_new_seed(x, version.SEED_PREFIX_2FA):
+        return '2fa'
+    # return ''
 
 is_seed = lambda x: bool(seed_type(x))
 

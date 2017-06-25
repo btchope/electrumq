@@ -8,9 +8,11 @@ from ecdsa.util import string_to_number
 from utils import InvalidPassword, public_key_from_private_key, pw_decode, pw_encode, \
     public_key_to_p2pkh, regenerate_key, is_compressed, bip32_public_derivation, \
     hash_160_to_bc_address, rev_hex, EncodeBase58Check, DecodeBase58Check, int_to_hex, CKD_pub, \
-    deserialize_xpub
+    deserialize_xpub, seed_type, deserialize_xprv, bip32_root, bip32_private_derivation, \
+    xpub_from_xprv, bip32_private_key
 from utils import Parameter
 from utils.base58 import Hash
+from utils.mnemonic import Mnemonic
 
 __author__ = 'zhouqi'
 
@@ -298,12 +300,53 @@ class WatchOnlySimpleKeyStore(SimpleKeyStore):
 
 
 class Deterministic_KeyStore(SoftwareKeyStore):
-    pass
+    def __init__(self, d):
+        SoftwareKeyStore.__init__(self)
+        self.seed = d.get('seed', '')
+        self.passphrase = d.get('passphrase', '')
+
+    def is_deterministic(self):
+        return True
+
+    def dump(self):
+        d = {}
+        if self.seed:
+            d['seed'] = self.seed
+        if self.passphrase:
+            d['passphrase'] = self.passphrase
+        return d
+
+    @classmethod
+    def create(cls, seed, password):
+        # try:
+        #     pubkey = public_key_from_private_key(sec)
+        # except Exception:
+        #     traceback.print_exc()
+        #     raise BaseException('Invalid private key')
+        return Deterministic_KeyStore({'seed': seed, 'passphrase': password})
+
+    def has_seed(self):
+        return bool(self.seed)
+
+    def is_watching_only(self):
+        return not self.has_seed()
+
+    def can_change_password(self):
+        return not self.is_watching_only()
+
+    def add_seed(self, seed):
+        if self.seed:
+            raise Exception("a seed exists")
+        self.seed = self.format_seed(seed)
+
+    def get_seed(self, password):
+        return pw_decode(self.seed, password)
+
+    def get_passphrase(self, password):
+        return pw_decode(self.passphrase, password) if self.passphrase else ''
 
 
 class Xpub:
-    pass
-
     def __init__(self):
         self.xpub = None
         self.xpub_receive = None
@@ -359,7 +402,69 @@ class Xpub:
 
 class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
     def __init__(self, d):
-        super(BIP32_KeyStore, self).__init__()
+        Xpub.__init__(self)
+        Deterministic_KeyStore.__init__(self, d)
+
+    def format_seed(self, seed):
+        return ' '.join(seed.split())
+
+    def dump(self):
+        d = Deterministic_KeyStore.dump(self)
+        d['type'] = 'bip32'
+        d['xpub'] = self.xpub
+        d['xprv'] = self.xprv
+        return d
+
+    def get_master_private_key(self, password):
+        return pw_decode(self.xprv, password)
+
+    def check_password(self, password):
+        xprv = pw_decode(self.xprv, password)
+        if deserialize_xprv(xprv)[4] != deserialize_xpub(self.xpub)[4]:
+            raise InvalidPassword()
+
+    def update_password(self, old_password, new_password):
+        self.check_password(old_password)
+        if new_password == '':
+            new_password = None
+        if self.has_seed():
+            decoded = self.get_seed(old_password)
+            self.seed = pw_encode(decoded, new_password)
+        if self.passphrase:
+            decoded = self.get_passphrase(old_password)
+            self.passphrase = pw_encode(decoded, new_password)
+        if self.xprv is not None:
+            b = pw_decode(self.xprv, old_password)
+            self.xprv = pw_encode(b, new_password)
+
+    def is_watching_only(self):
+        return self.xprv is None
+
+    def add_xprv(self, xprv):
+        self.xprv = xprv
+        self.xpub = xpub_from_xprv(xprv)
+
+    def add_xprv_from_seed(self, bip32_seed, xtype, derivation):
+        xprv, xpub = bip32_root(bip32_seed, xtype)
+        xprv, xpub = bip32_private_derivation(xprv, "m/", derivation)
+        self.add_xprv(xprv)
+
+    def get_private_key(self, sequence, password):
+        xprv = self.get_master_private_key(password)
+        _, _, _, _, c, k = deserialize_xprv(xprv)
+        pk = bip32_private_key(sequence, k, c)
+        return pk
+
+    def is_segwit(self):
+        return bool(deserialize_xpub(self.xpub)[0])
+
+    def get_pubkey_derivation(self, x_pubkey):
+        if x_pubkey[0:2] != 'ff':
+            return
+        xpub, derivation = self.parse_xpubkey(x_pubkey)
+        if self.xpub != xpub:
+            return
+        return derivation
 
 
 class Old_KeyStore(Deterministic_KeyStore):
@@ -467,3 +572,24 @@ def load_keystore(storage, name):
     else:
         raise BaseException('unknown wallet type', t)
     return k
+
+def from_seed2(storage, name):
+    d = storage.get(name, {})
+    seed = d.get('seed')
+    passphrase = d.get('passphrase')
+    return from_seed(seed, passphrase)
+
+def from_seed(seed, passphrase):
+    t = seed_type(seed)
+    if t == 'old':
+        keystore = Old_KeyStore({})
+        keystore.add_seed(seed)
+    elif t in ['standard', 'segwit']:
+        keystore = BIP32_KeyStore({})
+        keystore.add_seed(seed)
+        keystore.passphrase = passphrase
+        bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
+        xtype = 0 if t == 'standard' else 1
+        keystore.add_xprv_from_seed(bip32_seed, xtype, "m/")
+    return keystore
+
