@@ -427,19 +427,17 @@ class HDWallet(BaseWallet):
         self.storage.write()
 
     def init(self):
-        addresses = self.receiving_addresses + self.change_addresses
-        print addresses
-        NetWorkManager().client.add_message(GetHistory(['mipTN4UeM9Ab9PH5dU9XA5MjwAJnzkwCpX']), self.history_callback)
-        # NetWorkManager().client.add_message(GetHistory([addresses]), self.history_callback)
+        for address in (self.receiving_addresses + self.change_addresses):
+            NetWorkManager().client.add_message(GetHistory([address]), self.history_callback)
 
     @gen.coroutine
     def history_callback(self, msg_id, msg, param):
         for each in param:
             TxStore().add(msg['params'][0], each['tx_hash'], each['height'])
-        for tx, height in TxStore().unverify_tx_list:
-            NetWorkManager().client.add_message(GetMerkle([tx, height]), self.get_merkle_callback)
-        for tx in TxStore().unfetch_tx:
-            NetWorkManager().client.add_message(Get([tx]), self.get_tx_callback)
+        # for tx, height in TxStore().unverify_tx_list:
+            NetWorkManager().client.add_message(GetMerkle([each['tx_hash'], each['height']]), self.get_merkle_callback)
+        # for tx in TxStore().unfetch_tx:
+            NetWorkManager().client.add_message(Get([each['tx_hash']]), self.get_tx_callback)
 
     @gen.coroutine
     def get_merkle_callback(self, msg_id, msg, param):

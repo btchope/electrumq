@@ -157,7 +157,6 @@ def test_hd_wallet():
     network.start_ioloop()
     network.start_client()
     network.client.add_message(Version(["2.8.2", "0.10"]))
-    # network.client.add_message(GetHistory(['mipTN4UeM9Ab9PH5dU9XA5MjwAJnzkwCpX']))
     wallet = HDWallet(WalletConfig(store_path='hd_wallet.json'))
     if wallet.keystore is None:
         wallet.init_key_store(BIP32_KeyStore.create(u'reopen panel title aerobic wheat fury blame cement swarm wheel ball where', None))
@@ -170,14 +169,14 @@ def test_hd_wallet():
          'coinbase': False,
          'height': 10000} for e in TxStore().get_unspend_outs('mipTN4UeM9Ab9PH5dU9XA5MjwAJnzkwCpX')]
     outputs = []
-    outputs.append((TYPE_SCRIPT, 'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj', 100000))
-    tx = wallet.make_unsigned_transaction(inputs, outputs, {})
-    print tx
+    outputs.append((TYPE_ADDRESS, 'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj', 100000))
+    # tx = wallet.make_unsigned_transaction(inputs, outputs, {})
+    # print tx
     # cold_wallet = ColdSimpleWallet(WalletConfig(store_path='cold_simple_wallet.json'))
     # if cold_wallet.keystore is None:
     #     cold_wallet.init_key_store(SimpleKeyStore.create(SecretToASecret('\x20\x12\x10\x09' + '\x09' * 28, True), None))
-    wallet.sign_transaction(tx, None)
-    print tx
+    # wallet.sign_transaction(tx, None)
+    # print tx
 
 if __name__ == '__main__':
     test_hd_wallet()

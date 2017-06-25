@@ -459,12 +459,8 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         return bool(deserialize_xpub(self.xpub)[0])
 
     def get_pubkey_derivation(self, x_pubkey):
-        if x_pubkey[0:2] != 'ff':
-            return
-        xpub, derivation = self.parse_xpubkey(x_pubkey)
-        if self.xpub != xpub:
-            return
-        return derivation
+        return Xpub.get_pubkey_derivation(self, x_pubkey)
+
 
 
 class Old_KeyStore(Deterministic_KeyStore):
