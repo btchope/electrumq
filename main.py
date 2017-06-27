@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
+import logging
 import time
 
-import logging
 from tornado import gen
 
-from blockchain import BlockChain
-from db.mem.blockstore import BlockStore
-from db.sqlite import init, drop
+from db.sqlite import init
 from db.sqlite.tx import TxStore
 from network import NetWorkManager
 from utils import SecretToASecret, public_key_to_p2pkh
 from utils.key import ImportedKeyStore, SimpleKeyStore, WatchOnlySimpleKeyStore, \
-    Deterministic_KeyStore, BIP32_KeyStore
-from utils.parameter import set_testnet, TYPE_ADDRESS, TYPE_SCRIPT
-from wallet import SimpleWallet, WalletConfig, WatchOnlySimpleWallet, ColdSimpleWallet, HDWallet
-
-__author__ = 'zhouqi'
-
+    BIP32_KeyStore
+from utils.parameter import set_testnet, TYPE_ADDRESS
+from wallet import WalletConfig
+from wallet.hd import HDWallet
+from wallet.single import ColdSimpleWallet, WatchOnlySimpleWallet, SimpleWallet
 
 from message.all import *
+
+__author__ = 'zhouqi'
 
 
 def test_simple_wallet():

@@ -19,9 +19,12 @@ logger = logging.getLogger('blockchain')
 
 BLOCK_INTERVAL = 2016
 
-class BlockChain():
 
+class BlockChain():
     __metaclass__ = Singleton
+
+    def __init__(self):
+        pass
 
     def init_header(self):
         NetWorkManager().init_header(self.init_header_callback)
@@ -31,11 +34,15 @@ class BlockChain():
             result = future.result()
             block_cnt = len(result) / 80
             for idx in xrange(block_cnt / BLOCK_INTERVAL):
-                BlockStore().connect_chunk(idx, result[idx * 80 * BLOCK_INTERVAL: idx * 80 * BLOCK_INTERVAL + 80 * BLOCK_INTERVAL])
+                BlockStore().connect_chunk(idx, result[
+                                                idx * 80 * BLOCK_INTERVAL: idx * 80 * BLOCK_INTERVAL + 80 * BLOCK_INTERVAL])
             if block_cnt > block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL:
                 for idx in xrange(block_cnt - (block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL)):
                     height = block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL + idx
-                    BlockStore().connect_raw_header(result[(block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL + idx) * 80:(block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL + idx) * 80 + 80], height)
+                    BlockStore().connect_raw_header(result[(
+                                                           block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL + idx) * 80:(
+                                                                                                                   block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL + idx) * 80 + 80],
+                                                    height)
             from message.all import headers_subscribe
             NetWorkManager().client.add_subscribe(headers_subscribe([]), callback=self.catch_up,
                                                   subscribe=self.receive_header)  # do not have id
@@ -56,11 +63,12 @@ class BlockChain():
         local_height = BlockStore().height
         if height > local_height:
             from message.all import GetHeader, GetChunk
-            next_height = min(height, local_height / BLOCK_INTERVAL * BLOCK_INTERVAL + BLOCK_INTERVAL - 1)
-            logger.debug('catch up trunc from %d to %d' % (next_height / BLOCK_INTERVAL, height / BLOCK_INTERVAL))
+            next_height = min(height,
+                              local_height / BLOCK_INTERVAL * BLOCK_INTERVAL + BLOCK_INTERVAL - 1)
+            logger.debug('catch up trunc from %d to %d' % (
+            next_height / BLOCK_INTERVAL, height / BLOCK_INTERVAL))
             for h in xrange(next_height / BLOCK_INTERVAL, height / BLOCK_INTERVAL + 1):
                 NetWorkManager().client.add_message(GetChunk([h]), self.get_trunc_callback)
-
 
     @gen.coroutine
     def get_header_callback(self, msg_id, msg, header):
@@ -72,6 +80,7 @@ class BlockChain():
 
     def get_block_root(self, height):
         return BlockStore().get_block_root(height)
+
 
 class MemBlockChain(BlockChain):
     __metaclass__ = Singleton
@@ -87,11 +96,15 @@ class MemBlockChain(BlockChain):
             for idx in xrange(cnt / (80 * BLOCK_INTERVAL)):
                 print idx
                 BlockStore().connect_chunk(idx,
-                                           result[idx * 80 * BLOCK_INTERVAL: idx * 80 * BLOCK_INTERVAL + 80 * BLOCK_INTERVAL])
+                                           result[
+                                           idx * 80 * BLOCK_INTERVAL: idx * 80 * BLOCK_INTERVAL + 80 * BLOCK_INTERVAL])
             if cnt > cnt / (80 * BLOCK_INTERVAL) * (80 * BLOCK_INTERVAL):
-                for idx in xrange((cnt - (cnt / (80 * BLOCK_INTERVAL) * (80 * BLOCK_INTERVAL))) / 80):
+                for idx in xrange(
+                                (cnt - (cnt / (80 * BLOCK_INTERVAL) * (80 * BLOCK_INTERVAL))) / 80):
                     height = cnt / (80 * BLOCK_INTERVAL) * BLOCK_INTERVAL + idx
-                    header = BlockStore().deserialize_header(result[(cnt / (80 * BLOCK_INTERVAL) * BLOCK_INTERVAL + idx) * 80:(cnt / (80 * BLOCK_INTERVAL) * BLOCK_INTERVAL + idx) * 80 + 80])
+                    header = BlockStore().deserialize_header(result[(cnt / (
+                    80 * BLOCK_INTERVAL) * BLOCK_INTERVAL + idx) * 80:(cnt / (
+                    80 * BLOCK_INTERVAL) * BLOCK_INTERVAL + idx) * 80 + 80])
                     BlockStore().connect_header(header, height)
                     print height
             print datetime.now() - dt
@@ -120,7 +133,8 @@ class MemBlockChain(BlockChain):
             # for h in xrange(local_height + 1, next_height + 1):
             #     # pass
             #     NetWorkManager().client.add_message(GetHeader([h]), self.connect_header2)
-            logger.debug('catch up trunc from %d to %d' % (next_height / BLOCK_INTERVAL, height / BLOCK_INTERVAL))
+            logger.debug('catch up trunc from %d to %d' % (
+            next_height / BLOCK_INTERVAL, height / BLOCK_INTERVAL))
             for h in xrange(next_height / BLOCK_INTERVAL, height / BLOCK_INTERVAL + 1):
                 NetWorkManager().client.add_message(GetChunk([h]), self.get_trunc_callback)
                 # logger.debug('catch up header from %d to %d' % (height / BLOCK_INTERVAL * BLOCK_INTERVAL, height))

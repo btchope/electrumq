@@ -100,4 +100,4 @@ class TxStore():
     def get_max_tx_block(self, address):
         return execute_one(
             'SELECT ifnull(max(a.block_no),-1) FROM txs a, addresses_txs b WHERE b.address=? AND a.tx_hash=b.tx_hash',
-            address)[0]
+            (address,))[0]

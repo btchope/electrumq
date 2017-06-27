@@ -446,15 +446,15 @@ def i2o_ECPublicKey(pubkey, compressed=False):
 
 ############ functions from pywallet #####################
 
-def hash_160(public_key):
-    if 'ANDROID_DATA' in os.environ:
-        pass
-        # from Crypto.Hash import RIPEMD
-        # md = RIPEMD.new()
-    else:
-        md = hashlib.new('ripemd')
-    md.update(sha256(public_key))
-    return md.digest()
+# def hash_160(public_key):
+    # if 'ANDROID_DATA' in os.environ:
+    #     pass
+    #     # from Crypto.Hash import RIPEMD
+    #     # md = RIPEMD.new()
+    # else:
+    #     md = hashlib.new('ripemd')
+    # md.update(sha256(public_key))
+    # return md.digest()
 
 def hash_160_to_bc_address(h160, addrtype, witness_program_version=1):
     s = chr(addrtype)
