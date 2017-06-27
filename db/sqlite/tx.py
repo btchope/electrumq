@@ -96,3 +96,8 @@ class TxStore():
     def get_unspend_outs(self, address):
         res = execute_all('select tx_hash,out_sn,out_script,out_value,out_address from outs WHERE out_status=0 and out_address=?', (address,))
         return res
+
+    def get_max_tx_block(self, address):
+        return execute_one(
+            'SELECT ifnull(max(a.block_no),-1) FROM txs a, addresses_txs b WHERE b.address=? AND a.tx_hash=b.tx_hash',
+            address)[0]

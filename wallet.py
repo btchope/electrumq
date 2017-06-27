@@ -6,6 +6,7 @@ from functools import partial
 from tornado import gen
 
 from blockchain import BlockChain
+from db.sqlite.block import BlockStore
 from utils.storage import AbstractStorage, WalletStorage, multisig_type
 from utils.tx import Transaction, segwit_script, multisig_script
 from db.sqlite.tx import TxStore
@@ -328,18 +329,13 @@ class BaseWallet(AbstractWallet):
                 sent[txi] = height
         return received, sent
 
+
     def address_is_old(self, address, age_limit=2):
-        return False
-        # age = -1
-        # h = self.history.get(address, [])
-        # for tx_hash, tx_height in h:
-        #     if tx_height == 0:
-        #         tx_age = 0
-        #     else:
-        #         tx_age = self.get_local_height() - tx_height + 1
-        #     if tx_age > age:
-        #         age = tx_age
-        # return age > age_limit
+        tx_age = TxStore().get_max_tx_block(address)
+        if tx_age > 0:
+            return BlockStore().height - tx_age > age_limit
+        else:
+            return False
 
 
 class SimpleWallet(BaseWallet):
@@ -347,17 +343,6 @@ class SimpleWallet(BaseWallet):
         BaseWallet.__init__(self, wallet_config)
         if self.storage.get('keystore', None) is not None:
             self.keystore = load_keystore(self.storage, 'keystore')
-            # keystore = self.storage.get('key_store', None)
-            # if keystore is None:
-            #     self.keystore = None
-            # else:
-            #     self.keystore = SimpleKeyStore(keystore)
-            #     self._address = public_key_to_p2pkh(self.keystore.pub_key.decode('hex'))
-
-    # def add_address(self, address):
-    #     self.storage.put('address', address)
-    #     self.storage.write()
-    #     self._address = address
 
     def init_key_store(self, key_store):
         if self.keystore is not None:
