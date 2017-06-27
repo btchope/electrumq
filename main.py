@@ -7,9 +7,10 @@ from tornado import gen
 from db.sqlite import init
 from db.sqlite.tx import TxStore
 from network import NetWorkManager
-from utils import SecretToASecret, public_key_to_p2pkh
-from utils.key import ImportedKeyStore, SimpleKeyStore, WatchOnlySimpleKeyStore, \
-    BIP32_KeyStore
+from utils.base58 import public_key_to_p2pkh
+from utils.key import SecretToASecret
+from utils.key_store import BIP32_KeyStore, SimpleKeyStore, WatchOnlySimpleKeyStore, \
+    ImportedKeyStore
 from utils.parameter import set_testnet, TYPE_ADDRESS
 from wallet import WalletConfig
 from wallet.hd import HDWallet

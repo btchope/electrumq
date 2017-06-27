@@ -1,591 +1,383 @@
 # -*- coding: utf-8 -*-
-import traceback
+import base64
+import hashlib
+import hmac
+import os
 
 import ecdsa
+import pyaes
 from ecdsa import SECP256k1
-from ecdsa.util import string_to_number
+from ecdsa.ecdsa import curve_secp256k1
+from ecdsa.ecdsa import generator_secp256k1
+from ecdsa.ellipticcurve import Point
+from ecdsa.util import string_to_number, number_to_string
 
-from utils import InvalidPassword, public_key_from_private_key, pw_decode, pw_encode, \
-    public_key_to_p2pkh, regenerate_key, is_compressed, bip32_public_derivation, \
-    hash_160_to_bc_address, rev_hex, EncodeBase58Check, DecodeBase58Check, int_to_hex, CKD_pub, \
-    deserialize_xpub, seed_type, deserialize_xprv, bip32_root, bip32_private_derivation, \
-    xpub_from_xprv, bip32_private_key
-from utils import Parameter
-from utils.base58 import Hash
-from utils.mnemonic import Mnemonic
+from utils import Parameter, var_int
+from utils.base58 import b58decode_check, b58encode_check, public_key_to_p2pkh, double_hash, hash256, \
+    __b58chars
 
 __author__ = 'zhouqi'
 
 
-class KeyStore(object):
-    def has_seed(self):
+def pubkey_from_signature(sig, message):
+    if len(sig) != 65:
+        raise Exception("Wrong encoding")
+    nV = ord(sig[0])
+    if nV < 27 or nV >= 35:
+        raise Exception("Bad encoding")
+    if nV >= 31:
+        compressed = True
+        nV -= 4
+    else:
+        compressed = False
+    recid = nV - 27
+    h = double_hash(msg_magic(message))
+    return MyVerifyingKey.from_signature(sig[1:], recid, h, curve = SECP256k1), compressed
+
+def msg_magic(message):
+    varint = var_int(len(message))
+    encoded_varint = "".join([chr(int(varint[i:i+2], 16)) for i in xrange(0, len(varint), 2)])
+    return "\x18Bitcoin Signed Message:\n" + encoded_varint + message
+
+
+def verify_message(address, sig, message):
+    try:
+        public_key, compressed = pubkey_from_signature(sig, message)
+        # check public key using the address
+        pubkey = point_to_ser(public_key.pubkey.point, compressed)
+        addr = public_key_to_p2pkh(pubkey)
+        if address != addr:
+            raise Exception("Bad signature")
+        # check message
+        h = double_hash(msg_magic(message))
+        public_key.verify_digest(sig[1:], h, sigdecode = ecdsa.util.sigdecode_string)
+        return True
+    except Exception as e:
+        # print_error("Verification error: {0}".format(e))
         return False
 
-    def is_watching_only(self):
-        return False
 
-    def can_import(self):
-        return False
+def encrypt_message(message, pubkey):
+    return EC_KEY.encrypt_message(message, pubkey.decode('hex'))
 
-    def get_tx_derivations(self, tx):
-        keypairs = {}
-        for txin in tx.inputs():
-            num_sig = txin.get('num_sig')
-            if num_sig is None:
+
+class MyVerifyingKey(ecdsa.VerifyingKey):
+    @classmethod
+    def from_signature(klass, sig, recid, h, curve):
+        """ See http://www.secg.org/download/aid-780/sec1-v2.pdf, chapter 4.1.6 """
+        from ecdsa import util, numbertheory
+        import msqr
+        curveFp = curve.curve
+        G = curve.generator
+        order = G.order()
+        # extract r,s from signature
+        r, s = util.sigdecode_string(sig, order)
+        # 1.1
+        x = r + (recid/2) * order
+        # 1.3
+        alpha = ( x * x * x  + curveFp.a() * x + curveFp.b() ) % curveFp.p()
+        beta = msqr.modular_sqrt(alpha, curveFp.p())
+        y = beta if (beta - recid) % 2 == 0 else curveFp.p() - beta
+        # 1.4 the constructor checks that nR is at infinity
+        R = Point(curveFp, x, y, order)
+        # 1.5 compute e from message:
+        e = string_to_number(h)
+        minus_e = -e % order
+        # 1.6 compute Q = r^-1 (sR - eG)
+        inv_r = numbertheory.inverse_mod(r,order)
+        Q = inv_r * ( s * R + minus_e * G )
+        return klass.from_public_point( Q, curve )
+
+class MySigningKey(ecdsa.SigningKey):
+    """Enforce low S values in signatures"""
+
+    def sign_number(self, number, entropy=None, k=None):
+        curve = SECP256k1
+        G = curve.generator
+        order = G.order()
+        r, s = ecdsa.SigningKey.sign_number(self, number, entropy, k)
+        if s > order/2:
+            s = order - s
+        return r, s
+
+
+class EC_KEY(object):
+
+    def __init__( self, k ):
+        secret = string_to_number(k)
+        self.pubkey = ecdsa.ecdsa.Public_key( generator_secp256k1, generator_secp256k1 * secret )
+        self.privkey = ecdsa.ecdsa.Private_key( self.pubkey, secret )
+        self.secret = secret
+
+    def get_public_key(self, compressed=True):
+        return point_to_ser(self.pubkey.point, compressed).encode('hex')
+
+    def sign(self, msg_hash):
+        private_key = MySigningKey.from_secret_exponent(self.secret, curve = SECP256k1)
+        public_key = private_key.get_verifying_key()
+        signature = private_key.sign_digest_deterministic(msg_hash, hashfunc=hashlib.sha256, sigencode = ecdsa.util.sigencode_string)
+        assert public_key.verify_digest(signature, msg_hash, sigdecode = ecdsa.util.sigdecode_string)
+        return signature
+
+    def sign_message(self, message, is_compressed):
+        signature = self.sign(double_hash(msg_magic(message)))
+        for i in range(4):
+            sig = chr(27 + i + (4 if is_compressed else 0)) + signature
+            try:
+                self.verify_message(sig, message)
+                return sig
+            except Exception:
                 continue
-            x_signatures = txin['signatures']
-            signatures = filter(None, x_signatures)
-            if len(signatures) == num_sig:
-                # input is complete
-                continue
-            for k, x_pubkey in enumerate(txin['x_pubkeys']):
-                if x_signatures[k] is not None:
-                    # this pubkey already signed
-                    continue
-                derivation = self.get_pubkey_derivation(x_pubkey)
-                if not derivation:
-                    continue
-                keypairs[x_pubkey] = derivation
-        return keypairs
-
-    def can_sign(self, tx):
-        if self.is_watching_only():
-            return False
-        return bool(self.get_tx_derivations(tx))
-
-    def get_pubkey_derivation(self, x_pubkey):
-        pass
-
-    def is_segwit(self):
-        return False
-
-    def get_private_key(self, pubkey, password):
-        pass
-
-    def may_have_password(self):
-        return not self.is_watching_only()
-
-    def sign_message(self, sequence, message, password):
-        sec = self.get_private_key(sequence, password)
-        key = regenerate_key(sec)
-        compressed = is_compressed(sec)
-        return key.sign_message(message, compressed)
-
-    def decrypt_message(self, sequence, message, password):
-        sec = self.get_private_key(sequence, password)
-        ec = regenerate_key(sec)
-        decrypted = ec.decrypt_message(message)
-        return decrypted
-
-    def sign_transaction(self, tx, password):
-        if self.is_watching_only():
-            return
-        # Raise if password is not correct.
-        self.check_password(password)
-        # Add private keys
-        keypairs = self.get_tx_derivations(tx)
-        for k, v in keypairs.items():
-            keypairs[k] = self.get_private_key(v, password)
-        # Sign
-        if keypairs:
-            tx.sign(keypairs)
-
-    def check_password(self, password):
-        pass
+        else:
+            raise Exception("error: cannot sign message")
 
 
-class SoftwareKeyStore(KeyStore):
-    pass
+    def verify_message(self, sig, message):
+        public_key, compressed = pubkey_from_signature(sig, message)
+        # check public key
+        if point_to_ser(public_key.pubkey.point, compressed) != point_to_ser(self.pubkey.point, compressed):
+            raise Exception("Bad signature")
+        # check message
+        h = double_hash(msg_magic(message))
+        public_key.verify_digest(sig[1:], h, sigdecode = ecdsa.util.sigdecode_string)
 
 
-class ImportedKeyStore(SoftwareKeyStore):
-    # keystore for imported private keys
-
-    def __init__(self, d):
-        SoftwareKeyStore.__init__(self)
-        self.keypairs = d.get('keypairs', {})
-
-    def is_deterministic(self):
-        return False
-
-    def can_change_password(self):
-        return True
-
-    def get_master_public_key(self):
-        return None
-
-    def dump(self):
-        return {
-            'type': 'imported',
-            'keypairs': self.keypairs,
-        }
-
-    def can_import(self):
-        return True
-
-    def check_password(self, password):
-        pubkey = self.keypairs.keys()[0]
-        self.get_private_key(pubkey, password)
-
-    def import_key(self, sec, password):
-        try:
-            pubkey = public_key_from_private_key(sec)
-        except Exception:
-            traceback.print_exc()
-            raise BaseException('Invalid private key')
-        # allow overwrite
-        self.keypairs[pubkey] = pw_encode(sec, password)
-        return pubkey
-
-    def delete_imported_key(self, key):
-        self.keypairs.pop(key)
-
-    def get_private_key(self, pubkey, password):
-        pk = pw_decode(self.keypairs[pubkey], password)
-        # this checks the password
-        if pubkey != public_key_from_private_key(pk):
-            raise InvalidPassword()
-        return pk
-
-    def get_pubkey_derivation(self, x_pubkey):
-        if x_pubkey[0:2] in ['02', '03', '04']:
-            if x_pubkey in self.keypairs.keys():
-                return x_pubkey
-        elif x_pubkey[0:2] == 'fd':
-            # fixme: this assumes p2pkh
-            _, addr = xpubkey_to_address(x_pubkey)
-            for pubkey in self.keypairs.keys():
-                if public_key_to_p2pkh(pubkey.decode('hex')) == addr:
-                    return pubkey
-
-    def update_password(self, old_password, new_password):
-        self.check_password(old_password)
-        if new_password == '':
-            new_password = None
-        for k, v in self.keypairs.items():
-            b = pw_decode(v, old_password)
-            c = pw_encode(b, new_password)
-            self.keypairs[k] = c
-
-
-class SimpleKeyStore(SoftwareKeyStore):
-    def __init__(self, d):
-        SoftwareKeyStore.__init__(self)
-        self.pub_key = d.get('pub_key', None)
-        self.encrypt_priv_key = d.get('encrypt_priv_key', None)
-        self.address = d.get('address', None)
-
-    @property
-    def keypairs(self):
-        return {self.pub_key: self.encrypt_priv_key}
-
-    def is_deterministic(self):
-        return False
-
-    def can_change_password(self):
-        return True
-
-    def get_master_public_key(self):
-        return None
-
-    def dump(self):
-        return {
-            'type': 'simple',
-            'pub_key': self.pub_key,
-            'encrypt_priv_key': self.encrypt_priv_key,
-            'address': self.address
-        }
-
-    def can_import(self):
-        return True
-
-    def check_password(self, password):
-        pubkey = self.pub_key
-        self.get_private_key(pubkey, password)
+    # ECIES encryption/decryption methods; AES-128-CBC with PKCS7 is used as the cipher; hmac-sha256 is used as the mac
 
     @classmethod
-    def create(cls, sec, password):
+    def encrypt_message(self, message, pubkey):
+
+        pk = ser_to_point(pubkey)
+        if not ecdsa.ecdsa.point_is_valid(generator_secp256k1, pk.x(), pk.y()):
+            raise Exception('invalid pubkey')
+
+        ephemeral_exponent = number_to_string(ecdsa.util.randrange(pow(2,256)), generator_secp256k1.order())
+        ephemeral = EC_KEY(ephemeral_exponent)
+        ecdh_key = point_to_ser(pk * ephemeral.privkey.secret_multiplier)
+        key = hashlib.sha512(ecdh_key).digest()
+        iv, key_e, key_m = key[0:16], key[16:32], key[32:]
+        ciphertext = aes_encrypt_with_iv(key_e, iv, message)
+        ephemeral_pubkey = ephemeral.get_public_key(compressed=True).decode('hex')
+        encrypted = 'BIE1' + ephemeral_pubkey + ciphertext
+        mac = hmac.new(key_m, encrypted, hashlib.sha256).digest()
+
+        return base64.b64encode(encrypted + mac)
+
+
+    def decrypt_message(self, encrypted):
+        encrypted = base64.b64decode(encrypted)
+        if len(encrypted) < 85:
+            raise Exception('invalid ciphertext: length')
+        magic = encrypted[:4]
+        ephemeral_pubkey = encrypted[4:37]
+        ciphertext = encrypted[37:-32]
+        mac = encrypted[-32:]
+        if magic != 'BIE1':
+            raise Exception('invalid ciphertext: invalid magic bytes')
         try:
-            pubkey = public_key_from_private_key(sec)
-        except Exception:
-            traceback.print_exc()
-            raise BaseException('Invalid private key')
-        return SimpleKeyStore(
-            {'type': 'simple', 'pub_key': pubkey, 'encrypt_priv_key': pw_encode(sec, password),
-             'address': public_key_to_p2pkh(pubkey.decode('hex'))})
-
-    def get_private_key(self, pubkey, password):
-        pk = pw_decode(self.encrypt_priv_key, password)
-        # this checks the password
-        if pubkey != public_key_from_private_key(pk):
+            ephemeral_pubkey = ser_to_point(ephemeral_pubkey)
+        except AssertionError, e:
+            raise Exception('invalid ciphertext: invalid ephemeral pubkey')
+        if not ecdsa.ecdsa.point_is_valid(generator_secp256k1, ephemeral_pubkey.x(), ephemeral_pubkey.y()):
+            raise Exception('invalid ciphertext: invalid ephemeral pubkey')
+        ecdh_key = point_to_ser(ephemeral_pubkey * self.privkey.secret_multiplier)
+        key = hashlib.sha512(ecdh_key).digest()
+        iv, key_e, key_m = key[0:16], key[16:32], key[32:]
+        if mac != hmac.new(key_m, encrypted[:-32], hashlib.sha256).digest():
             raise InvalidPassword()
-        return pk
-
-    def get_pubkey_derivation(self, x_pubkey):
-        if x_pubkey[0:2] in ['02', '03', '04']:
-            if x_pubkey == self.pub_key:
-                return x_pubkey
-        elif x_pubkey[0:2] == 'fd':
-            # fixme: this assumes p2pkh
-            _, addr = xpubkey_to_address(x_pubkey)
-            if public_key_to_p2pkh(self.pub_key.decode('hex')) == addr:
-                return self.pub_key
-
-    def update_password(self, old_password, new_password):
-        self.check_password(old_password)
-        if new_password == '':
-            new_password = None
-        # for k, v in self.keypairs.items():
-        b = pw_decode(self.encrypt_priv_key, old_password)
-        self.encrypt_priv_key = pw_encode(b, new_password)
+        return aes_decrypt_with_iv(key_e, iv, ciphertext)
 
 
-class WatchOnlySimpleKeyStore(SimpleKeyStore):
-    def __init__(self, d):
-        SoftwareKeyStore.__init__(self)
-        self.pub_key = d.get('pub_key', None)
-        self.address = d.get('address', None)
+def ECC_YfromX(x,curved=curve_secp256k1, odd=True):
+    _p = curved.p()
+    _a = curved.a()
+    _b = curved.b()
+    for offset in range(128):
+        Mx = x + offset
+        My2 = pow(Mx, 3, _p) + _a * pow(Mx, 2, _p) + _b % _p
+        My = pow(My2, (_p+1)/4, _p )
 
-    @property
-    def keypairs(self):
-        return {self.pub_key: self}
+        if curved.contains_point(Mx,My):
+            if odd == bool(My&1):
+                return [My,offset]
+            return [_p-My,offset]
+    raise Exception('ECC_YfromX: No Y found')
 
-    def is_deterministic(self):
+
+def point_to_ser(P, comp=True ):
+    if comp:
+        return ( ('%02x'%(2+(P.y()&1)))+('%064x'%P.x()) ).decode('hex')
+    return ( '04'+('%064x'%P.x())+('%064x'%P.y()) ).decode('hex')
+
+
+def ser_to_point(Aser):
+    curve = curve_secp256k1
+    generator = generator_secp256k1
+    _r  = generator.order()
+    assert Aser[0] in ['\x02','\x03','\x04']
+    if Aser[0] == '\x04':
+        return Point( curve, string_to_number(Aser[1:33]), string_to_number(Aser[33:]), _r )
+    Mx = string_to_number(Aser[1:])
+    return Point( curve, Mx, ECC_YfromX(Mx, curve, Aser[0]=='\x03')[0], _r )
+
+
+def i2o_ECPublicKey(pubkey, compressed=False):
+    # public keys are 65 bytes long (520 bits)
+    # 0x04 + 32-byte X-coordinate + 32-byte Y-coordinate
+    # 0x00 = point at infinity, 0x02 and 0x03 = compressed, 0x04 = uncompressed
+    # compressed keys: <sign> <x> where <sign> is 0x02 if y is even and 0x03 if y is odd
+    if compressed:
+        if pubkey.point.y() & 1:
+            key = '03' + '%064x' % pubkey.point.x()
+        else:
+            key = '02' + '%064x' % pubkey.point.x()
+    else:
+        key = '04' + \
+              '%064x' % pubkey.point.x() + \
+              '%064x' % pubkey.point.y()
+
+    return key.decode('hex')
+
+def PrivKeyToSecret(privkey):
+    return privkey[9:9+32]
+
+
+def SecretToASecret(secret, compressed=False):
+    addrtype = Parameter().ADDRTYPE_P2PKH
+    vchIn = chr((addrtype+128)&255) + secret
+    if compressed: vchIn += '\01'
+    return b58encode_check(vchIn)
+
+def ASecretToSecret(key):
+    addrtype = Parameter().ADDRTYPE_P2PKH
+    vch = b58decode_check(key)
+    if vch and vch[0] == chr((addrtype+128)&255):
+        return vch[1:]
+    elif is_minikey(key):
+        return minikey_to_private_key(key)
+    else:
         return False
 
-    def can_change_password(self):
-        return True
+def regenerate_key(sec):
+    b = ASecretToSecret(sec)
+    if not b:
+        return False
+    b = b[0:32]
+    return EC_KEY(b)
 
-    def get_master_public_key(self):
-        return None
 
-    def dump(self):
-        return {
-            'type': 'watchonly',
-            'pub_key': self.pub_key,
-            'address': self.address,
-        }
+def GetPubKey(pubkey, compressed=False):
+    return i2o_ECPublicKey(pubkey, compressed)
 
-    def can_import(self):
-        return True
 
-    def check_password(self, password):
-        return True
+def GetSecret(pkey):
+    return ('%064x' % pkey.secret).decode('hex')
 
-    @classmethod
-    def create(cls, sec, password):
+
+def is_compressed(sec):
+    b = ASecretToSecret(sec)
+    return len(b) == 33
+
+
+def public_key_from_private_key(sec):
+    # rebuild public key from private key, compressed or uncompressed
+    pkey = regenerate_key(sec)
+    assert pkey
+    compressed = is_compressed(sec)
+    public_key = GetPubKey(pkey.pubkey, compressed)
+    return public_key.encode('hex')
+
+
+def address_from_private_key(sec):
+    public_key = public_key_from_private_key(sec)
+    address = public_key_to_p2pkh(public_key.decode('hex'))
+    return address
+
+
+def is_private_key(key):
+    try:
+        k = ASecretToSecret(key)
+        return k is not False
+    except:
+        return False
+
+
+def is_minikey(text):
+    # Minikeys are typically 22 or 30 characters, but this routine
+    # permits any length of 20 or more provided the minikey is valid.
+    # A valid minikey must begin with an 'S', be in base58, and when
+    # suffixed with '?' have its SHA256 hash begin with a zero byte.
+    # They are widely used in Casascius physical bitoins.
+    return (len(text) >= 20 and text[0] == 'S'
+            and all(c in __b58chars for c in text)
+            and ord(hash256(text + '?')[0]) == 0)
+
+def minikey_to_private_key(text):
+    return hash256(text)
+
+
+def aes_encrypt_with_iv(key, iv, data):
+    # if AES:
+    #     padlen = 16 - (len(data) % 16)
+    #     if padlen == 0:
+    #         padlen = 16
+    #     data += chr(padlen) * padlen
+    #     e = AES.new(key, AES.MODE_CBC, iv).encrypt(data)
+    #     return e
+    # else:
+    aes_cbc = pyaes.AESModeOfOperationCBC(key, iv=iv)
+    aes = pyaes.Encrypter(aes_cbc)
+    e = aes.feed(data) + aes.feed()  # empty aes.feed() appends pkcs padding
+    return e
+
+def aes_decrypt_with_iv(key, iv, data):
+    # if AES:
+    #     cipher = AES.new(key, AES.MODE_CBC, iv)
+    #     data = cipher.decrypt(data)
+    #     padlen = ord(data[-1])
+    #     for i in data[-padlen:]:
+    #         if ord(i) != padlen:
+    #             raise Exception()
+    #             # raise InvalidPassword()
+    #     return data[0:-padlen]
+    # else:
+    aes_cbc = pyaes.AESModeOfOperationCBC(key, iv=iv)
+    aes = pyaes.Decrypter(aes_cbc)
+    s = aes.feed(data) + aes.feed()  # empty aes.feed() strips pkcs padding
+    return s
+
+def EncodeAES(secret, s):
+    iv = bytes(os.urandom(16))
+    ct = aes_encrypt_with_iv(secret, iv, s)
+    e = iv + ct
+    return base64.b64encode(e)
+
+def DecodeAES(secret, e):
+    e = bytes(base64.b64decode(e))
+    iv, e = e[:16], e[16:]
+    s = aes_decrypt_with_iv(secret, iv, e)
+    return s
+
+def pw_encode(s, password):
+    if password:
+        secret = double_hash(password)
+        return EncodeAES(secret, s.encode("utf8"))
+    else:
+        return s
+
+def pw_decode(s, password):
+    if password is not None:
+        secret = double_hash(password)
         try:
-            pubkey = public_key_from_private_key(sec)
+            d = DecodeAES(secret, s).decode("utf8")
         except Exception:
-            traceback.print_exc()
-            raise BaseException('Invalid private key')
-        return WatchOnlySimpleKeyStore({'type': 'simple', 'pub_key': pubkey,
-                                        'address': public_key_to_p2pkh(pubkey.decode('hex'))})
-
-    def get_private_key(self, pubkey, password):
-        return None
-
-    def get_pubkey_derivation(self, x_pubkey):
-        if x_pubkey[0:2] in ['02', '03', '04']:
-            if x_pubkey == self.pub_key:
-                return x_pubkey
-        elif x_pubkey[0:2] == 'fd':
-            # fixme: this assumes p2pkh
-            _, addr = xpubkey_to_address(x_pubkey)
-            if public_key_to_p2pkh(self.pub_key.decode('hex')) == addr:
-                return self.pub_key
-
-    def update_password(self, old_password, new_password):
-        pass
-
-
-class Deterministic_KeyStore(SoftwareKeyStore):
-    def __init__(self, d):
-        SoftwareKeyStore.__init__(self)
-        self.seed = d.get('seed', '')
-        self.passphrase = d.get('passphrase', '')
-
-    def is_deterministic(self):
-        return True
-
-    def dump(self):
-        d = {}
-        if self.seed:
-            d['seed'] = self.seed
-        if self.passphrase:
-            d['passphrase'] = self.passphrase
+            raise InvalidPassword()
         return d
-
-    @classmethod
-    def create(cls, seed, password):
-        # try:
-        #     pubkey = public_key_from_private_key(sec)
-        # except Exception:
-        #     traceback.print_exc()
-        #     raise BaseException('Invalid private key')
-        return Deterministic_KeyStore({'seed': seed, 'passphrase': password})
-
-    def has_seed(self):
-        return bool(self.seed)
-
-    def is_watching_only(self):
-        return not self.has_seed()
-
-    def can_change_password(self):
-        return not self.is_watching_only()
-
-    def add_seed(self, seed):
-        if self.seed:
-            raise Exception("a seed exists")
-        self.seed = self.format_seed(seed)
-
-    def get_seed(self, password):
-        return pw_decode(self.seed, password)
-
-    def get_passphrase(self, password):
-        return pw_decode(self.passphrase, password) if self.passphrase else ''
-
-
-class Xpub:
-    def __init__(self):
-        self.xpub = None
-        self.xpub_receive = None
-        self.xpub_change = None
-
-    def get_master_public_key(self):
-        return self.xpub
-
-    def derive_pubkey(self, for_change, n):
-        xpub = self.xpub_change if for_change else self.xpub_receive
-        if xpub is None:
-            xpub = bip32_public_derivation(self.xpub, "", "/%d" % for_change)
-            if for_change:
-                self.xpub_change = xpub
-            else:
-                self.xpub_receive = xpub
-        return self.get_pubkey_from_xpub(xpub, (n,))
-
-    @classmethod
-    def get_pubkey_from_xpub(self, xpub, sequence):
-        _, _, _, _, c, cK = deserialize_xpub(xpub)
-        for i in sequence:
-            cK, c = CKD_pub(cK, c, i)
-        return cK.encode('hex')
-
-    def get_xpubkey(self, c, i):
-        s = ''.join(map(lambda x: int_to_hex(x, 2), (c, i)))
-        return 'ff' + DecodeBase58Check(self.xpub).encode('hex') + s
-
-    @classmethod
-    def parse_xpubkey(self, pubkey):
-        assert pubkey[0:2] == 'ff'
-        pk = pubkey.decode('hex')
-        pk = pk[1:]
-        xkey = EncodeBase58Check(pk[0:78])
-        dd = pk[78:]
-        s = []
-        while dd:
-            n = int(rev_hex(dd[0:2].encode('hex')), 16)
-            dd = dd[2:]
-            s.append(n)
-        assert len(s) == 2
-        return xkey, s
-
-    def get_pubkey_derivation(self, x_pubkey):
-        if x_pubkey[0:2] != 'ff':
-            return
-        xpub, derivation = self.parse_xpubkey(x_pubkey)
-        if self.xpub != xpub:
-            return
-        return derivation
-
-
-class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
-    def __init__(self, d):
-        Xpub.__init__(self)
-        Deterministic_KeyStore.__init__(self, d)
-
-    def format_seed(self, seed):
-        return ' '.join(seed.split())
-
-    def dump(self):
-        d = Deterministic_KeyStore.dump(self)
-        d['type'] = 'bip32'
-        d['xpub'] = self.xpub
-        d['xprv'] = self.xprv
-        return d
-
-    def get_master_private_key(self, password):
-        return pw_decode(self.xprv, password)
-
-    def check_password(self, password):
-        xprv = pw_decode(self.xprv, password)
-        if deserialize_xprv(xprv)[4] != deserialize_xpub(self.xpub)[4]:
-            raise InvalidPassword()
-
-    def update_password(self, old_password, new_password):
-        self.check_password(old_password)
-        if new_password == '':
-            new_password = None
-        if self.has_seed():
-            decoded = self.get_seed(old_password)
-            self.seed = pw_encode(decoded, new_password)
-        if self.passphrase:
-            decoded = self.get_passphrase(old_password)
-            self.passphrase = pw_encode(decoded, new_password)
-        if self.xprv is not None:
-            b = pw_decode(self.xprv, old_password)
-            self.xprv = pw_encode(b, new_password)
-
-    def is_watching_only(self):
-        return self.xprv is None
-
-    def add_xprv(self, xprv):
-        self.xprv = xprv
-        self.xpub = xpub_from_xprv(xprv)
-
-    def add_xprv_from_seed(self, bip32_seed, xtype, derivation):
-        xprv, xpub = bip32_root(bip32_seed, xtype)
-        xprv, xpub = bip32_private_derivation(xprv, "m/", derivation)
-        self.add_xprv(xprv)
-
-    def get_private_key(self, sequence, password):
-        xprv = self.get_master_private_key(password)
-        _, _, _, _, c, k = deserialize_xprv(xprv)
-        pk = bip32_private_key(sequence, k, c)
-        return pk
-
-    def is_segwit(self):
-        return bool(deserialize_xpub(self.xpub)[0])
-
-    def get_pubkey_derivation(self, x_pubkey):
-        return Xpub.get_pubkey_derivation(self, x_pubkey)
-
-
-
-class Old_KeyStore(Deterministic_KeyStore):
-    def __init__(self, d):
-        super(Old_KeyStore, self).__init__()
-
-    @classmethod
-    def get_sequence(self, mpk, for_change, n):
-        return string_to_number(Hash("%d:%d:" % (n, for_change) + mpk.decode('hex')))
-
-    @classmethod
-    def parse_xpubkey(self, x_pubkey):
-        assert x_pubkey[0:2] == 'fe'
-        pk = x_pubkey[2:]
-        mpk = pk[0:128]
-        dd = pk[128:]
-        s = []
-        while dd:
-            n = int(rev_hex(dd[0:4]), 16)
-            dd = dd[4:]
-            s.append(n)
-        assert len(s) == 2
-        return mpk, s
-
-    @classmethod
-    def get_pubkey_from_mpk(self, mpk, for_change, n):
-        z = self.get_sequence(mpk, for_change, n)
-        master_public_key = ecdsa.VerifyingKey.from_string(mpk.decode('hex'), curve=SECP256k1)
-        pubkey_point = master_public_key.pubkey.point + z * SECP256k1.generator
-        public_key2 = ecdsa.VerifyingKey.from_public_point(pubkey_point, curve=SECP256k1)
-        return '04' + public_key2.to_string().encode('hex')
-
-
-class Hardware_KeyStore(KeyStore, Xpub):
-    pass
-
-
-def xpubkey_to_address(x_pubkey):
-    address = None
-    if x_pubkey[0:2] == 'fd':
-        addrtype = ord(x_pubkey[2:4].decode('hex'))
-        hash160 = x_pubkey[4:].decode('hex')
-        address = hash_160_to_bc_address(hash160, addrtype)
-        return x_pubkey, address
-    if x_pubkey[0:2] in ['02', '03', '04']:
-        pubkey = x_pubkey
-    elif x_pubkey[0:2] == 'ff':
-        xpub, s = BIP32_KeyStore.parse_xpubkey(x_pubkey)
-        pubkey = BIP32_KeyStore.get_pubkey_from_xpub(xpub, s)
-    elif x_pubkey[0:2] == 'fe':
-        mpk, s = Old_KeyStore.parse_xpubkey(x_pubkey)
-        pubkey = Old_KeyStore.get_pubkey_from_mpk(mpk, s[0], s[1])
     else:
-        raise BaseException("Cannot parse pubkey")
-    if pubkey:
-        address = public_key_to_p2pkh(pubkey.decode('hex'))
-    return pubkey, address
+        return s
 
 
-def xpubkey_to_pubkey(x_pubkey):
-    pubkey, address = xpubkey_to_address(x_pubkey)
-    return pubkey
-
-
-def bip44_derivation(account_id):
-    if Parameter().TESTNET:
-        return "m/44'/1'/%d'" % int(account_id)
-    else:
-        return "m/44'/0'/%d'" % int(account_id)
-
-
-hw_keystores = {}
-
-
-def register_keystore(hw_type, constructor):
-    hw_keystores[hw_type] = constructor
-
-
-def hardware_keystore(d):
-    hw_type = d['hw_type']
-    if hw_type in hw_keystores:
-        constructor = hw_keystores[hw_type]
-        return constructor(d)
-    raise BaseException('unknown hardware type', hw_type)
-
-
-def load_keystore(storage, name):
-    w = storage.get('wallet_type', 'standard')
-    d = storage.get(name, {})
-    t = d.get('type')
-    if not t:
-        raise BaseException('wallet format requires update')
-    if t == 'old':
-        k = Old_KeyStore(d)
-    elif t == 'imported':
-        k = ImportedKeyStore(d)
-    elif t == 'simple':
-        k = SimpleKeyStore(d)
-    elif t == 'watchonly':
-        k = WatchOnlySimpleKeyStore(d)
-    elif t == 'bip32':
-        k = BIP32_KeyStore(d)
-    elif t == 'hardware':
-        k = hardware_keystore(d)
-    else:
-        raise BaseException('unknown wallet type', t)
-    return k
-
-def from_seed2(storage, name):
-    d = storage.get(name, {})
-    seed = d.get('seed')
-    passphrase = d.get('passphrase')
-    return from_seed(seed, passphrase)
-
-def from_seed(seed, passphrase):
-    t = seed_type(seed)
-    if t == 'old':
-        keystore = Old_KeyStore({})
-        keystore.add_seed(seed)
-    elif t in ['standard', 'segwit']:
-        keystore = BIP32_KeyStore({})
-        keystore.add_seed(seed)
-        keystore.passphrase = passphrase
-        bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
-        xtype = 0 if t == 'standard' else 1
-        keystore.add_xprv_from_seed(bip32_seed, xtype, "m/")
-    return keystore
-
+class InvalidPassword(Exception):
+    def __str__(self):
+        return 'Incorrect password'
+        # return _("Incorrect password")

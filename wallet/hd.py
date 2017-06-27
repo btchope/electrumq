@@ -6,7 +6,7 @@ from db.sqlite.tx import TxStore
 from message.blockchain.address import GetHistory
 from message.blockchain.transaction import GetMerkle, Get
 from network import NetWorkManager
-from utils.key import from_seed2
+from utils.key_store import from_seed2
 from utils.tx import Transaction
 from wallet import BaseWallet
 

@@ -5,6 +5,7 @@ from hashlib import sha256
 import Crypto.Hash.SHA256 as SHA256
 import Crypto.Hash.RIPEMD as RIPEMD160
 
+from utils import Parameter
 
 __author__ = 'zhouqi'
 
@@ -39,7 +40,7 @@ def b58encode(v):
     return (__b58chars[0] * nPad) + result
 
 
-def b58decode(v, length):
+def b58decode(v, length=None):
     """ decode v into a string of len bytes
     """
     long_value = 0L
@@ -78,16 +79,84 @@ def public_key_to_bc_address(public_key, version='\x00'):
     return hash_160_to_bc_address(h160, version)
 
 
-def hash_160_to_bc_address(h160, version='\x00'):
-    vh160 = version + h160  # \x00 is version 0
+# def hash_160_to_bc_address(h160, version='\x00'):
+#     vh160 = version + h160  # \x00 is version 0
+#     h3 = SHA256.new(SHA256.new(vh160).digest()).digest()
+#     addr = vh160 + h3[0:4]
+#     return b58encode(addr)
+
+
+def double_hash(x):
+    if type(x) is unicode: x = x.encode('utf-8')
+    return SHA256.new(SHA256.new(x).digest()).digest()
+
+def hash256(x):
+    if type(x) is unicode: x = x.encode('utf-8')
+    return SHA256.new(x).digest()
+
+
+def hash_160_to_bc_address(h160, version='\x00', witness_program_version=1):
+    if version.__class__ is int:
+        version = chr(version)
+    if version == chr(Parameter().ADDRTYPE_P2WPKH):
+        vh160 = version + chr(witness_program_version) + chr(0)
+    else:
+        vh160 = version + h160
     h3 = SHA256.new(SHA256.new(vh160).digest()).digest()
     addr = vh160 + h3[0:4]
     return b58encode(addr)
 
 
+def hash160_to_p2pkh(h160):
+    return hash_160_to_bc_address(h160, Parameter().ADDRTYPE_P2PKH)
+
+
+def hash160_to_p2sh(h160):
+    return hash_160_to_bc_address(h160, Parameter().ADDRTYPE_P2SH)
+
+
+def public_key_to_p2pkh(public_key):
+    return hash160_to_p2pkh(hash_160(public_key))
+
+
+def public_key_to_p2wpkh(public_key):
+    return hash_160_to_bc_address(hash_160(public_key), Parameter().ADDRTYPE_P2WPKH)
+
+
+def is_valid(addr):
+    return is_address(addr)
+
+
+def is_address(addr):
+    try:
+        addrtype, h = bc_address_to_type_and_hash_160(addr)
+    except Exception:
+        return False
+    if addrtype not in [Parameter().ADDRTYPE_P2PKH, Parameter().ADDRTYPE_P2SH]:
+        return False
+    return addr == hash_160_to_bc_address(h, addrtype)
+
+
+def is_p2pkh(addr):
+    if is_address(addr):
+        addrtype, h = bc_address_to_type_and_hash_160(addr)
+        return addrtype == Parameter().ADDRTYPE_P2PKH
+
+
+def is_p2sh(addr):
+    if is_address(addr):
+        addrtype, h = bc_address_to_type_and_hash_160(addr)
+        return addrtype == Parameter().ADDRTYPE_P2SH
+
+
 def bc_address_to_hash_160(addr):
     bytes = b58decode(addr, 25)
     return bytes[1:21]
+
+
+def bc_address_to_type_and_hash_160(addr):
+    bytes = b58decode(addr, 25)
+    return ord(bytes[0]), bytes[1:21]
 
 
 def hash_to_integer(hash_str=''):

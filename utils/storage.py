@@ -15,8 +15,8 @@ from stat import S_IREAD, S_IWRITE
 import pbkdf2 as pbkdf2
 import re
 
-from utils import EC_KEY, encrypt_message
-from utils.key import bip44_derivation
+from utils.key import EC_KEY, encrypt_message
+from utils.key_store import bip44_derivation
 
 __author__ = 'zhouqi'
 

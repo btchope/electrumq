@@ -14,7 +14,7 @@ from message.blockchain.address import GetHistory
 from message.blockchain.transaction import GetMerkle, Get
 from network import NetWorkManager
 from utils import coinchooser, public_key_to_p2pkh, hash160_to_p2sh, hash_160, InvalidPassword, \
-    bc_address_to_hash_160
+    bc_address_to_type_and_hash_160
 from utils import is_address
 from utils.key import KeyStore, SimpleKeyStore, load_keystore, from_seed, from_seed2
 from utils.parameter import TYPE_ADDRESS, COINBASE_MATURITY, Parameter
@@ -654,7 +654,7 @@ class Imported_Wallet(BaseWallet):
         return []
 
     def add_input_sig_info(self, txin, address):
-        addrtype, hash160 = bc_address_to_hash_160(address)
+        addrtype, hash160 = bc_address_to_type_and_hash_160(address)
         x_pubkey = 'fd' + (chr(addrtype) + hash160).encode('hex')
         txin['x_pubkeys'] = [x_pubkey]
         txin['signatures'] = [None]

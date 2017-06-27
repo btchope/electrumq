@@ -9,7 +9,12 @@ import exceptions
 import ecdsa
 
 from utils import *
-from utils.key import xpubkey_to_pubkey, xpubkey_to_address
+from utils.base58 import hash160_to_p2sh, hash160_to_p2pkh, hash_160, \
+    bc_address_to_type_and_hash_160, public_key_to_p2pkh
+from utils.key import public_key_from_private_key, MySigningKey, MyVerifyingKey
+from utils.key import regenerate_key
+from utils.key_store import xpubkey_to_pubkey, xpubkey_to_address
+from utils.parameter import TYPE_SCRIPT, TYPE_ADDRESS, TYPE_PUBKEY
 
 __author__ = 'zhouqi'
 
@@ -810,7 +815,7 @@ def push_script(x):
     return op_push(len(x)/2) + x
 
 def get_scriptPubKey(addr):
-    addrtype, hash_160 = bc_address_to_hash_160(addr)
+    addrtype, hash_160 = bc_address_to_type_and_hash_160(addr)
     if addrtype == Parameter().ADDRTYPE_P2PKH:
         script = '76a9'                                      # op_dup, op_hash_160
         script += push_script(hash_160.encode('hex'))

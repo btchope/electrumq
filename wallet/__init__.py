@@ -5,8 +5,8 @@ from functools import partial
 
 from db.sqlite.block import BlockStore
 from db.sqlite.tx import TxStore
-from utils import coinchooser, hash160_to_p2sh, public_key_to_p2pkh, hash_160
-from utils import is_address
+from utils import coinchooser
+from utils.base58 import is_address, public_key_to_p2pkh, hash160_to_p2sh, hash_160
 from utils.parameter import TYPE_ADDRESS, COINBASE_MATURITY, Parameter
 from utils.storage import WalletStorage
 from utils.tx import Transaction
