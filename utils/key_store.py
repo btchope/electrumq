@@ -16,7 +16,7 @@ from utils.bip32 import bip32_public_derivation, deserialize_xpub, CKD_pub, dese
 from utils.key import is_compressed, public_key_from_private_key, pw_encode, InvalidPassword, \
     pw_decode
 from utils.key import regenerate_key
-from utils.mnemonic import Mnemonic
+from utils.mnemonic import Mnemonic, is_new_seed, is_old_seed
 from utils.parser import write_uint16, read_uint16
 
 __author__ = 'zhouqi'
@@ -321,15 +321,6 @@ class Deterministic_KeyStore(SoftwareKeyStore):
             d['passphrase'] = self.passphrase
         return d
 
-    @classmethod
-    def create(cls, seed, password):
-        # try:
-        #     pubkey = public_key_from_private_key(sec)
-        # except Exception:
-        #     traceback.print_exc()
-        #     raise BaseException('Invalid private key')
-        return cls({'seed': seed, 'passphrase': password})
-
     def has_seed(self):
         return bool(self.seed)
 
@@ -608,28 +599,3 @@ def seed_type(x):
     # return ''
 
 is_seed = lambda x: bool(seed_type(x))
-
-
-def is_new_seed(x, prefix=None):
-    if prefix is None: prefix = version.SEED_PREFIX
-    import mnemonic
-    x = mnemonic.normalize_text(x)
-    s = hmac.new("Seed version", x.encode('utf8'), hashlib.sha512).digest().encode('hex')
-    return s.startswith(prefix)
-
-
-def is_old_seed(seed):
-    return False
-    # import old_mnemonic
-    # words = seed.strip().split()
-    # try:
-    #     old_mnemonic.mn_decode(words)
-    #     uses_electrum_words = True
-    # except Exception:
-    #     uses_electrum_words = False
-    # try:
-    #     seed.decode('hex')
-    #     is_hex = (len(seed) == 32 or len(seed) == 64)
-    # except Exception:
-    #     is_hex = False
-    # return is_hex or (uses_electrum_words and (len(words) == 12 or len(words) == 24))

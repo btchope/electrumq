@@ -1,20 +1,11 @@
 # -*- coding: utf-8 -*-
-import traceback
-from collections import deque
-
-import time
-
-from datetime import datetime
-
 import logging
+import traceback
 
-from db.block import Block as BaseBlock
-from tornado.httpclient import AsyncHTTPClient
-from tornado import gen
-
-from network import NetWorkManager
 from utils import Parameter
-from utils import Singleton, hash_encode, Hash, int_to_hex, rev_hex
+from utils import Singleton, hash_encode, Hash
+from utils.base58 import reverse_hex_str
+from utils.parser import write_uint64
 
 __author__ = 'zhouqi'
 
@@ -118,12 +109,12 @@ class BlockStore():
         return hash_encode(Hash(self.serialize_header(header).decode('hex')))
 
     def serialize_header(self, res):
-        s = int_to_hex(res.get('version'), 4) \
-            + rev_hex(res.get('prev_block_hash')) \
-            + rev_hex(res.get('merkle_root')) \
-            + int_to_hex(int(res.get('timestamp')), 4) \
-            + int_to_hex(int(res.get('bits')), 4) \
-            + int_to_hex(int(res.get('nonce')), 4)
+        s = write_uint64(res.get('version')) \
+            + reverse_hex_str(res.get('prev_block_hash')) \
+            + reverse_hex_str(res.get('merkle_root')) \
+            + write_uint64(int(res.get('timestamp'))) \
+            + write_uint64(int(res.get('bits'))) \
+            + write_uint64(int(res.get('nonce')))
         return s
 
     def connect_chunk(self, idx, data):

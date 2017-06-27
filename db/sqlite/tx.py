@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from db.sqlite import Connection, execute_all, execute_one
-from utils import Singleton, hash_decode, hash_encode
+from utils import Singleton
 from utils.base58 import Hash
 
 __author__ = 'zhouqi'
@@ -52,11 +52,11 @@ class TxStore():
 
 
     def hash_merkle_root(self, merkle_s, target_hash, pos):
-        h = hash_decode(target_hash)
+        h = target_hash.decode('hex')[::-1]
         for i in range(len(merkle_s)):
             item = merkle_s[i]
-            h = Hash( hash_decode(item) + h ) if ((pos >> i) & 1) else Hash( h + hash_decode(item) )
-        return hash_encode(h)
+            h = Hash( item.decode('hex')[::-1] + h ) if ((pos >> i) & 1) else Hash( h + item.decode('hex')[::-1] )
+        return h[::-1].encode('hex')
 
 
     def undo_verifications(self, height):

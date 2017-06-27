@@ -39,8 +39,8 @@ import pbkdf2
 import i18n
 
 # http://www.asahi-net.or.jp/~ax2s-kmtn/ref/unicode/e_asia.html
-from utils import is_new_seed
-from utils import is_old_seed
+from utils import print_error
+from utils import version
 
 CJK_INTERVALS = [
     (0x4E00, 0x9FFF, 'CJK Unified Ideographs'),
@@ -183,5 +183,30 @@ class Mnemonic(object):
                 continue
             if is_new_seed(seed, prefix):
                 break
-        print_errorerror('%d words'%len(seed.split()))
+        print_error('%d words'%len(seed.split()))
         return seed
+
+
+def is_new_seed(x, prefix=None):
+    if prefix is None: prefix = version.SEED_PREFIX
+    import mnemonic
+    x = mnemonic.normalize_text(x)
+    s = hmac.new("Seed version", x.encode('utf8'), hashlib.sha512).digest().encode('hex')
+    return s.startswith(prefix)
+
+
+def is_old_seed(seed):
+    pass
+    # import old_mnemonic
+    # words = seed.strip().split()
+    # try:
+    #     old_mnemonic.mn_decode(words)
+    #     uses_electrum_words = True
+    # except Exception:
+    #     uses_electrum_words = False
+    # try:
+    #     seed.decode('hex')
+    #     is_hex = (len(seed) == 32 or len(seed) == 64)
+    # except Exception:
+    #     is_hex = False
+    # return is_hex or (uses_electrum_words and (len(words) == 12 or len(words) == 24))

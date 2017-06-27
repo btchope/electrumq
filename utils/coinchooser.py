@@ -36,20 +36,20 @@ from math import floor, log10
 # so if sending twice from the same UTXO set we choose the same UTXOs
 # to spend.  This prevents attacks on users by malicious or stale
 # servers.
+from utils.base58 import hash256
 from utils.tx import Transaction
-from utils import sha256
 from utils.parameter import COIN, TYPE_ADDRESS
 
 
 class PRNG:
     def __init__(self, seed):
-        self.sha = sha256(seed)
+        self.sha = hash256(seed)
         self.pool = bytearray()
 
     def get_bytes(self, n):
         while len(self.pool) < n:
             self.pool.extend(self.sha)
-            self.sha = sha256(self.sha)
+            self.sha = hash256(self.sha)
         result, self.pool = self.pool[:n], self.pool[n:]
         return result
 

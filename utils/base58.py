@@ -86,9 +86,6 @@ def public_key_to_bc_address(public_key, version='\x00'):
 #     return b58encode(addr)
 
 
-def double_hash(x):
-    if type(x) is unicode: x = x.encode('utf-8')
-    return SHA256.new(SHA256.new(x).digest()).digest()
 
 def hash256(x):
     if type(x) is unicode: x = x.encode('utf-8')
@@ -171,7 +168,8 @@ def double_sha256(s):
     return SHA256.new(SHA256.new(s).digest()).digest()
 
 def Hash(x):
-    if type(x) is unicode: x=x.encode('utf-8')
+    if type(x) is unicode:
+        x=x.encode('utf-8')
     return double_sha256(x)
 
 def reverse_hex_str(hex_str):

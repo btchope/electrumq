@@ -13,8 +13,8 @@ from ecdsa.ellipticcurve import Point
 from ecdsa.util import string_to_number, number_to_string
 
 from utils import Parameter
-from utils.base58 import b58decode_check, b58encode_check, public_key_to_p2pkh, double_hash, hash256, \
-    __b58chars
+from utils.base58 import b58decode_check, b58encode_check, public_key_to_p2pkh, hash256, \
+    __b58chars, double_sha256
 from utils.parser import write_compact_size
 
 __author__ = 'zhouqi'
@@ -32,13 +32,17 @@ def pubkey_from_signature(sig, message):
     else:
         compressed = False
     recid = nV - 27
-    h = double_hash(msg_magic(message))
+    h = double_sha256(msg_magic(message))
     return MyVerifyingKey.from_signature(sig[1:], recid, h, curve = SECP256k1), compressed
+
 
 def msg_magic(message):
     # varint = var_int(len(message))
     # encoded_varint = "".join([chr(int(varint[i:i+2], 16)) for i in xrange(0, len(varint), 2)])
-    return "\x18Bitcoin Signed Message:\n" + write_compact_size(len(message)) + message
+    s = "\x18Bitcoin Signed Message:\n" + write_compact_size(len(message)) + message
+    if type(s) is unicode:
+        s = s.encode('utf-8')
+    return s
 
 
 def verify_message(address, sig, message):
@@ -50,7 +54,7 @@ def verify_message(address, sig, message):
         if address != addr:
             raise Exception("Bad signature")
         # check message
-        h = double_hash(msg_magic(message))
+        h = double_sha256(msg_magic(message))
         public_key.verify_digest(sig[1:], h, sigdecode = ecdsa.util.sigdecode_string)
         return True
     except Exception as e:
@@ -121,7 +125,7 @@ class EC_KEY(object):
         return signature
 
     def sign_message(self, message, is_compressed):
-        signature = self.sign(double_hash(msg_magic(message)))
+        signature = self.sign(double_sha256(msg_magic(message)))
         for i in range(4):
             sig = chr(27 + i + (4 if is_compressed else 0)) + signature
             try:
@@ -139,7 +143,7 @@ class EC_KEY(object):
         if point_to_ser(public_key.pubkey.point, compressed) != point_to_ser(self.pubkey.point, compressed):
             raise Exception("Bad signature")
         # check message
-        h = double_hash(msg_magic(message))
+        h = double_sha256(msg_magic(message))
         public_key.verify_digest(sig[1:], h, sigdecode = ecdsa.util.sigdecode_string)
 
 
@@ -361,14 +365,14 @@ def DecodeAES(secret, e):
 
 def pw_encode(s, password):
     if password:
-        secret = double_hash(password)
+        secret = double_sha256(password)
         return EncodeAES(secret, s.encode("utf8"))
     else:
         return s
 
 def pw_decode(s, password):
     if password is not None:
-        secret = double_hash(password)
+        secret = double_sha256(password)
         try:
             d = DecodeAES(secret, s).decode("utf8")
         except Exception:

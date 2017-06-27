@@ -10,7 +10,7 @@ from network import NetWorkManager
 from utils.base58 import public_key_to_p2pkh
 from utils.key import SecretToASecret
 from utils.key_store import BIP32_KeyStore, SimpleKeyStore, WatchOnlySimpleKeyStore, \
-    ImportedKeyStore
+    ImportedKeyStore, from_seed
 from utils.parameter import set_testnet, TYPE_ADDRESS
 from wallet import WalletConfig
 from wallet.hd import HDWallet
@@ -159,7 +159,7 @@ def test_hd_wallet():
     network.client.add_message(Version(["2.8.2", "0.10"]))
     wallet = HDWallet(WalletConfig(store_path='hd_wallet.json'))
     if wallet.keystore is None:
-        wallet.init_key_store(BIP32_KeyStore.create(u'reopen panel title aerobic wheat fury blame cement swarm wheel ball where', None))
+        wallet.init_key_store(from_seed(u'reopen panel title aerobic wheat fury blame cement swarm wheel ball where', None))
     wallet.init()
     wallet.synchronize()
     print wallet.get_change_addresses()

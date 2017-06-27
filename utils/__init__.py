@@ -26,7 +26,7 @@ class Singleton(type):
 
 # hash_encode = lambda x: x[::-1].encode('hex')
 # hash_decode = lambda x: x.decode('hex')[::-1]
-hmac_sha_512 = lambda x, y: hmac.new(x, y, hashlib.sha512).digest()
+# hmac_sha_512 = lambda x, y: hmac.new(x, y, hashlib.sha512).digest()
 # TESTNET = False
 # NOLNET = False
 # ADDRTYPE_P2PKH = 0
@@ -37,16 +37,16 @@ hmac_sha_512 = lambda x, y: hmac.new(x, y, hashlib.sha512).digest()
 # HEADERS_URL = "https://headers.electrum.org/blockchain_headers"
 
 
-def sha256(x):
-    return hashlib.sha256(x).digest()
-
-
-def Hash(x):
-    if type(x) is unicode: x = x.encode('utf-8')
-    return sha256(sha256(x))
-
-def rev_hex(s):
-    return s.decode('hex')[::-1].encode('hex')
+# def sha256(x):
+#     return hashlib.sha256(x).digest()
+#
+#
+# def Hash(x):
+#     if type(x) is unicode: x = x.encode('utf-8')
+#     return sha256(sha256(x))
+#
+# def rev_hex(s):
+#     return s.decode('hex')[::-1].encode('hex')
 
 
 # def int_to_hex(i, length=1):
@@ -159,8 +159,8 @@ def rev_hex(s):
 #         return key
 
 
-def var_int(i):
-    pass
+# def var_int(i):
+#     pass
     # https://en.bitcoin.it/wiki/Protocol_specification#Variable_length_integer
     # if i<0xfd:
     #     return int_to_hex(i)
@@ -274,7 +274,7 @@ def print_msg(*args):
 # try:
 #     from Cryptodome.Cipher import AES
 # except:
-AES = None
+# AES = None
 
 # def aes_encrypt_with_iv(key, iv, data):
 #     if AES:
@@ -337,8 +337,8 @@ AES = None
 #         return s
 
 
-def rev_hex(s):
-    return s.decode('hex')[::-1].encode('hex')
+# def rev_hex(s):
+#     return s.decode('hex')[::-1].encode('hex')
 
 
 # def int_to_hex(i, length=1):
@@ -378,33 +378,33 @@ def rev_hex(s):
 #     if type(x) is unicode: x=x.encode('utf-8')
 #     return sha256(sha256(x))
 
-hash_encode = lambda x: x[::-1].encode('hex')
-hash_decode = lambda x: x.decode('hex')[::-1]
-hmac_sha_512 = lambda x,y: hmac.new(x, y, hashlib.sha512).digest()
+# hash_encode = lambda x: x[::-1].encode('hex')
+# hash_decode = lambda x: x.decode('hex')[::-1]
+# hmac_sha_512 = lambda x,y: hmac.new(x, y, hashlib.sha512).digest()
 
-def is_new_seed(x, prefix=None):
-    if prefix is None: prefix = version.SEED_PREFIX
-    import mnemonic
-    x = mnemonic.normalize_text(x)
-    s = hmac_sha_512("Seed version", x.encode('utf8')).encode('hex')
-    return s.startswith(prefix)
+# def is_new_seed(x, prefix=None):
+#     if prefix is None: prefix = version.SEED_PREFIX
+#     import mnemonic
+#     x = mnemonic.normalize_text(x)
+#     s = hmac_sha_512("Seed version", x.encode('utf8')).encode('hex')
+#     return s.startswith(prefix)
 
 
-def is_old_seed(seed):
-    pass
-    # import old_mnemonic
-    # words = seed.strip().split()
-    # try:
-    #     old_mnemonic.mn_decode(words)
-    #     uses_electrum_words = True
-    # except Exception:
-    #     uses_electrum_words = False
-    # try:
-    #     seed.decode('hex')
-    #     is_hex = (len(seed) == 32 or len(seed) == 64)
-    # except Exception:
-    #     is_hex = False
-    # return is_hex or (uses_electrum_words and (len(words) == 12 or len(words) == 24))
+# def is_old_seed(seed):
+#     pass
+#     # import old_mnemonic
+#     # words = seed.strip().split()
+#     # try:
+#     #     old_mnemonic.mn_decode(words)
+#     #     uses_electrum_words = True
+#     # except Exception:
+#     #     uses_electrum_words = False
+#     # try:
+#     #     seed.decode('hex')
+#     #     is_hex = (len(seed) == 32 or len(seed) == 64)
+#     # except Exception:
+#     #     is_hex = False
+#     # return is_hex or (uses_electrum_words and (len(words) == 12 or len(words) == 24))
 
 
 # def seed_type(x):
