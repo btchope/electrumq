@@ -715,3 +715,14 @@ def parse_sig(sig_bytes):
 #         if e[1] is not None and len(e[1]) > 33 and ord(e[1][0]) == 0x30:
 #             result.append(parse_r_from_sig(e[1]))
 #     return result
+
+
+def op_push(i):
+    if i<0x4c:
+        return chr(i).encode('hex')
+    elif i<0xff:
+        return '4c' + chr(i).encode('hex')
+    elif i<0xffff:
+        return '4d' + write_uint16(i).encode('hex')
+    else:
+        return '4e' + write_uint32(i).encode('hex')

@@ -4,14 +4,15 @@ import hmac
 
 from ecdsa import SECP256k1, ecdsa
 from ecdsa import SigningKey
+from ecdsa import VerifyingKey
 from ecdsa.ecdsa import generator_secp256k1
 from ecdsa.util import string_to_number, number_to_string
 
 from utils import Parameter
-from utils import rev_hex, int_to_hex
 from utils.base58 import hash_160, b58encode_check, b58decode_check
 from utils.key import SecretToASecret, GetPubKey, EC_KEY, ser_to_point
 from utils.mnemonic import Mnemonic
+from utils.parser import write_uint32
 
 __author__ = 'zhouqi'
 
@@ -40,7 +41,7 @@ def get_pubkeys_from_secret(secret):
 #  public key can be determined without the master private key.
 def CKD_priv(k, c, n):
     is_prime = n & BIP32_PRIME
-    return _CKD_priv(k, c, rev_hex(int_to_hex(n,4)).decode('hex'), is_prime)
+    return _CKD_priv(k, c, write_uint32(n)[::-1], is_prime)
 
 def _CKD_priv(k, c, s, is_prime):
     order = generator_secp256k1.order()
@@ -60,7 +61,7 @@ def _CKD_priv(k, c, s, is_prime):
 #  non-negative. If n is negative, we need the master private key to find it.
 def CKD_pub(cK, c, n):
     if n & BIP32_PRIME: raise
-    return _CKD_pub(cK, c, rev_hex(int_to_hex(n,4)).decode('hex'))
+    return _CKD_pub(cK, c, write_uint32(n)[::-1])
 
 # helper function, callable with arbitrary string
 def _CKD_pub(cK, c, s):
@@ -68,7 +69,7 @@ def _CKD_pub(cK, c, s):
     I = hmac.new(c, cK + s, hashlib.sha512).digest()
     curve = SECP256k1
     pubkey_point = string_to_number(I[0:32])*curve.generator + ser_to_point(cK)
-    public_key = ecdsa.VerifyingKey.from_public_point( pubkey_point, curve = SECP256k1 )
+    public_key = VerifyingKey.from_public_point( pubkey_point, curve = SECP256k1 )
     c_n = I[32:]
     cK_n = GetPubKey(public_key.pubkey,True)
     return cK_n, c_n

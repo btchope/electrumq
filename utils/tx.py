@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
-import types
-from _hotshot import profiler
-
-import struct
-
 import exceptions
+import struct
+import types
 
-import ecdsa
+from ecdsa import SECP256k1
 
 from utils import *
 from utils.base58 import hash160_to_p2sh, hash160_to_p2pkh, hash_160, \
     bc_address_to_type_and_hash_160, public_key_to_p2pkh
-from utils.key import public_key_from_private_key, MySigningKey, MyVerifyingKey
+from utils.key import public_key_from_private_key, MySigningKey, MyVerifyingKey, point_to_ser
 from utils.key import regenerate_key
 from utils.key_store import xpubkey_to_pubkey, xpubkey_to_address
 from utils.parameter import TYPE_SCRIPT, TYPE_ADDRESS, TYPE_PUBKEY
+from utils.parser import int_to_hex
 
 __author__ = 'zhouqi'
 
@@ -154,7 +152,7 @@ class Transaction:
     def serialize_witness(self, txin):
         pubkeys, sig_list = self.get_siglist(txin)
         n = len(pubkeys) + len(sig_list)
-        return var_int(n) + ''.join(push_script(x) for x in sig_list) + ''.join(push_script(x) for x in pubkeys)
+        return int_to_hex(n) + ''.join(push_script(x) for x in sig_list) + ''.join(push_script(x) for x in pubkeys)
 
     @classmethod
     def is_segwit_input(self, txin):
@@ -206,7 +204,7 @@ class Transaction:
         # Prev hash and index
         s = self.serialize_outpoint(txin)
         # Script length, script, sequence
-        s += var_int(len(script)/2)
+        s += int_to_hex(len(script)/2)
         s += script
         s += int_to_hex(txin.get('sequence', 0xffffffff), 4)
         return s
@@ -225,7 +223,7 @@ class Transaction:
         output_type, addr, amount = output
         s = int_to_hex(amount, 8)
         script = self.pay_script(output_type, addr)
-        s += var_int(len(script)/2)
+        s += int_to_hex(len(script)/2)
         s += script
         return s
 
@@ -251,8 +249,8 @@ class Transaction:
             nSequence = int_to_hex(txin.get('sequence', 0xffffffff), 4)
             preimage = nVersion + hashPrevouts + hashSequence + outpoint + scriptCode + amount + nSequence + hashOutputs + nLocktime + nHashType
         else:
-            txins = var_int(len(inputs)) + ''.join(self.serialize_input(txin, self.get_preimage_script(txin) if i==k else '') for k, txin in enumerate(inputs))
-            txouts = var_int(len(outputs)) + ''.join(self.serialize_output(o) for o in outputs)
+            txins = int_to_hex(len(inputs)) + ''.join(self.serialize_input(txin, self.get_preimage_script(txin) if i==k else '') for k, txin in enumerate(inputs))
+            txouts = int_to_hex(len(outputs)) + ''.join(self.serialize_output(o) for o in outputs)
             preimage = nVersion + txins + txouts + nLocktime + nHashType
         return preimage
 
@@ -264,8 +262,8 @@ class Transaction:
         nLocktime = int_to_hex(self.locktime, 4)
         inputs = self.inputs()
         outputs = self.outputs()
-        txins = var_int(len(inputs)) + ''.join(self.serialize_input(txin, self.input_script(txin, estimate_size)) for txin in inputs)
-        txouts = var_int(len(outputs)) + ''.join(self.serialize_output(o) for o in outputs)
+        txins = int_to_hex(len(inputs)) + ''.join(self.serialize_input(txin, self.input_script(txin, estimate_size)) for txin in inputs)
+        txouts = int_to_hex(len(outputs)) + ''.join(self.serialize_output(o) for o in outputs)
         if witness and self.is_segwit():
             marker = '00'
             flag = '01'

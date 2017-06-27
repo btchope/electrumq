@@ -49,10 +49,10 @@ def rev_hex(s):
     return s.decode('hex')[::-1].encode('hex')
 
 
-def int_to_hex(i, length=1):
-    s = hex(i)[2:].rstrip('L')
-    s = "0"*(2*length - len(s)) + s
-    return rev_hex(s)
+# def int_to_hex(i, length=1):
+#     s = hex(i)[2:].rstrip('L')
+#     s = "0"*(2*length - len(s)) + s
+#     return rev_hex(s)
 
 
 # def hash_160(public_key):
@@ -160,26 +160,27 @@ def int_to_hex(i, length=1):
 
 
 def var_int(i):
+    pass
     # https://en.bitcoin.it/wiki/Protocol_specification#Variable_length_integer
-    if i<0xfd:
-        return int_to_hex(i)
-    elif i<=0xffff:
-        return "fd"+int_to_hex(i,2)
-    elif i<=0xffffffff:
-        return "fe"+int_to_hex(i,4)
-    else:
-        return "ff"+int_to_hex(i,8)
+    # if i<0xfd:
+    #     return int_to_hex(i)
+    # elif i<=0xffff:
+    #     return "fd"+int_to_hex(i,2)
+    # elif i<=0xffffffff:
+    #     return "fe"+int_to_hex(i,4)
+    # else:
+    #     return "ff"+int_to_hex(i,8)
 
 
-def op_push(i):
-    if i<0x4c:
-        return int_to_hex(i)
-    elif i<0xff:
-        return '4c' + int_to_hex(i)
-    elif i<0xffff:
-        return '4d' + int_to_hex(i,2)
-    else:
-        return '4e' + int_to_hex(i,4)
+# def op_push(i):
+#     if i<0x4c:
+#         return int_to_hex(i)
+#     elif i<0xff:
+#         return '4c' + int_to_hex(i)
+#     elif i<0xffff:
+#         return '4d' + int_to_hex(i,2)
+#     else:
+#         return '4e' + int_to_hex(i,4)
 
 #
 # TYPE_ADDRESS = 0
@@ -340,33 +341,33 @@ def rev_hex(s):
     return s.decode('hex')[::-1].encode('hex')
 
 
-def int_to_hex(i, length=1):
-    s = hex(i)[2:].rstrip('L')
-    s = "0"*(2*length - len(s)) + s
-    return rev_hex(s)
+# def int_to_hex(i, length=1):
+#     s = hex(i)[2:].rstrip('L')
+#     s = "0"*(2*length - len(s)) + s
+#     return rev_hex(s)
 
 
-def var_int(i):
-    # https://en.bitcoin.it/wiki/Protocol_specification#Variable_length_integer
-    if i<0xfd:
-        return int_to_hex(i)
-    elif i<=0xffff:
-        return "fd"+int_to_hex(i,2)
-    elif i<=0xffffffff:
-        return "fe"+int_to_hex(i,4)
-    else:
-        return "ff"+int_to_hex(i,8)
+# def var_int(i):
+#     # https://en.bitcoin.it/wiki/Protocol_specification#Variable_length_integer
+#     if i<0xfd:
+#         return int_to_hex(i)
+#     elif i<=0xffff:
+#         return "fd"+int_to_hex(i,2)
+#     elif i<=0xffffffff:
+#         return "fe"+int_to_hex(i,4)
+#     else:
+#         return "ff"+int_to_hex(i,8)
 
 
-def op_push(i):
-    if i<0x4c:
-        return int_to_hex(i)
-    elif i<0xff:
-        return '4c' + int_to_hex(i)
-    elif i<0xffff:
-        return '4d' + int_to_hex(i,2)
-    else:
-        return '4e' + int_to_hex(i,4)
+# def op_push(i):
+#     if i<0x4c:
+#         return int_to_hex(i)
+#     elif i<0xff:
+#         return '4c' + int_to_hex(i)
+#     elif i<0xffff:
+#         return '4d' + int_to_hex(i,2)
+#     else:
+#         return '4e' + int_to_hex(i,4)
 
 
 # def sha256(x):
@@ -655,10 +656,10 @@ def is_old_seed(seed):
 # def minikey_to_private_key(text):
 #     return sha256(text)
 
-from ecdsa.ecdsa import curve_secp256k1, generator_secp256k1
-from ecdsa.curves import SECP256k1
-from ecdsa.ellipticcurve import Point
-from ecdsa.util import string_to_number, number_to_string
+# from ecdsa.ecdsa import curve_secp256k1, generator_secp256k1
+# from ecdsa.curves import SECP256k1
+# from ecdsa.ellipticcurve import Point
+# from ecdsa.util import string_to_number, number_to_string
 
 # def msg_magic(message):
 #     varint = var_int(len(message))
@@ -687,45 +688,45 @@ from ecdsa.util import string_to_number, number_to_string
 #     return EC_KEY.encrypt_message(message, pubkey.decode('hex'))
 
 
-def chunks(l, n):
-    return [l[i:i+n] for i in xrange(0, len(l), n)]
+# def chunks(l, n):
+#     return [l[i:i+n] for i in xrange(0, len(l), n)]
 
 
-def ECC_YfromX(x,curved=curve_secp256k1, odd=True):
-    _p = curved.p()
-    _a = curved.a()
-    _b = curved.b()
-    for offset in range(128):
-        Mx = x + offset
-        My2 = pow(Mx, 3, _p) + _a * pow(Mx, 2, _p) + _b % _p
-        My = pow(My2, (_p+1)/4, _p )
-
-        if curved.contains_point(Mx,My):
-            if odd == bool(My&1):
-                return [My,offset]
-            return [_p-My,offset]
-    raise Exception('ECC_YfromX: No Y found')
-
-
-def negative_point(P):
-    return Point( P.curve(), P.x(), -P.y(), P.order() )
+# def ECC_YfromX(x,curved=curve_secp256k1, odd=True):
+#     _p = curved.p()
+#     _a = curved.a()
+#     _b = curved.b()
+#     for offset in range(128):
+#         Mx = x + offset
+#         My2 = pow(Mx, 3, _p) + _a * pow(Mx, 2, _p) + _b % _p
+#         My = pow(My2, (_p+1)/4, _p )
+#
+#         if curved.contains_point(Mx,My):
+#             if odd == bool(My&1):
+#                 return [My,offset]
+#             return [_p-My,offset]
+#     raise Exception('ECC_YfromX: No Y found')
 
 
-def point_to_ser(P, comp=True ):
-    if comp:
-        return ( ('%02x'%(2+(P.y()&1)))+('%064x'%P.x()) ).decode('hex')
-    return ( '04'+('%064x'%P.x())+('%064x'%P.y()) ).decode('hex')
+# def negative_point(P):
+#     return Point( P.curve(), P.x(), -P.y(), P.order() )
 
 
-def ser_to_point(Aser):
-    curve = curve_secp256k1
-    generator = generator_secp256k1
-    _r  = generator.order()
-    assert Aser[0] in ['\x02','\x03','\x04']
-    if Aser[0] == '\x04':
-        return Point( curve, string_to_number(Aser[1:33]), string_to_number(Aser[33:]), _r )
-    Mx = string_to_number(Aser[1:])
-    return Point( curve, Mx, ECC_YfromX(Mx, curve, Aser[0]=='\x03')[0], _r )
+# def point_to_ser(P, comp=True ):
+#     if comp:
+#         return ( ('%02x'%(2+(P.y()&1)))+('%064x'%P.x()) ).decode('hex')
+#     return ( '04'+('%064x'%P.x())+('%064x'%P.y()) ).decode('hex')
+
+
+# def ser_to_point(Aser):
+#     curve = curve_secp256k1
+#     generator = generator_secp256k1
+#     _r  = generator.order()
+#     assert Aser[0] in ['\x02','\x03','\x04']
+#     if Aser[0] == '\x04':
+#         return Point( curve, string_to_number(Aser[1:33]), string_to_number(Aser[33:]), _r )
+#     Mx = string_to_number(Aser[1:])
+#     return Point( curve, Mx, ECC_YfromX(Mx, curve, Aser[0]=='\x03')[0], _r )
 
 
 

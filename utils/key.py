@@ -12,9 +12,10 @@ from ecdsa.ecdsa import generator_secp256k1
 from ecdsa.ellipticcurve import Point
 from ecdsa.util import string_to_number, number_to_string
 
-from utils import Parameter, var_int
+from utils import Parameter
 from utils.base58 import b58decode_check, b58encode_check, public_key_to_p2pkh, double_hash, hash256, \
     __b58chars
+from utils.parser import write_compact_size
 
 __author__ = 'zhouqi'
 
@@ -35,9 +36,9 @@ def pubkey_from_signature(sig, message):
     return MyVerifyingKey.from_signature(sig[1:], recid, h, curve = SECP256k1), compressed
 
 def msg_magic(message):
-    varint = var_int(len(message))
-    encoded_varint = "".join([chr(int(varint[i:i+2], 16)) for i in xrange(0, len(varint), 2)])
-    return "\x18Bitcoin Signed Message:\n" + encoded_varint + message
+    # varint = var_int(len(message))
+    # encoded_varint = "".join([chr(int(varint[i:i+2], 16)) for i in xrange(0, len(varint), 2)])
+    return "\x18Bitcoin Signed Message:\n" + write_compact_size(len(message)) + message
 
 
 def verify_message(address, sig, message):

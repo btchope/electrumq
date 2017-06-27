@@ -161,9 +161,9 @@ def test_hd_wallet():
     if wallet.keystore is None:
         wallet.init_key_store(BIP32_KeyStore.create(u'reopen panel title aerobic wheat fury blame cement swarm wheel ball where', None))
     wallet.init()
+    wallet.synchronize()
     print wallet.get_change_addresses()
     print wallet.get_receiving_addresses()
-    wallet.synchronize()
     inputs = [
         {'prevout_hash': e[0], 'prevout_n': e[1], 'scriptSig': e[2], 'value': e[3], 'address': e[4],
          'coinbase': False,

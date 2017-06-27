@@ -7,7 +7,7 @@ import ecdsa
 from ecdsa import SECP256k1
 from ecdsa.util import string_to_number
 
-from utils import Parameter, rev_hex, int_to_hex
+from utils import Parameter
 from utils import version
 from utils.base58 import Hash, public_key_to_p2pkh, b58decode_check, b58encode_check, \
     hash_160_to_bc_address
@@ -17,6 +17,7 @@ from utils.key import is_compressed, public_key_from_private_key, pw_encode, Inv
     pw_decode
 from utils.key import regenerate_key
 from utils.mnemonic import Mnemonic
+from utils.parser import write_uint16, read_uint16
 
 __author__ = 'zhouqi'
 
@@ -327,7 +328,7 @@ class Deterministic_KeyStore(SoftwareKeyStore):
         # except Exception:
         #     traceback.print_exc()
         #     raise BaseException('Invalid private key')
-        return Deterministic_KeyStore({'seed': seed, 'passphrase': password})
+        return cls({'seed': seed, 'passphrase': password})
 
     def has_seed(self):
         return bool(self.seed)
@@ -377,8 +378,8 @@ class Xpub:
         return cK.encode('hex')
 
     def get_xpubkey(self, c, i):
-        s = ''.join(map(lambda x: int_to_hex(x, 2), (c, i)))
-        return 'ff' + b58decode_check(self.xpub).encode('hex') + s
+        s = write_uint16(c) + write_uint16(i)
+        return 'ff' + b58decode_check(self.xpub).encode('hex') + s.encode('hex')
 
     @classmethod
     def parse_xpubkey(self, pubkey):
@@ -389,7 +390,7 @@ class Xpub:
         dd = pk[78:]
         s = []
         while dd:
-            n = int(rev_hex(dd[0:2].encode('hex')), 16)
+            n = read_uint16(dd[:2])
             dd = dd[2:]
             s.append(n)
         assert len(s) == 2
@@ -406,8 +407,8 @@ class Xpub:
 
 class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
     def __init__(self, d):
-        Xpub.__init__(self)
         Deterministic_KeyStore.__init__(self, d)
+        Xpub.__init__(self)
 
     def format_seed(self, seed):
         return ' '.join(seed.split())
@@ -483,7 +484,7 @@ class Old_KeyStore(Deterministic_KeyStore):
         dd = pk[128:]
         s = []
         while dd:
-            n = int(rev_hex(dd[0:4]), 16)
+            n = read_uint16(dd[:4].decode('hex'))
             dd = dd[4:]
             s.append(n)
         assert len(s) == 2
