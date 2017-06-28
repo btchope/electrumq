@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
+from utils import Singleton
 
 __author__ = 'zhouqi'
 
-
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
 
 class Parameter(object):
     __metaclass__ = Singleton
@@ -25,6 +18,14 @@ class Parameter(object):
     XPUB_HEADER = 0x0488b21e
 
     HEADERS_URL = 'http://127.0.0.1:8866/files/blockchain_headers'
+
+    ELECTRUM_VERSION = '2.8.3'  # version of the client package
+    PROTOCOL_VERSION = '0.10'  # protocol version requested
+
+    # The hash of the mnemonic seed must begin with this
+    SEED_PREFIX = '01'  # Electrum standard wallet
+    SEED_PREFIX_SW = '02'  # Electrum segwit wallet
+    SEED_PREFIX_2FA = '101'  # extended seed for two-factor authentication
 
     DEFAULT_PORTS = {'t': '50001', 's': '50002'}
     DEFAULT_SERVERS = {
@@ -51,9 +52,6 @@ class Parameter(object):
     }
 
 
-
-
-
 # HEADERS_URL = "https://headers.electrum.org/blockchain_headers"
 
 
@@ -68,22 +66,20 @@ COIN = 100000000
 
 # supported types of transction outputs
 TYPE_ADDRESS = 0
-TYPE_PUBKEY  = 1
-TYPE_SCRIPT  = 2
+TYPE_PUBKEY = 1
+TYPE_SCRIPT = 2
 
-
-
-
-#There is a schedule to move the default list to e-x (electrumx) by Jan 2018
-#Schedule is as follows:
-#move ~3/4 to e-x by 1.4.17
-#then gradually switch remaining nodes to e-x nodes
+# There is a schedule to move the default list to e-x (electrumx) by Jan 2018
+# Schedule is as follows:
+# move ~3/4 to e-x by 1.4.17
+# then gradually switch remaining nodes to e-x nodes
 
 
 
 
 NODES_RETRY_INTERVAL = 60
 SERVER_RETRY_INTERVAL = 10
+
 
 def set_testnet():
     Parameter().TESTNET = True
@@ -103,8 +99,8 @@ def set_testnet():
         'ELEX05.blackpole.online': {'t': '52011', 's': '52002'},
     }
 
-def set_nolnet():
 
+def set_nolnet():
     Parameter().NOLNET = True
     Parameter().ADDRTYPE_P2PKH = 0
     Parameter().ADDRTYPE_P2SH = 5

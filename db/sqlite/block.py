@@ -2,13 +2,9 @@
 import logging
 import traceback
 
-from datetime import datetime, timedelta
-
 from db.sqlite import execute_one, BlockItem, Connection, header_dict_to_block_item
-from utils import Parameter
+from utils.parameter import Parameter
 from utils import Singleton
-from utils.base58 import reverse_hex_str, Hash, double_sha256
-from utils.parser import int_to_hex, write_compact_size, write_uint32, read_uint32
 
 __author__ = 'zhouqi'
 

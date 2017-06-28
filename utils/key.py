@@ -12,9 +12,9 @@ from ecdsa.ecdsa import generator_secp256k1
 from ecdsa.ellipticcurve import Point
 from ecdsa.util import string_to_number, number_to_string
 
-from utils import Parameter
 from utils.base58 import b58decode_check, b58encode_check, public_key_to_p2pkh, hash256, \
     __b58chars, double_sha256
+from utils.parameter import Parameter
 from utils.parser import write_compact_size
 
 __author__ = 'zhouqi'
@@ -33,7 +33,7 @@ def pubkey_from_signature(sig, message):
         compressed = False
     recid = nV - 27
     h = double_sha256(msg_magic(message))
-    return MyVerifyingKey.from_signature(sig[1:], recid, h, curve = SECP256k1), compressed
+    return MyVerifyingKey.from_signature(sig[1:], recid, h, curve=SECP256k1), compressed
 
 
 def msg_magic(message):
@@ -55,7 +55,7 @@ def verify_message(address, sig, message):
             raise Exception("Bad signature")
         # check message
         h = double_sha256(msg_magic(message))
-        public_key.verify_digest(sig[1:], h, sigdecode = ecdsa.util.sigdecode_string)
+        public_key.verify_digest(sig[1:], h, sigdecode=ecdsa.util.sigdecode_string)
         return True
     except Exception as e:
         # print_error("Verification error: {0}".format(e))
@@ -78,9 +78,9 @@ class MyVerifyingKey(ecdsa.VerifyingKey):
         # extract r,s from signature
         r, s = util.sigdecode_string(sig, order)
         # 1.1
-        x = r + (recid/2) * order
+        x = r + (recid / 2) * order
         # 1.3
-        alpha = ( x * x * x  + curveFp.a() * x + curveFp.b() ) % curveFp.p()
+        alpha = (x * x * x + curveFp.a() * x + curveFp.b()) % curveFp.p()
         beta = msqr.modular_sqrt(alpha, curveFp.p())
         y = beta if (beta - recid) % 2 == 0 else curveFp.p() - beta
         # 1.4 the constructor checks that nR is at infinity
@@ -89,9 +89,10 @@ class MyVerifyingKey(ecdsa.VerifyingKey):
         e = string_to_number(h)
         minus_e = -e % order
         # 1.6 compute Q = r^-1 (sR - eG)
-        inv_r = numbertheory.inverse_mod(r,order)
-        Q = inv_r * ( s * R + minus_e * G )
-        return klass.from_public_point( Q, curve )
+        inv_r = numbertheory.inverse_mod(r, order)
+        Q = inv_r * (s * R + minus_e * G)
+        return klass.from_public_point(Q, curve)
+
 
 class MySigningKey(ecdsa.SigningKey):
     """Enforce low S values in signatures"""
@@ -101,27 +102,27 @@ class MySigningKey(ecdsa.SigningKey):
         G = curve.generator
         order = G.order()
         r, s = ecdsa.SigningKey.sign_number(self, number, entropy, k)
-        if s > order/2:
+        if s > order / 2:
             s = order - s
         return r, s
 
 
 class EC_KEY(object):
-
-    def __init__( self, k ):
+    def __init__(self, k):
         secret = string_to_number(k)
-        self.pubkey = ecdsa.ecdsa.Public_key( generator_secp256k1, generator_secp256k1 * secret )
-        self.privkey = ecdsa.ecdsa.Private_key( self.pubkey, secret )
+        self.pubkey = ecdsa.ecdsa.Public_key(generator_secp256k1, generator_secp256k1 * secret)
+        self.privkey = ecdsa.ecdsa.Private_key(self.pubkey, secret)
         self.secret = secret
 
     def get_public_key(self, compressed=True):
         return point_to_ser(self.pubkey.point, compressed).encode('hex')
 
     def sign(self, msg_hash):
-        private_key = MySigningKey.from_secret_exponent(self.secret, curve = SECP256k1)
+        private_key = MySigningKey.from_secret_exponent(self.secret, curve=SECP256k1)
         public_key = private_key.get_verifying_key()
-        signature = private_key.sign_digest_deterministic(msg_hash, hashfunc=hashlib.sha256, sigencode = ecdsa.util.sigencode_string)
-        assert public_key.verify_digest(signature, msg_hash, sigdecode = ecdsa.util.sigdecode_string)
+        signature = private_key.sign_digest_deterministic(msg_hash, hashfunc=hashlib.sha256,
+                                                          sigencode=ecdsa.util.sigencode_string)
+        assert public_key.verify_digest(signature, msg_hash, sigdecode=ecdsa.util.sigdecode_string)
         return signature
 
     def sign_message(self, message, is_compressed):
@@ -136,16 +137,15 @@ class EC_KEY(object):
         else:
             raise Exception("error: cannot sign message")
 
-
     def verify_message(self, sig, message):
         public_key, compressed = pubkey_from_signature(sig, message)
         # check public key
-        if point_to_ser(public_key.pubkey.point, compressed) != point_to_ser(self.pubkey.point, compressed):
+        if point_to_ser(public_key.pubkey.point, compressed) != point_to_ser(self.pubkey.point,
+                                                                             compressed):
             raise Exception("Bad signature")
         # check message
         h = double_sha256(msg_magic(message))
-        public_key.verify_digest(sig[1:], h, sigdecode = ecdsa.util.sigdecode_string)
-
+        public_key.verify_digest(sig[1:], h, sigdecode=ecdsa.util.sigdecode_string)
 
     # ECIES encryption/decryption methods; AES-128-CBC with PKCS7 is used as the cipher; hmac-sha256 is used as the mac
 
@@ -156,7 +156,8 @@ class EC_KEY(object):
         if not ecdsa.ecdsa.point_is_valid(generator_secp256k1, pk.x(), pk.y()):
             raise Exception('invalid pubkey')
 
-        ephemeral_exponent = number_to_string(ecdsa.util.randrange(pow(2,256)), generator_secp256k1.order())
+        ephemeral_exponent = number_to_string(ecdsa.util.randrange(pow(2, 256)),
+                                              generator_secp256k1.order())
         ephemeral = EC_KEY(ephemeral_exponent)
         ecdh_key = point_to_ser(pk * ephemeral.privkey.secret_multiplier)
         key = hashlib.sha512(ecdh_key).digest()
@@ -167,7 +168,6 @@ class EC_KEY(object):
         mac = hmac.new(key_m, encrypted, hashlib.sha256).digest()
 
         return base64.b64encode(encrypted + mac)
-
 
     def decrypt_message(self, encrypted):
         encrypted = base64.b64decode(encrypted)
@@ -183,7 +183,8 @@ class EC_KEY(object):
             ephemeral_pubkey = ser_to_point(ephemeral_pubkey)
         except AssertionError, e:
             raise Exception('invalid ciphertext: invalid ephemeral pubkey')
-        if not ecdsa.ecdsa.point_is_valid(generator_secp256k1, ephemeral_pubkey.x(), ephemeral_pubkey.y()):
+        if not ecdsa.ecdsa.point_is_valid(generator_secp256k1, ephemeral_pubkey.x(),
+                                          ephemeral_pubkey.y()):
             raise Exception('invalid ciphertext: invalid ephemeral pubkey')
         ecdh_key = point_to_ser(ephemeral_pubkey * self.privkey.secret_multiplier)
         key = hashlib.sha512(ecdh_key).digest()
@@ -193,37 +194,37 @@ class EC_KEY(object):
         return aes_decrypt_with_iv(key_e, iv, ciphertext)
 
 
-def ECC_YfromX(x,curved=curve_secp256k1, odd=True):
+def ECC_YfromX(x, curved=curve_secp256k1, odd=True):
     _p = curved.p()
     _a = curved.a()
     _b = curved.b()
     for offset in range(128):
         Mx = x + offset
         My2 = pow(Mx, 3, _p) + _a * pow(Mx, 2, _p) + _b % _p
-        My = pow(My2, (_p+1)/4, _p )
+        My = pow(My2, (_p + 1) / 4, _p)
 
-        if curved.contains_point(Mx,My):
-            if odd == bool(My&1):
-                return [My,offset]
-            return [_p-My,offset]
+        if curved.contains_point(Mx, My):
+            if odd == bool(My & 1):
+                return [My, offset]
+            return [_p - My, offset]
     raise Exception('ECC_YfromX: No Y found')
 
 
-def point_to_ser(P, comp=True ):
+def point_to_ser(P, comp=True):
     if comp:
-        return ( ('%02x'%(2+(P.y()&1)))+('%064x'%P.x()) ).decode('hex')
-    return ( '04'+('%064x'%P.x())+('%064x'%P.y()) ).decode('hex')
+        return (('%02x' % (2 + (P.y() & 1))) + ('%064x' % P.x())).decode('hex')
+    return ('04' + ('%064x' % P.x()) + ('%064x' % P.y())).decode('hex')
 
 
 def ser_to_point(Aser):
     curve = curve_secp256k1
     generator = generator_secp256k1
-    _r  = generator.order()
-    assert Aser[0] in ['\x02','\x03','\x04']
+    _r = generator.order()
+    assert Aser[0] in ['\x02', '\x03', '\x04']
     if Aser[0] == '\x04':
-        return Point( curve, string_to_number(Aser[1:33]), string_to_number(Aser[33:]), _r )
+        return Point(curve, string_to_number(Aser[1:33]), string_to_number(Aser[33:]), _r)
     Mx = string_to_number(Aser[1:])
-    return Point( curve, Mx, ECC_YfromX(Mx, curve, Aser[0]=='\x03')[0], _r )
+    return Point(curve, Mx, ECC_YfromX(Mx, curve, Aser[0] == '\x03')[0], _r)
 
 
 def i2o_ECPublicKey(pubkey, compressed=False):
@@ -243,25 +244,28 @@ def i2o_ECPublicKey(pubkey, compressed=False):
 
     return key.decode('hex')
 
+
 def PrivKeyToSecret(privkey):
-    return privkey[9:9+32]
+    return privkey[9:9 + 32]
 
 
 def SecretToASecret(secret, compressed=False):
     addrtype = Parameter().ADDRTYPE_P2PKH
-    vchIn = chr((addrtype+128)&255) + secret
+    vchIn = chr((addrtype + 128) & 255) + secret
     if compressed: vchIn += '\01'
     return b58encode_check(vchIn)
+
 
 def ASecretToSecret(key):
     addrtype = Parameter().ADDRTYPE_P2PKH
     vch = b58decode_check(key)
-    if vch and vch[0] == chr((addrtype+128)&255):
+    if vch and vch[0] == chr((addrtype + 128) & 255):
         return vch[1:]
     elif is_minikey(key):
         return minikey_to_private_key(key)
     else:
         return False
+
 
 def regenerate_key(sec):
     b = ASecretToSecret(sec)
@@ -317,6 +321,7 @@ def is_minikey(text):
             and all(c in __b58chars for c in text)
             and ord(hash256(text + '?')[0]) == 0)
 
+
 def minikey_to_private_key(text):
     return hash256(text)
 
@@ -335,6 +340,7 @@ def aes_encrypt_with_iv(key, iv, data):
     e = aes.feed(data) + aes.feed()  # empty aes.feed() appends pkcs padding
     return e
 
+
 def aes_decrypt_with_iv(key, iv, data):
     # if AES:
     #     cipher = AES.new(key, AES.MODE_CBC, iv)
@@ -351,11 +357,13 @@ def aes_decrypt_with_iv(key, iv, data):
     s = aes.feed(data) + aes.feed()  # empty aes.feed() strips pkcs padding
     return s
 
+
 def EncodeAES(secret, s):
     iv = bytes(os.urandom(16))
     ct = aes_encrypt_with_iv(secret, iv, s)
     e = iv + ct
     return base64.b64encode(e)
+
 
 def DecodeAES(secret, e):
     e = bytes(base64.b64decode(e))
@@ -363,12 +371,14 @@ def DecodeAES(secret, e):
     s = aes_decrypt_with_iv(secret, iv, e)
     return s
 
+
 def pw_encode(s, password):
     if password:
         secret = double_sha256(password)
         return EncodeAES(secret, s.encode("utf8"))
     else:
         return s
+
 
 def pw_decode(s, password):
     if password is not None:

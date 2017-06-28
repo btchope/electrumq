@@ -5,7 +5,7 @@ from hashlib import sha256
 import Crypto.Hash.SHA256 as SHA256
 import Crypto.Hash.RIPEMD as RIPEMD160
 
-from utils import Parameter
+from utils.parameter import Parameter
 
 __author__ = 'zhouqi'
 
@@ -92,7 +92,7 @@ def hash256(x):
     return SHA256.new(x).digest()
 
 
-def hash_160_to_bc_address(h160, version='\x00', witness_program_version=1):
+def hash_160_to_bc_address(h160, version=0, witness_program_version=1):
     if version.__class__ is int:
         version = chr(version)
     if version == chr(Parameter().ADDRTYPE_P2WPKH):

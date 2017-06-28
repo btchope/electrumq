@@ -61,8 +61,10 @@ def write_compact_size(size):
     else:
         raise EOFError("attempt to write size > int64")
 
+
 def int_to_hex(size):
     return write_compact_size(size).encode('hex')
+
 
 def parse_TxIn(reader):
     d = {}
@@ -671,6 +673,7 @@ def parse_sig(sig_bytes):
     else:
         return None, None
 
+
 # def parse_r_from_in_script(in_script):
 #     decoded = parse_script(in_script)
 #     result = []
@@ -718,11 +721,11 @@ def parse_sig(sig_bytes):
 
 
 def op_push(i):
-    if i<0x4c:
+    if i < 0x4c:
         return chr(i).encode('hex')
-    elif i<0xff:
+    elif i < 0xff:
         return '4c' + chr(i).encode('hex')
-    elif i<0xffff:
+    elif i < 0xffff:
         return '4d' + write_uint16(i).encode('hex')
     else:
         return '4e' + write_uint32(i).encode('hex')

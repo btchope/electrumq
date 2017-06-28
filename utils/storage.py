@@ -20,10 +20,12 @@ from utils.key_store import bip44_derivation
 
 __author__ = 'zhouqi'
 
-OLD_SEED_VERSION = 4        # electrum versions < 2.0
-NEW_SEED_VERSION = 11       # electrum versions >= 2.0
-FINAL_SEED_VERSION = 13     # electrum >= 2.7 will set this to prevent
-                            # old versions from overwriting new format
+OLD_SEED_VERSION = 4  # electrum versions < 2.0
+NEW_SEED_VERSION = 11  # electrum versions >= 2.0
+FINAL_SEED_VERSION = 13  # electrum >= 2.7 will set this to prevent
+
+
+# old versions from overwriting new format
 
 def multisig_type(wallet_type):
     '''If wallet_type is mofn multi-sig, return [m, n],
@@ -53,8 +55,8 @@ class AbstractStorage(object):
     def print_msg(self, *args, **kwargs):
         pass
 
-class WalletStorage(AbstractStorage):
 
+class WalletStorage(AbstractStorage):
     def __init__(self, path):
         AbstractStorage.__init__(self)
         # self.print_error("wallet path", path)
@@ -110,7 +112,8 @@ class WalletStorage(AbstractStorage):
         return self.path and os.path.exists(self.path)
 
     def get_key(self, password):
-        secret = pbkdf2.PBKDF2(password, '', iterations = 1024, macmodule = hmac, digestmodule = hashlib.sha512).read(64)
+        secret = pbkdf2.PBKDF2(password, '', iterations=1024, macmodule=hmac,
+                               digestmodule=hashlib.sha512).read(64)
         ec_key = EC_KEY(secret)
         return ec_key
 
@@ -222,7 +225,7 @@ class WalletStorage(AbstractStorage):
                 x = d[k]
                 if x.get("pending"):
                     continue
-                xpub = mpk["x/%d'"%i]
+                xpub = mpk["x/%d'" % i]
                 new_path = storage.path + '.' + k
                 storage2 = WalletStorage(new_path)
                 storage2.data = copy.deepcopy(storage.data)
@@ -249,7 +252,7 @@ class WalletStorage(AbstractStorage):
     def convert_wallet_type(self):
         wallet_type = self.get('wallet_type')
         if wallet_type == 'btchip': wallet_type = 'ledger'
-        if self.get('keystore') or self.get('x1/') or wallet_type=='imported':
+        if self.get('keystore') or self.get('x1/') or wallet_type == 'imported':
             return False
         assert not self.requires_split()
         seed_version = self.get_seed_version()
@@ -334,7 +337,7 @@ class WalletStorage(AbstractStorage):
 
     def convert_imported(self):
         # '/x' is the internal ID for imported accounts
-        d = self.get('accounts', {}).get('/x', {}).get('imported',{})
+        d = self.get('accounts', {}).get('/x', {}).get('imported', {})
         if not d:
             return False
         addresses = []
@@ -374,18 +377,20 @@ class WalletStorage(AbstractStorage):
     def get_seed_version(self):
         seed_version = self.get('seed_version')
         if not seed_version:
-            seed_version = OLD_SEED_VERSION if len(self.get('master_public_key','')) == 128 else NEW_SEED_VERSION
-        if seed_version >=12:
+            seed_version = OLD_SEED_VERSION if len(
+                self.get('master_public_key', '')) == 128 else NEW_SEED_VERSION
+        if seed_version >= 12:
             return seed_version
         if seed_version not in [OLD_SEED_VERSION, NEW_SEED_VERSION]:
             msg = "Your wallet has an unsupported seed version."
             msg += '\n\nWallet file: %s' % os.path.abspath(self.path)
             if seed_version in [5, 7, 8, 9, 10]:
-                msg += "\n\nTo open this wallet, try 'git checkout seed_v%d'"%seed_version
+                msg += "\n\nTo open this wallet, try 'git checkout seed_v%d'" % seed_version
             if seed_version == 6:
                 # version 1.9.8 created v6 wallets when an incorrect seed was entered in the restore dialog
                 msg += '\n\nThis file was created because of a bug in version 1.9.8.'
-                if self.get('master_public_keys') is None and self.get('master_private_keys') is None and self.get('imported_keys') is None:
+                if self.get('master_public_keys') is None and self.get(
+                        'master_private_keys') is None and self.get('imported_keys') is None:
                     # pbkdf2 was not included with the binaries, and wallet creation aborted.
                     msg += "\nIt does not contain any keys, and can safely be removed."
                 else:

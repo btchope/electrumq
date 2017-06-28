@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
-import hashlib
-import hmac
 import traceback
 
 import ecdsa
 from ecdsa import SECP256k1
 from ecdsa.util import string_to_number
 
-from utils import Parameter
-from utils import version
 from utils.base58 import Hash, public_key_to_p2pkh, b58decode_check, b58encode_check, \
     hash_160_to_bc_address
 from utils.bip32 import bip32_public_derivation, deserialize_xpub, CKD_pub, deserialize_xprv, \
@@ -17,6 +13,7 @@ from utils.key import is_compressed, public_key_from_private_key, pw_encode, Inv
     pw_decode
 from utils.key import regenerate_key
 from utils.mnemonic import Mnemonic, is_new_seed, is_old_seed
+from utils.parameter import Parameter
 from utils.parser import write_uint16, read_uint16
 
 __author__ = 'zhouqi'
@@ -458,17 +455,16 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         return Xpub.get_pubkey_derivation(self, x_pubkey)
 
 
-
 class Old_KeyStore(Deterministic_KeyStore):
     def __init__(self, d):
-        super(Old_KeyStore, self).__init__()
+        super(Old_KeyStore, self).__init__(d)
 
     @classmethod
-    def get_sequence(self, mpk, for_change, n):
+    def get_sequence(cls, mpk, for_change, n):
         return string_to_number(Hash("%d:%d:" % (n, for_change) + mpk.decode('hex')))
 
     @classmethod
-    def parse_xpubkey(self, x_pubkey):
+    def parse_xpubkey(cls, x_pubkey):
         assert x_pubkey[0:2] == 'fe'
         pk = x_pubkey[2:]
         mpk = pk[0:128]
@@ -482,8 +478,8 @@ class Old_KeyStore(Deterministic_KeyStore):
         return mpk, s
 
     @classmethod
-    def get_pubkey_from_mpk(self, mpk, for_change, n):
-        z = self.get_sequence(mpk, for_change, n)
+    def get_pubkey_from_mpk(cls, mpk, for_change, n):
+        z = cls.get_sequence(mpk, for_change, n)
         master_public_key = ecdsa.VerifyingKey.from_string(mpk.decode('hex'), curve=SECP256k1)
         pubkey_point = master_public_key.pubkey.point + z * SECP256k1.generator
         public_key2 = ecdsa.VerifyingKey.from_public_point(pubkey_point, curve=SECP256k1)
@@ -565,14 +561,17 @@ def load_keystore(storage, name):
         raise BaseException('unknown wallet type', t)
     return k
 
+
 def from_seed2(storage, name):
     d = storage.get(name, {})
     seed = d.get('seed')
     passphrase = d.get('passphrase')
     return from_seed(seed, passphrase)
 
+
 def from_seed(seed, passphrase):
     t = seed_type(seed)
+    keystore = None
     if t == 'old':
         keystore = Old_KeyStore({})
         keystore.add_seed(seed)
@@ -586,16 +585,17 @@ def from_seed(seed, passphrase):
     return keystore
 
 
-
 def seed_type(x):
     if is_old_seed(x):
         return 'old'
     elif is_new_seed(x):
         return 'standard'
-    elif Parameter().TESTNET and is_new_seed(x, version.SEED_PREFIX_SW):
+    elif Parameter().TESTNET and is_new_seed(x, Parameter().SEED_PREFIX_SW):
         return 'segwit'
-    elif is_new_seed(x, version.SEED_PREFIX_2FA):
+    elif is_new_seed(x, Parameter().SEED_PREFIX_2FA):
         return '2fa'
-    # return ''
+    return ''
 
-is_seed = lambda x: bool(seed_type(x))
+
+def is_seed(x):
+    return bool(seed_type(x))

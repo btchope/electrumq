@@ -69,23 +69,24 @@ class PRNG:
     def shuffle(self, x):
         for i in reversed(xrange(1, len(x))):
             # pick an element in x[:i+1] with which to exchange x[i]
-            j = self.randint(0, i+1)
+            j = self.randint(0, i + 1)
             x[i], x[j] = x[j], x[i]
 
 
 Bucket = namedtuple('Bucket', ['desc', 'size', 'value', 'coins'])
 
+
 def strip_unneeded(bkts, sufficient_funds):
     '''Remove buckets that are unnecessary in achieving the spend amount'''
-    bkts = sorted(bkts, key = lambda bkt: bkt.value)
+    bkts = sorted(bkts, key=lambda bkt: bkt.value)
     for i in range(len(bkts)):
         if not sufficient_funds(bkts[i + 1:]):
             return bkts[i:]
     # Shouldn't get here
     return bkts
 
-class CoinChooserBase():
 
+class CoinChooserBase():
     def keys(self, coins):
         raise NotImplementedError
 
@@ -106,6 +107,7 @@ class CoinChooserBase():
     def penalty_func(self, tx):
         def penalty(candidate):
             return 0
+
         return penalty
 
     def change_amounts(self, tx, count, fee_estimator, dust_threshold):
@@ -213,6 +215,7 @@ class CoinChooserBase():
 
         return tx
 
+
 class CoinChooserOldestFirst(CoinChooserBase):
     '''Maximize transaction priority. Select the oldest unspent
     transaction outputs in your wallet, that are sufficient to cover
@@ -228,18 +231,18 @@ class CoinChooserOldestFirst(CoinChooserBase):
         '''Spend the oldest buckets first.'''
         # Unconfirmed coins are young, not old
         adj_height = lambda height: 99999999 if height <= 0 else height
-        buckets.sort(key = lambda b: max(adj_height(coin['height'])
-                                         for coin in b.coins))
+        buckets.sort(key=lambda b: max(adj_height(coin['height'])
+                                       for coin in b.coins))
         selected = []
         for bucket in buckets:
             selected.append(bucket)
             if sufficient_funds(selected):
                 return strip_unneeded(selected, sufficient_funds)
         else:
-            raise Exception()#NotEnoughFunds()
+            raise Exception()  # NotEnoughFunds()
+
 
 class CoinChooserRandom(CoinChooserBase):
-
     def bucket_candidates(self, buckets, sufficient_funds):
         '''Returns a list of bucket sets.'''
         candidates = set()
@@ -247,7 +250,7 @@ class CoinChooserRandom(CoinChooserBase):
         # Add all singletons
         for n, bucket in enumerate(buckets):
             if sufficient_funds([bucket]):
-                candidates.add((n, ))
+                candidates.add((n,))
 
         # And now some random ones
         attempts = min(100, (len(buckets) - 1) * 10 + 1)
@@ -263,7 +266,7 @@ class CoinChooserRandom(CoinChooserBase):
                     candidates.add(tuple(sorted(permutation[:count + 1])))
                     break
             else:
-                raise Exception()#NotEnoughFunds()
+                raise Exception()  # NotEnoughFunds()
 
         candidates = [[buckets[n] for n in c] for c in candidates]
         return [strip_unneeded(c, sufficient_funds) for c in candidates]
@@ -275,6 +278,7 @@ class CoinChooserRandom(CoinChooserBase):
         self.print_error("Bucket sets:", len(buckets))
         self.print_error("Winning penalty:", min(penalties))
         return winner
+
 
 class CoinChooserPrivacy(CoinChooserRandom):
     '''Attempts to better preserve user privacy.  First, if any coin is
@@ -313,11 +317,13 @@ class CoinChooserPrivacy(CoinChooserRandom):
 COIN_CHOOSERS = {'Priority': CoinChooserOldestFirst,
                  'Privacy': CoinChooserPrivacy}
 
+
 def get_name(config):
     kind = config.get('coin_chooser')
-    if not kind in COIN_CHOOSERS:
+    if kind not in COIN_CHOOSERS:
         kind = 'Priority'
     return kind
+
 
 def get_coin_chooser(config):
     klass = COIN_CHOOSERS[get_name(config)]

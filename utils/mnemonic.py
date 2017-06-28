@@ -33,14 +33,9 @@ import string
 import ecdsa
 import pbkdf2
 
-# from util import print_error
-# from bitcoin import is_old_seed, is_new_seed
-# import version
-import i18n
-
 # http://www.asahi-net.or.jp/~ax2s-kmtn/ref/unicode/e_asia.html
 from utils import print_error
-from utils import version
+from utils.parameter import Parameter
 
 CJK_INTERVALS = [
     (0x4E00, 0x9FFF, 'CJK Unified Ideographs'),
@@ -50,7 +45,7 @@ CJK_INTERVALS = [
     (0x2B740, 0x2B81F, 'CJK Unified Ideographs Extension D'),
     (0xF900, 0xFAFF, 'CJK Compatibility Ideographs'),
     (0x2F800, 0x2FA1D, 'CJK Compatibility Ideographs Supplement'),
-    (0x3190, 0x319F , 'Kanbun'),
+    (0x3190, 0x319F, 'Kanbun'),
     (0x2E80, 0x2EFF, 'CJK Radicals Supplement'),
     (0x2F00, 0x2FDF, 'CJK Radicals'),
     (0x31C0, 0x31EF, 'CJK Strokes'),
@@ -74,10 +69,12 @@ CJK_INTERVALS = [
     (0xA490, 0xA4CF, 'Yi Radicals'),
 ]
 
-def is_CJK(c):
+
+def is_cjk(c):
     n = ord(c)
-    for imin,imax,name in CJK_INTERVALS:
-        if n>=imin and n<=imax: return True
+    for start, end, name in CJK_INTERVALS:
+        if start <= n <= end:
+            return True
     return False
 
 
@@ -91,18 +88,18 @@ def normalize_text(seed):
     # normalize whitespaces
     seed = u' '.join(seed.split())
     # remove whitespaces between CJK
-    seed = u''.join([seed[i] for i in range(len(seed)) if not (seed[i] in string.whitespace and is_CJK(seed[i-1]) and is_CJK(seed[i+1]))])
+    seed = u''.join([seed[i] for i in range(len(seed)) if not (
+        seed[i] in string.whitespace and is_cjk(seed[i - 1]) and is_cjk(seed[i + 1]))])
     return seed
 
 
 filenames = {
-    'en':'english.txt',
-    'es':'spanish.txt',
-    'ja':'japanese.txt',
-    'pt':'portuguese.txt',
-    'zh':'chinese_simplified.txt'
+    'en': 'english.txt',
+    'es': 'spanish.txt',
+    'ja': 'japanese.txt',
+    'pt': 'portuguese.txt',
+    'zh': 'chinese_simplified.txt'
 }
-
 
 
 class Mnemonic(object):
@@ -114,7 +111,7 @@ class Mnemonic(object):
         print_error('language', lang)
         filename = filenames.get(lang[0:2], 'english.txt')
         path = os.path.join(os.path.dirname(__file__), 'wordlist', filename)
-        s = open(path,'r').read().strip()
+        s = open(path, 'r').read().strip()
         s = unicodedata.normalize('NFKD', s.decode('utf8'))
         lines = s.split('\n')
         self.wordlist = []
@@ -124,21 +121,22 @@ class Mnemonic(object):
             assert ' ' not in line
             if line:
                 self.wordlist.append(line)
-        print_error("wordlist has %d words"%len(self.wordlist))
+        print_error("wordlist has %d words" % len(self.wordlist))
 
     @classmethod
     def mnemonic_to_seed(self, mnemonic, passphrase):
         PBKDF2_ROUNDS = 2048
         mnemonic = normalize_text(mnemonic)
         passphrase = normalize_text(passphrase)
-        return pbkdf2.PBKDF2(mnemonic, 'electrum' + passphrase, iterations = PBKDF2_ROUNDS, macmodule = hmac, digestmodule = hashlib.sha512).read(64)
+        return pbkdf2.PBKDF2(mnemonic, 'electrum' + passphrase, iterations=PBKDF2_ROUNDS,
+                             macmodule=hmac, digestmodule=hashlib.sha512).read(64)
 
     def mnemonic_encode(self, i):
         n = len(self.wordlist)
         words = []
         while i:
-            x = i%n
-            i = i/n
+            x = i % n
+            i = i / n
             words.append(self.wordlist[x])
         return ' '.join(words)
 
@@ -154,7 +152,7 @@ class Mnemonic(object):
         while words:
             w = words.pop()
             k = self.wordlist.index(w)
-            i = i*n + k
+            i = i * n + k
         return i
 
     def check_seed(self, seed, custom_entropy):
@@ -163,11 +161,10 @@ class Mnemonic(object):
         return i % custom_entropy == 0
 
     def make_seed(self, seed_type='standard', num_bits=132, custom_entropy=1):
-        import version
-        prefix = version.seed_prefix(seed_type)
+        prefix = seed_prefix(seed_type)
         # increase num_bits in order to obtain a uniform distibution for the last word
         bpw = math.log(len(self.wordlist), 2)
-        num_bits = int(math.ceil(num_bits/bpw)) * bpw
+        num_bits = int(math.ceil(num_bits / bpw)) * bpw
         # handle custom entropy; make sure we add at least 16 bits
         n_custom = int(math.ceil(math.log(custom_entropy, 2)))
         n = max(16, num_bits - n_custom)
@@ -183,14 +180,13 @@ class Mnemonic(object):
                 continue
             if is_new_seed(seed, prefix):
                 break
-        print_error('%d words'%len(seed.split()))
+        print_error('%d words' % len(seed.split()))
         return seed
 
 
 def is_new_seed(x, prefix=None):
-    if prefix is None: prefix = version.SEED_PREFIX
-    import mnemonic
-    x = mnemonic.normalize_text(x)
+    if prefix is None: prefix = Parameter().SEED_PREFIX
+    x = normalize_text(x)
     s = hmac.new("Seed version", x.encode('utf8'), hashlib.sha512).digest().encode('hex')
     return s.startswith(prefix)
 
@@ -210,3 +206,12 @@ def is_old_seed(seed):
     # except Exception:
     #     is_hex = False
     # return is_hex or (uses_electrum_words and (len(words) == 12 or len(words) == 24))
+
+
+def seed_prefix(seed_type):
+    if seed_type == 'standard':
+        return Parameter().SEED_PREFIX
+    elif seed_type == 'segwit':
+        return Parameter().SEED_PREFIX_SW
+    elif seed_type == '2fa':
+        return Parameter().SEED_PREFIX_2FA
