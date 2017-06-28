@@ -6,7 +6,7 @@ from db.sqlite.tx import TxStore
 from message.blockchain.address import GetHistory
 from message.blockchain.transaction import GetMerkle, Get
 from network import NetWorkManager
-from utils.key_store import from_seed2
+from utils.key_store import load_keystore
 from utils.tx import Transaction
 from wallet import BaseWallet
 
@@ -17,7 +17,7 @@ class HDWallet(BaseWallet):
     def __init__(self, wallet_config):
         BaseWallet.__init__(self, wallet_config)
         if self.storage.get('keystore', None) is not None:
-            self.keystore = from_seed2(self.storage, 'keystore') #load_keystore(self.storage, 'keystore')
+            self.keystore = load_keystore(self.storage, 'keystore')
         self.gap_limit = self.storage.get('gap_limit', 20)
 
     def init_key_store(self, key_store):

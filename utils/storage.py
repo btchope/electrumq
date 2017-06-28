@@ -28,8 +28,10 @@ FINAL_SEED_VERSION = 13  # electrum >= 2.7 will set this to prevent
 # old versions from overwriting new format
 
 def multisig_type(wallet_type):
-    '''If wallet_type is mofn multi-sig, return [m, n],
-    otherwise return None.'''
+    """
+    If wallet_type is mofn multi-sig, return [m, n],
+    otherwise return None.
+    """
     match = re.match('(\d+)of(\d+)', wallet_type)
     if match:
         match = [int(x) for x in match.group(1, 2)]

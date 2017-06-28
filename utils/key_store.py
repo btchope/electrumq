@@ -307,6 +307,7 @@ class Deterministic_KeyStore(SoftwareKeyStore):
         self.seed = d.get('seed', '')
         self.passphrase = d.get('passphrase', '')
 
+
     def is_deterministic(self):
         return True
 
@@ -331,6 +332,9 @@ class Deterministic_KeyStore(SoftwareKeyStore):
         if self.seed:
             raise Exception("a seed exists")
         self.seed = self.format_seed(seed)
+
+    def format_seed(self, seed):
+        return ' '.join(seed.split())
 
     def get_seed(self, password):
         return pw_decode(self.seed, password)
@@ -397,9 +401,6 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
     def __init__(self, d):
         Deterministic_KeyStore.__init__(self, d)
         Xpub.__init__(self)
-
-    def format_seed(self, seed):
-        return ' '.join(seed.split())
 
     def dump(self):
         d = Deterministic_KeyStore.dump(self)
@@ -554,19 +555,12 @@ def load_keystore(storage, name):
     elif t == 'watchonly':
         k = WatchOnlySimpleKeyStore(d)
     elif t == 'bip32':
-        k = BIP32_KeyStore(d)
+        k = from_seed(d['seed'], d.get('passphrase', None))#BIP32_KeyStore(d)
     elif t == 'hardware':
         k = hardware_keystore(d)
     else:
         raise BaseException('unknown wallet type', t)
     return k
-
-
-def from_seed2(storage, name):
-    d = storage.get(name, {})
-    seed = d.get('seed')
-    passphrase = d.get('passphrase')
-    return from_seed(seed, passphrase)
 
 
 def from_seed(seed, passphrase):
