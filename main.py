@@ -179,6 +179,7 @@ def test_hd_wallet():
     # print tx
 
 if __name__ == '__main__':
-    test_hd_wallet()
+    test_cold_hot_wallet()
+    # test_hd_wallet()
     # test_simple_wallet()
     time.sleep(10000000)

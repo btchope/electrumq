@@ -8,6 +8,7 @@ from utils import parser
 
 __author__ = 'zhouqi'
 
+
 class TestWallet(unittest.TestCase):
     def setUp(self):
         pass
@@ -25,7 +26,6 @@ class TestBlockchain(unittest.TestCase):
 
 
 class TestUtil(unittest.TestCase):
-
     def test_Hash(self):
         s = 'abc'
         print base58.Hash(s)
@@ -33,6 +33,7 @@ class TestUtil(unittest.TestCase):
         s = u'周琪'
         print base58.Hash(s)
         self.assertEqual(base58.Hash(s), utils.Hash(s))
+
 
 class TestConnection(unittest.TestCase):
     def setUp(self):
@@ -49,7 +50,7 @@ class TestConnection(unittest.TestCase):
         with Connection.gen_db() as conn:
             c = conn.cursor()
             res = c.execute('select * from test;')
-            self.assertEqual(res.fetchall(), [(1, )])
+            self.assertEqual(res.fetchall(), [(1,)])
 
     def test_error(self):
         try:

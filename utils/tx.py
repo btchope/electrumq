@@ -12,8 +12,8 @@ from utils.base58 import hash160_to_p2sh, hash160_to_p2pkh, hash_160, \
 from utils.key import public_key_from_private_key, MySigningKey, MyVerifyingKey, point_to_ser
 from utils.key import regenerate_key
 from utils.key_store import xpubkey_to_pubkey, xpubkey_to_address
-from utils.parameter import TYPE_SCRIPT, TYPE_ADDRESS, TYPE_PUBKEY
-from utils.parser import int_to_hex, op_push
+from utils.parameter import TYPE_SCRIPT, TYPE_ADDRESS, TYPE_PUBKEY, Parameter
+from utils.parser import int_to_hex, op_push, write_uint32, write_uint64
 
 __author__ = 'zhouqi'
 
@@ -201,8 +201,8 @@ class Transaction:
 
     @classmethod
     def serialize_outpoint(self, txin):
-        return txin['prevout_hash'].decode('hex')[::-1].encode('hex') + int_to_hex(
-            txin['prevout_n'], 4)
+        return txin['prevout_hash'].decode('hex')[::-1].encode('hex') \
+               + write_uint32(txin['prevout_n']).encode('hex')
 
     @classmethod
     def serialize_input(self, txin, script):
@@ -211,7 +211,7 @@ class Transaction:
         # Script length, script, sequence
         s += int_to_hex(len(script) / 2)
         s += script
-        s += int_to_hex(txin.get('sequence', 0xffffffff), 4)
+        s += write_uint32(txin.get('sequence', 0xffffffff)).encode('hex')
         return s
 
     def set_rbf(self, rbf):
@@ -226,16 +226,16 @@ class Transaction:
 
     def serialize_output(self, output):
         output_type, addr, amount = output
-        s = int_to_hex(amount, 8)
+        s = write_uint64(amount).encode('hex')
         script = self.pay_script(output_type, addr)
         s += int_to_hex(len(script) / 2)
         s += script
         return s
 
     def serialize_preimage(self, i):
-        nVersion = int_to_hex(1, 4)
-        nHashType = int_to_hex(1, 4)
-        nLocktime = int_to_hex(self.locktime, 4)
+        nVersion = write_uint32(1).encode('hex')
+        nHashType = write_uint32(1).encode('hex')
+        nLocktime = write_uint32(self.locktime).encode('hex')
         inputs = self.inputs()
         outputs = self.outputs()
         txin = inputs[i]
@@ -270,8 +270,8 @@ class Transaction:
         return any(self.is_segwit_input(x) for x in self.inputs())
 
     def serialize(self, estimate_size=False, witness=True):
-        nVersion = int_to_hex(1, 4)
-        nLocktime = int_to_hex(self.locktime, 4)
+        nVersion = write_uint32(1).encode('hex')
+        nLocktime = write_uint32(self.locktime).encode('hex')
         inputs = self.inputs()
         outputs = self.outputs()
         txins = int_to_hex(len(inputs)) + ''.join(

@@ -38,7 +38,7 @@ class AbstractWallet(object):
     def sign_transaction(self, tx, password):
         pass
 
-    def print_error(self, **kwargs):
+    def print_error(self, *args, **kwargs):
         pass
 
     def print_msg(self, *args, **kwargs):
@@ -47,15 +47,18 @@ class AbstractWallet(object):
 
 class BaseWallet(AbstractWallet):
     max_change_outputs = 3
+    keystore = None
+    txin_type = 'p2pkh'
 
     def __init__(self, wallet_config):
         super(BaseWallet, self).__init__(wallet_config)
         self.storage = WalletStorage(self.wallet_confg.store_path)
         self.gap_limit_for_change = 6
-        self.use_change = True  # storage.get('use_change', True)
-        self.multiple_change = False  # storage.get('multiple_change', False)
+        self.use_change = wallet_config.use_change
+        self.multiple_change = wallet_config.multiple_change
         self.frozen_addresses = []
-        self.keystore = None
+        self.receiving_addresses = []
+        self.change_addresses = []
         self.load_addresses()
 
     def can_import(self):
@@ -81,9 +84,11 @@ class BaseWallet(AbstractWallet):
 
     def load_addresses(self):
         d = self.storage.get('addresses', {})
-        if type(d) != dict: d = {}
-        self.receiving_addresses = d.get('receiving', [])
-        self.change_addresses = d.get('change', [])
+        if type(d) is dict:
+            if 'receiving' in d:
+                self.receiving_addresses = d['receiving']
+            if 'change' in d:
+                self.change_addresses = d['change']
 
     def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None):
         # check outputs
@@ -161,12 +166,12 @@ class BaseWallet(AbstractWallet):
         #     self.add_hw_info(tx)
         # sign
         for k in self.get_keystores():
-            try:
-                if k.can_sign(tx):
-                    k.sign_transaction(tx, password)
-            except Exception as ex:
-                traceback.print_stack()
-                continue
+            # try:
+            if k.can_sign(tx):
+                k.sign_transaction(tx, password)
+            # except Exception as ex:
+            #     traceback.print_stack()
+            #     continue
 
     def get_num_tx(self, address):
         # todo:
@@ -179,7 +184,7 @@ class BaseWallet(AbstractWallet):
         return fee
 
     def add_input_info(self, txin):
-        txin['type'] = 'p2pkh'  # self.txin_type
+        txin['type'] = self.txin_type #'p2pkh'
         # Add address for utxo that are in wallet
         if txin.get('scriptSig') == '':
             coins = self.get_spendable_coins()
@@ -202,6 +207,7 @@ class BaseWallet(AbstractWallet):
         txin['num_sig'] = 1
 
     def get_address_index(self, address):
+        # todo: need review
         if self.can_import():
             for pubkey in self.keystore.keypairs.keys():
                 if self.pubkeys_to_address(pubkey) == address:
@@ -213,6 +219,7 @@ class BaseWallet(AbstractWallet):
         raise Exception("Address not found", address)
 
     def get_public_key(self, address):
+        # todo: need review
         if self.can_import():
             pubkey = self.get_address_index(address)
         else:
@@ -221,6 +228,7 @@ class BaseWallet(AbstractWallet):
         return pubkey
 
     def pubkeys_to_address(self, pubkey):
+        # todo: need review
         if not self.is_segwit:
             return public_key_to_p2pkh(pubkey.decode('hex'))
         elif Parameter().TESTNET:
@@ -233,10 +241,7 @@ class BaseWallet(AbstractWallet):
         return address in self.get_addresses()
 
     def get_addresses(self):
-        out = []
-        out += self.get_receiving_addresses()
-        out += self.get_change_addresses()
-        return out
+        return self.get_receiving_addresses() + self.get_change_addresses()
 
     def add_address(self, address):
         pass
@@ -245,12 +250,13 @@ class BaseWallet(AbstractWallet):
         return self.get_receiving_addresses()[0]
 
     def get_receiving_addresses(self):
-        return []
+        return self.receiving_addresses
 
     def get_change_addresses(self):
-        return []
+        return self.change_addresses
 
     def get_local_height(self):
+        # todo: need implement
         """ return last known height if we are offline """
         return 0  # self.network.get_local_height() if self.network else self.stored_height
 
@@ -266,8 +272,7 @@ class BaseWallet(AbstractWallet):
         for addr in domain:
             utxos = self.get_addr_utxo(addr)
             for x in utxos:
-                if mature and x['coinbase'] and x[
-                    'height'] + COINBASE_MATURITY > self.get_local_height():
+                if mature and x['coinbase'] and x['height'] + COINBASE_MATURITY > self.get_local_height():
                     continue
                 coins.append(x)
                 continue
