@@ -70,12 +70,6 @@ class HDWallet(BaseWallet):
     def is_deterministic(self):
         return self.keystore.is_deterministic()
 
-    def get_receiving_addresses(self):
-        return self.receiving_addresses
-
-    def get_change_addresses(self):
-        return self.change_addresses
-
     def get_seed(self, password):
         return self.keystore.get_seed(password)
 
@@ -101,6 +95,7 @@ class HDWallet(BaseWallet):
             return False
 
     def num_unused_trailing_addresses(self, addresses):
+        # todo: not use history
         k = 0
         for a in addresses[::-1]:
             if self.history.get(a):
@@ -109,6 +104,7 @@ class HDWallet(BaseWallet):
         return k
 
     def min_acceptable_gap(self):
+        # todo: not use history
         # fixme: this assumes wallet is synchronized
         n = 0
         nmax = 0
