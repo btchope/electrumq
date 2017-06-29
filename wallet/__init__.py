@@ -190,8 +190,8 @@ class BaseWallet(AbstractWallet):
         if txin.get('scriptSig') == '':
             coins = self.get_spendable_coins()
             for item in coins:
-                if txin.get('prevout_hash') == item.get('prevout_hash') and txin.get(
-                        'prevout_n') == item.get('prevout_n'):
+                if txin.get('prevout_hash') == item.get('prevout_hash') \
+                        and txin.get('prevout_n') == item.get('prevout_n'):
                     txin['address'] = item.get('address')
         address = txin['address']
         if self.is_mine(address):
@@ -257,7 +257,6 @@ class BaseWallet(AbstractWallet):
         return self.change_addresses
 
     def get_local_height(self):
-        # todo: need implement
         """ return last known height if we are offline """
         return BlockStore().height  # self.network.get_local_height() if self.network else self.stored_height
 
@@ -286,10 +285,12 @@ class BaseWallet(AbstractWallet):
     def relayfee(self):
         RELAY_FEE = 5000
         MAX_RELAY_FEE = 50000
+        # todo: relay fee
         f = RELAY_FEE  # self.network.relay_fee if self.network and self.network.relay_fee else RELAY_FEE
         return min(f, MAX_RELAY_FEE)
 
     def get_addr_utxo(self, address):
+        # todo: use sqlite to get data
         coins, spent = self.get_addr_io(address)
         for txi in spent:
             coins.pop(txi)
@@ -309,6 +310,7 @@ class BaseWallet(AbstractWallet):
         return out
 
     def get_addr_io(self, address):
+        # todo: use sqlite to get data not history
         h = self.history.get(address, [])
         received = {}
         sent = {}
