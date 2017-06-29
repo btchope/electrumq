@@ -3,6 +3,7 @@ import random
 import traceback
 from functools import partial
 
+from blockchain import BlockChain
 from db.sqlite.block import BlockStore
 from db.sqlite.tx import TxStore
 from utils import coinchooser
@@ -258,7 +259,7 @@ class BaseWallet(AbstractWallet):
     def get_local_height(self):
         # todo: need implement
         """ return last known height if we are offline """
-        return 0  # self.network.get_local_height() if self.network else self.stored_height
+        return BlockStore().height  # self.network.get_local_height() if self.network else self.stored_height
 
     def get_spendable_coins(self, domain=None):
         return self.get_utxos(domain, exclude_frozen=True, mature=True)

@@ -73,7 +73,6 @@ class NetWorkManager():
                 eligible.append(self.serialize_server(host, port, protocol))
         return eligible
 
-
     def pick_random_server(self, hostmap=None, protocol='t', exclude_set=set()):
         if hostmap is None:
             hostmap = Parameter().DEFAULT_SERVERS

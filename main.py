@@ -4,6 +4,7 @@ import time
 
 from tornado import gen
 
+from blockchain import BlockChain
 from db.sqlite import init
 from db.sqlite.tx import TxStore
 from network import NetWorkManager
@@ -114,6 +115,7 @@ def test_cold_hot_wallet():
     network = NetWorkManager()
     network.start_ioloop()
     network.start_client()
+    BlockChain().init_header()
 
 
 
@@ -179,6 +181,7 @@ def test_hd_wallet():
     # print tx
 
 if __name__ == '__main__':
+
     test_cold_hot_wallet()
     # test_hd_wallet()
     # test_simple_wallet()
