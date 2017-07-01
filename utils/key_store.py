@@ -307,7 +307,6 @@ class Deterministic_KeyStore(SoftwareKeyStore):
         self.seed = d.get('seed', '')
         self.passphrase = d.get('passphrase', '')
 
-
     def is_deterministic(self):
         return True
 
