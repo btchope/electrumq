@@ -7,17 +7,16 @@ from tornado import gen
 from blockchain import BlockChain
 from db.sqlite import init
 from db.sqlite.tx import TxStore
+from message.all import *
 from network import NetWorkManager
 from utils.base58 import public_key_to_p2pkh
-from utils.key import SecretToASecret
-from utils.key_store import BIP32_KeyStore, SimpleKeyStore, WatchOnlySimpleKeyStore, \
-    ImportedKeyStore, from_seed
+from utils.key import SecretToASecret, public_key_from_private_key
+from utils.key_store import SimpleKeyStore, WatchOnlySimpleKeyStore, \
+    ImportedKeyStore, from_seed, BIP32KeyHotStore
 from utils.parameter import set_testnet, TYPE_ADDRESS
 from wallet import WalletConfig
-from wallet.hd import HDWallet
+from wallet.hd import HDWallet, HDWatchOnlyWallet
 from wallet.single import ColdSimpleWallet, WatchOnlySimpleWallet, SimpleWallet
-
-from message.all import *
 
 __author__ = 'zhouqi'
 
@@ -117,8 +116,6 @@ def test_cold_hot_wallet():
     network.start_client()
     BlockChain().init_header()
 
-
-
     network.client.add_message(Version(["2.8.2", "0.10"]))
 
     network.client.add_message(GetHistory(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
@@ -128,10 +125,10 @@ def test_cold_hot_wallet():
     network.client.add_message(address_subscribe(
         ['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))  # 'mmXqJTLjjyD6Xp2tJ7syCeZTcwvRjcojLz'
     wallet = WatchOnlySimpleWallet(WalletConfig(store_path='watch_only_simple_wallet.json'))
+    secret = '\x20\x12\x10\x09' + '\x09' * 28
     if wallet.keystore is None:
         wallet.init_key_store(
-            WatchOnlySimpleKeyStore.create(SecretToASecret('\x20\x12\x10\x09' + '\x09' * 28, True),
-                                           None))
+            WatchOnlySimpleKeyStore.create(public_key_from_private_key(secret)))
     wallet.init()
     inputs = [
         {'prevout_hash': e[0], 'prevout_n': e[1], 'scriptSig': e[2], 'value': e[3], 'address': e[4],
@@ -143,7 +140,7 @@ def test_cold_hot_wallet():
     print tx
     cold_wallet = ColdSimpleWallet(WalletConfig(store_path='cold_simple_wallet.json'))
     if cold_wallet.keystore is None:
-        cold_wallet.init_key_store(SimpleKeyStore.create(SecretToASecret('\x20\x12\x10\x09' + '\x09' * 28, True), None))
+        cold_wallet.init_key_store(SimpleKeyStore.create(SecretToASecret(secret, True), None))
     cold_wallet.sign_transaction(tx, None)
     # SecretToASecret('\x11'*16, True)
     print tx
@@ -180,9 +177,43 @@ def test_hd_wallet():
     # wallet.sign_transaction(tx, None)
     # print tx
 
-if __name__ == '__main__':
+def test_hd_cold_hot_wallet():
+    global network, wallet
+    set_testnet()
+    logging.config.fileConfig('logging.conf')
+    # drop()
+    init()
+    network = NetWorkManager()
+    network.start_ioloop()
+    network.start_client()
+    network.client.add_message(Version(["2.8.2", "0.10"]))
+    wallet = HDWatchOnlyWallet(WalletConfig(store_path='hd_hot_wallet.json'))
+    seed = from_seed(u'reopen panel title aerobic wheat fury blame cement swarm wheel ball where', None)
+    wallet.xpub = seed.xpub
+    wallet.keystore = BIP32KeyHotStore({})
+    wallet.keystore.xpub = seed.xpub
+    # if wallet.keystore is None:
+    #     wallet.init_key_store(from_seed(u'reopen panel title aerobic wheat fury blame cement swarm wheel ball where', None))
+    wallet.init()
+    wallet.synchronize()
+    print wallet.get_change_addresses()
+    print wallet.get_receiving_addresses()
+    inputs = [
+        {'prevout_hash': e[0], 'prevout_n': e[1], 'scriptSig': e[2], 'value': e[3], 'address': e[4],
+         'coinbase': False,
+         'height': 10000} for e in TxStore().get_unspend_outs('mipTN4UeM9Ab9PH5dU9XA5MjwAJnzkwCpX')]
+    outputs = []
+    outputs.append((TYPE_ADDRESS, 'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj', 100000))
+    # tx = wallet.make_unsigned_transaction(inputs, outputs, {})
+    # print tx
+    # cold_wallet = ColdSimpleWallet(WalletConfig(store_path='cold_simple_wallet.json'))
+    # if cold_wallet.keystore is None:
+    #     cold_wallet.init_key_store(SimpleKeyStore.create(SecretToASecret('\x20\x12\x10\x09' + '\x09' * 28, True), None))
+    # wallet.sign_transaction(tx, None)
+    # print tx
 
-    test_cold_hot_wallet()
+if __name__ == '__main__':
+    test_hd_cold_hot_wallet()
     # test_hd_wallet()
     # test_simple_wallet()
     time.sleep(10000000)

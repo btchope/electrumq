@@ -20,16 +20,63 @@ __author__ = 'zhouqi'
 
 
 class KeyStore(object):
+    def __init__(self):
+        self._has_seed = False
+        self._is_watching_only = False
+        self._can_import = False
+        self._is_segwit = False
+        self._is_deterministic = False
+        self._can_change_password = True
+
     def has_seed(self):
-        return False
+        return self._has_seed
 
     def is_watching_only(self):
-        return False
+        return self._is_watching_only
+
+    def may_have_password(self):
+        return not self.is_watching_only()
 
     def can_import(self):
-        return False
+        return self._can_import
 
-    def get_tx_derivations(self, tx):
+    def is_segwit(self):
+        return self._is_segwit
+
+    def is_deterministic(self):
+        return self._is_deterministic
+
+    def dump(self):
+        pass
+
+    def can_change_password(self):
+        return self._can_change_password
+
+    def check_password(self, password):
+        pass
+
+    def update_password(self, old_password, new_password):
+        pass
+
+    def sign_transaction(self, tx, password):
+        if self.is_watching_only():
+            return
+        # Raise if password is not correct.
+        self.check_password(password)
+        # Add private keys
+        keypairs = self._get_tx_derivations(tx)
+        for k, v in keypairs.items():
+            keypairs[k] = self._get_private_key(v, password)
+        # Sign
+        if keypairs:
+            tx.sign(keypairs)
+
+    def can_sign(self, tx):
+        if self.is_watching_only():
+            return False
+        return bool(self._get_tx_derivations(tx))
+
+    def _get_tx_derivations(self, tx):
         keypairs = {}
         for txin in tx.inputs():
             num_sig = txin.get('num_sig')
@@ -44,74 +91,38 @@ class KeyStore(object):
                 if x_signatures[k] is not None:
                     # this pubkey already signed
                     continue
-                derivation = self.get_pubkey_derivation(x_pubkey)
+                derivation = self._get_pubkey_derivation(x_pubkey)
                 if not derivation:
                     continue
                 keypairs[x_pubkey] = derivation
         return keypairs
 
-    def can_sign(self, tx):
-        if self.is_watching_only():
-            return False
-        return bool(self.get_tx_derivations(tx))
-
-    def get_pubkey_derivation(self, x_pubkey):
+    def _get_pubkey_derivation(self, x_pubkey):
         pass
 
-    def is_segwit(self):
-        return False
-
-    def get_private_key(self, pubkey, password):
+    def _get_private_key(self, pubkey, password):
         pass
-
-    def may_have_password(self):
-        return not self.is_watching_only()
 
     def sign_message(self, sequence, message, password):
-        sec = self.get_private_key(sequence, password)
+        sec = self._get_private_key(sequence, password)
         key = regenerate_key(sec)
         compressed = is_compressed(sec)
         return key.sign_message(message, compressed)
 
     def decrypt_message(self, sequence, message, password):
-        sec = self.get_private_key(sequence, password)
+        sec = self._get_private_key(sequence, password)
         ec = regenerate_key(sec)
         decrypted = ec.decrypt_message(message)
         return decrypted
 
-    def sign_transaction(self, tx, password):
-        if self.is_watching_only():
-            return
-        # Raise if password is not correct.
-        self.check_password(password)
-        # Add private keys
-        keypairs = self.get_tx_derivations(tx)
-        for k, v in keypairs.items():
-            keypairs[k] = self.get_private_key(v, password)
-        # Sign
-        if keypairs:
-            tx.sign(keypairs)
 
-    def check_password(self, password):
-        pass
-
-
-class SoftwareKeyStore(KeyStore):
-    pass
-
-
-class ImportedKeyStore(SoftwareKeyStore):
+class ImportedKeyStore(KeyStore):
     # keystore for imported private keys
 
     def __init__(self, d):
-        SoftwareKeyStore.__init__(self)
+        KeyStore.__init__(self)
+        self._can_import = True
         self.keypairs = d.get('keypairs', {})
-
-    def is_deterministic(self):
-        return False
-
-    def can_change_password(self):
-        return True
 
     def get_master_public_key(self):
         return None
@@ -122,12 +133,9 @@ class ImportedKeyStore(SoftwareKeyStore):
             'keypairs': self.keypairs,
         }
 
-    def can_import(self):
-        return True
-
     def check_password(self, password):
         pubkey = self.keypairs.keys()[0]
-        self.get_private_key(pubkey, password)
+        self._get_private_key(pubkey, password)
 
     def import_key(self, sec, password):
         try:
@@ -142,14 +150,14 @@ class ImportedKeyStore(SoftwareKeyStore):
     def delete_imported_key(self, key):
         self.keypairs.pop(key)
 
-    def get_private_key(self, pubkey, password):
+    def _get_private_key(self, pubkey, password):
         pk = pw_decode(self.keypairs[pubkey], password)
         # this checks the password
         if pubkey != public_key_from_private_key(pk):
             raise InvalidPassword()
         return pk
 
-    def get_pubkey_derivation(self, x_pubkey):
+    def _get_pubkey_derivation(self, x_pubkey):
         if x_pubkey[0:2] in ['02', '03', '04']:
             if x_pubkey in self.keypairs.keys():
                 return x_pubkey
@@ -170,9 +178,10 @@ class ImportedKeyStore(SoftwareKeyStore):
             self.keypairs[k] = c
 
 
-class SimpleKeyStore(SoftwareKeyStore):
+class SimpleKeyStore(KeyStore):
     def __init__(self, d):
-        SoftwareKeyStore.__init__(self)
+        KeyStore.__init__(self)
+        self._can_import = True
         self.pub_key = d.get('pub_key', None)
         self.encrypt_priv_key = d.get('encrypt_priv_key', None)
         self.address = d.get('address', None)
@@ -180,12 +189,6 @@ class SimpleKeyStore(SoftwareKeyStore):
     @property
     def keypairs(self):
         return {self.pub_key: self.encrypt_priv_key}
-
-    def is_deterministic(self):
-        return False
-
-    def can_change_password(self):
-        return True
 
     def get_master_public_key(self):
         return None
@@ -198,12 +201,9 @@ class SimpleKeyStore(SoftwareKeyStore):
             'address': self.address
         }
 
-    def can_import(self):
-        return True
-
     def check_password(self, password):
         pubkey = self.pub_key
-        self.get_private_key(pubkey, password)
+        self._get_private_key(pubkey, password)
 
     @classmethod
     def create(cls, sec, password):
@@ -216,14 +216,14 @@ class SimpleKeyStore(SoftwareKeyStore):
             {'type': 'simple', 'pub_key': pubkey, 'encrypt_priv_key': pw_encode(sec, password),
              'address': public_key_to_p2pkh(pubkey.decode('hex'))})
 
-    def get_private_key(self, pubkey, password):
+    def _get_private_key(self, pubkey, password):
         pk = pw_decode(self.encrypt_priv_key, password)
         # this checks the password
         if pubkey != public_key_from_private_key(pk):
             raise InvalidPassword()
         return pk
 
-    def get_pubkey_derivation(self, x_pubkey):
+    def _get_pubkey_derivation(self, x_pubkey):
         if x_pubkey[0:2] in ['02', '03', '04']:
             if x_pubkey == self.pub_key:
                 return x_pubkey
@@ -244,22 +244,14 @@ class SimpleKeyStore(SoftwareKeyStore):
 
 class WatchOnlySimpleKeyStore(SimpleKeyStore):
     def __init__(self, d):
-        SoftwareKeyStore.__init__(self)
+        KeyStore.__init__(self)
+        self._can_import = True
         self.pub_key = d.get('pub_key', None)
         self.address = d.get('address', None)
 
     @property
     def keypairs(self):
         return {self.pub_key: self}
-
-    def is_deterministic(self):
-        return False
-
-    def can_change_password(self):
-        return True
-
-    def get_master_public_key(self):
-        return None
 
     def dump(self):
         return {
@@ -268,26 +260,23 @@ class WatchOnlySimpleKeyStore(SimpleKeyStore):
             'address': self.address,
         }
 
-    def can_import(self):
-        return True
-
     def check_password(self, password):
         return True
 
     @classmethod
-    def create(cls, sec, password):
-        try:
-            pubkey = public_key_from_private_key(sec)
-        except Exception:
-            traceback.print_exc()
-            raise BaseException('Invalid private key')
+    def create(cls, pubkey):
+        # try:
+        #     pubkey = public_key_from_private_key(sec)
+        # except Exception:
+        #     traceback.print_exc()
+        #     raise BaseException('Invalid private key')
         return WatchOnlySimpleKeyStore({'type': 'simple', 'pub_key': pubkey,
                                         'address': public_key_to_p2pkh(pubkey.decode('hex'))})
 
-    def get_private_key(self, pubkey, password):
+    def _get_private_key(self, pubkey, password):
         return None
 
-    def get_pubkey_derivation(self, x_pubkey):
+    def _get_pubkey_derivation(self, x_pubkey):
         if x_pubkey[0:2] in ['02', '03', '04']:
             if x_pubkey == self.pub_key:
                 return x_pubkey
@@ -301,14 +290,12 @@ class WatchOnlySimpleKeyStore(SimpleKeyStore):
         pass
 
 
-class Deterministic_KeyStore(SoftwareKeyStore):
+class DeterministicKeyStore(KeyStore):
     def __init__(self, d):
-        SoftwareKeyStore.__init__(self)
+        KeyStore.__init__(self)
+        self._is_deterministic = True
         self.seed = d.get('seed', '')
         self.passphrase = d.get('passphrase', '')
-
-    def is_deterministic(self):
-        return True
 
     def dump(self):
         d = {}
@@ -342,7 +329,7 @@ class Deterministic_KeyStore(SoftwareKeyStore):
         return pw_decode(self.passphrase, password) if self.passphrase else ''
 
 
-class Xpub:
+class XpubMixin(object):
     def __init__(self):
         self.xpub = None
         self.xpub_receive = None
@@ -362,7 +349,7 @@ class Xpub:
         return self.get_pubkey_from_xpub(xpub, (n,))
 
     @classmethod
-    def get_pubkey_from_xpub(self, xpub, sequence):
+    def get_pubkey_from_xpub(cls, xpub, sequence):
         _, _, _, _, c, cK = deserialize_xpub(xpub)
         for i in sequence:
             cK, c = CKD_pub(cK, c, i)
@@ -373,7 +360,7 @@ class Xpub:
         return 'ff' + b58decode_check(self.xpub).encode('hex') + s.encode('hex')
 
     @classmethod
-    def parse_xpubkey(self, pubkey):
+    def parse_xpubkey(cls, pubkey):
         assert pubkey[0:2] == 'ff'
         pk = pubkey.decode('hex')
         pk = pk[1:]
@@ -387,7 +374,7 @@ class Xpub:
         assert len(s) == 2
         return xkey, s
 
-    def get_pubkey_derivation(self, x_pubkey):
+    def _get_pubkey_derivation(self, x_pubkey):
         if x_pubkey[0:2] != 'ff':
             return
         xpub, derivation = self.parse_xpubkey(x_pubkey)
@@ -396,13 +383,13 @@ class Xpub:
         return derivation
 
 
-class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
+class BIP32KeyStore(DeterministicKeyStore, XpubMixin):
     def __init__(self, d):
-        Deterministic_KeyStore.__init__(self, d)
-        Xpub.__init__(self)
+        DeterministicKeyStore.__init__(self, d)
+        XpubMixin.__init__(self)
 
     def dump(self):
-        d = Deterministic_KeyStore.dump(self)
+        d = DeterministicKeyStore.dump(self)
         d['type'] = 'bip32'
         d['xpub'] = self.xpub
         d['xprv'] = self.xprv
@@ -442,7 +429,7 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         xprv, xpub = bip32_private_derivation(xprv, "m/", derivation)
         self.add_xprv(xprv)
 
-    def get_private_key(self, sequence, password):
+    def _get_private_key(self, sequence, password):
         xprv = self.get_master_private_key(password)
         _, _, _, _, c, k = deserialize_xprv(xprv)
         pk = bip32_private_key(sequence, k, c)
@@ -451,13 +438,61 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
     def is_segwit(self):
         return bool(deserialize_xpub(self.xpub)[0])
 
-    def get_pubkey_derivation(self, x_pubkey):
-        return Xpub.get_pubkey_derivation(self, x_pubkey)
+    def _get_pubkey_derivation(self, x_pubkey):
+        return XpubMixin.get_pubkey_derivation(self, x_pubkey)
 
 
-class Old_KeyStore(Deterministic_KeyStore):
+class BIP32KeyHotStore(DeterministicKeyStore, XpubMixin):
     def __init__(self, d):
-        super(Old_KeyStore, self).__init__(d)
+        DeterministicKeyStore.__init__(self, d)
+        XpubMixin.__init__(self)
+        self.xpub = d.get('xpub', '')
+
+    def dump(self):
+        d = DeterministicKeyStore.dump(self)
+        d['type'] = 'bip32watchonly'
+        d['xpub'] = self.xpub
+        return d
+
+    def get_master_private_key(self, password):
+        return None
+        # return pw_decode(self.xprv, password)
+
+    def check_password(self, password):
+        return None
+
+    def update_password(self, old_password, new_password):
+        pass
+
+    def is_watching_only(self):
+        return self.xprv is None
+
+    def add_xprv(self, xprv):
+        self.xprv = xprv
+        self.xpub = xpub_from_xprv(xprv)
+
+    def add_xprv_from_seed(self, bip32_seed, xtype, derivation):
+        xprv, xpub = bip32_root(bip32_seed, xtype)
+        xprv, xpub = bip32_private_derivation(xprv, "m/", derivation)
+        self.add_xprv(xprv)
+
+    def _get_private_key(self, sequence, password):
+        pass
+        # xprv = self.get_master_private_key(password)
+        # _, _, _, _, c, k = deserialize_xprv(xprv)
+        # pk = bip32_private_key(sequence, k, c)
+        # return pk
+
+    def is_segwit(self):
+        return bool(deserialize_xpub(self.xpub)[0])
+
+    def _get_pubkey_derivation(self, x_pubkey):
+        return XpubMixin.get_pubkey_derivation(self, x_pubkey)
+
+
+class OldKeyStore(DeterministicKeyStore):
+    def __init__(self, d):
+        super(OldKeyStore, self).__init__(d)
 
     @classmethod
     def get_sequence(cls, mpk, for_change, n):
@@ -486,7 +521,7 @@ class Old_KeyStore(Deterministic_KeyStore):
         return '04' + public_key2.to_string().encode('hex')
 
 
-class Hardware_KeyStore(KeyStore, Xpub):
+class HardwareKeyStore(KeyStore, XpubMixin):
     pass
 
 
@@ -500,11 +535,11 @@ def xpubkey_to_address(x_pubkey):
     if x_pubkey[0:2] in ['02', '03', '04']:
         pubkey = x_pubkey
     elif x_pubkey[0:2] == 'ff':
-        xpub, s = BIP32_KeyStore.parse_xpubkey(x_pubkey)
-        pubkey = BIP32_KeyStore.get_pubkey_from_xpub(xpub, s)
+        xpub, s = BIP32KeyStore.parse_xpubkey(x_pubkey)
+        pubkey = BIP32KeyStore.get_pubkey_from_xpub(xpub, s)
     elif x_pubkey[0:2] == 'fe':
-        mpk, s = Old_KeyStore.parse_xpubkey(x_pubkey)
-        pubkey = Old_KeyStore.get_pubkey_from_mpk(mpk, s[0], s[1])
+        mpk, s = OldKeyStore.parse_xpubkey(x_pubkey)
+        pubkey = OldKeyStore.get_pubkey_from_mpk(mpk, s[0], s[1])
     else:
         raise BaseException("Cannot parse pubkey")
     if pubkey:
@@ -546,7 +581,7 @@ def load_keystore(storage, name):
     if not t:
         raise BaseException('wallet format requires update')
     if t == 'old':
-        k = Old_KeyStore(d)
+        k = OldKeyStore(d)
     elif t == 'imported':
         k = ImportedKeyStore(d)
     elif t == 'simple':
@@ -554,7 +589,9 @@ def load_keystore(storage, name):
     elif t == 'watchonly':
         k = WatchOnlySimpleKeyStore(d)
     elif t == 'bip32':
-        k = from_seed(d['seed'], d.get('passphrase', None))#BIP32_KeyStore(d)
+        k = from_seed(d['seed'], d.get('passphrase', None))  # BIP32_KeyStore(d)
+    elif t == 'bip32watchonly':
+        k = BIP32KeyHotStore(d)#from_seed(d['seed'], d.get('passphrase', None))  # BIP32_KeyStore(d)
     elif t == 'hardware':
         k = hardware_keystore(d)
     else:
@@ -566,10 +603,10 @@ def from_seed(seed, passphrase):
     t = seed_type(seed)
     keystore = None
     if t == 'old':
-        keystore = Old_KeyStore({})
+        keystore = OldKeyStore({})
         keystore.add_seed(seed)
     elif t in ['standard', 'segwit']:
-        keystore = BIP32_KeyStore({})
+        keystore = BIP32KeyStore({})
         keystore.add_seed(seed)
         keystore.passphrase = passphrase
         bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
