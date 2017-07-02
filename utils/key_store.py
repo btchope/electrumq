@@ -439,7 +439,7 @@ class BIP32KeyStore(DeterministicKeyStore, XpubMixin):
         return bool(deserialize_xpub(self.xpub)[0])
 
     def _get_pubkey_derivation(self, x_pubkey):
-        return XpubMixin.get_pubkey_derivation(self, x_pubkey)
+        return XpubMixin._get_pubkey_derivation(self, x_pubkey)
 
 
 class BIP32KeyHotStore(DeterministicKeyStore, XpubMixin):

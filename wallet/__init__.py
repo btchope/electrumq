@@ -91,6 +91,17 @@ class BaseWallet(AbstractWallet):
             if 'change' in d:
                 self.change_addresses = d['change']
 
+    def get_utxo(self):
+        utxo = reduce(lambda x, y: x + y, [[
+                                               {'prevout_hash': e[0], 'prevout_n': e[1],
+                                                'scriptSig': e[2], 'value': e[3],
+                                                'address': e[4],
+                                                'coinbase': False,
+                                                'height': e[5]} for e in
+                                               TxStore().get_unspend_outs(address=address)] for
+                                           address in self.get_addresses()], [])
+        return utxo
+
     def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None):
         # check outputs
         i_max = None
