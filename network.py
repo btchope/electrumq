@@ -28,6 +28,7 @@ __author__ = 'zhouqi'
 # logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('rpcclient')
 
+
 class NetWorkManager():
     """
     1. start/stop ioloop
@@ -64,6 +65,7 @@ class NetWorkManager():
         # ip, port = '176.9.108.141', 50001
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
         self.ioloop.add_feature(self.client.connect())
+        self.client.add_message(Version([Parameter().ELECTRUM_VERSION, Parameter().PROTOCOL_VERSION]))
 
     def filter_protocol(self, hostmap, protocol='s'):
         '''Filters the hostmap for those implementing protocol.

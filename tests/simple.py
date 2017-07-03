@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import unittest
 
+from sqlite3 import Connection
+
 import utils
-from db.sqlite import Connection, init, drop
+from db.sqlite import drop, init
 from utils import base58
-from utils import parser
 
 __author__ = 'zhouqi'
-
 
 class TestWallet(unittest.TestCase):
     def setUp(self):
