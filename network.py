@@ -13,7 +13,7 @@ from logging.config import dictConfig
 
 import tornado
 from tornado import gen
-from tornado.concurrent import is_future
+from tornado.concurrent import is_future, Future
 from tornado.httpclient import AsyncHTTPClient
 from tornado.iostream import StreamClosedError
 from tornado.tcpclient import TCPClient
@@ -55,17 +55,25 @@ class NetWorkManager():
 
     def start_client(self, ip=None, port=None):
         ip, port, _ = self.deserialize_server(self.pick_random_server())
-        print ip, port
         port = int(port)
+        logger.debug('begin to connect to %s %d' % (ip, port))
         try:
             l = socket.getaddrinfo(ip, port, socket.AF_UNSPEC, socket.SOCK_STREAM)
             ip, port = l[0][-1]
         except socket.gaierror:
-            self.print_error("cannot resolve hostname")
+            logger.debug('cannot resolve hostname')
         # ip, port = '176.9.108.141', 50001
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
-        self.ioloop.add_feature(self.client.connect())
-        self.client.add_message(Version([Parameter().ELECTRUM_VERSION, Parameter().PROTOCOL_VERSION]))
+        self.ioloop.add_feature(self.client.connect2(), self.connect_callback)
+
+    def connect_callback(self, feature):
+        if not self.client.is_connected:
+            logger.debug('connect failed and retry')
+            self.client = None
+            self.start_client()
+        else:
+            self.client.add_message(
+                Version([Parameter().ELECTRUM_VERSION, Parameter().PROTOCOL_VERSION]))
 
     def filter_protocol(self, hostmap, protocol='s'):
         '''Filters the hostmap for those implementing protocol.
@@ -121,7 +129,12 @@ class RPCClient():
     _callback_dict = {}
     _subscribe_dict = {}
     ioloop = None
+    connect_future = None
+    connect_timeout = 0.5
+    connect_retry_time = 3
     logger = logging.getLogger('rpcclient')
+
+    timeout = None
 
     def __init__(self, ioloop, ip=None, port=None):
         if ip is not None:
@@ -130,13 +143,56 @@ class RPCClient():
             self.port = port
         self.ioloop = ioloop
 
+    def connect2(self):
+        self.try_connect()
+        return self.connect_future
+
+    def try_connect(self):
+        self.connect_future = Future()
+        self.ioloop.add_feature(TCPClient().connect(self.ip, self.port), self.connect_callback)
+        self.set_timout(timeout=1)
+
+    def connect_callback(self, future):
+        if future.exception() is None:
+            self.stream = future.result()
+            self.is_connected = True
+            self.stream.read_until(b"\n", callback=self.parse_response)
+            logger.debug('client connected')
+            self.ioloop.add_periodic(self.send_all)
+            self.ioloop.add_periodic(self.callback)
+            self.ioloop.add_periodic(self.subscribe)
+            self.connect_future.set_result(True)
+        else:
+            if self.connect_retry_time > 0:
+                self.connect_retry_time -= 1
+                self.try_connect()
+            else:
+                self.connect_future.set_result(False)
+
+    def set_timout(self, timeout):
+        self.timeout = self.ioloop.add_timeout(self.ioloop.time() + timeout,
+                                                self.on_timeout)
+
+    def on_timeout(self):
+        self.timeout = None
+        if self.connect_future is not None and not self.connect_future.done():
+            self.connect_future.set_result(False)
+
+    def clear_timeout(self):
+        if self.timeout is not None:
+            self.ioloop.remove_timeout(self.timeout)
+
     @gen.coroutine
     def connect(self):
         try:
+            self.port += 1
+            from datetime import datetime
+            d = datetime.now()
             self.stream = yield TCPClient().connect(self.ip, self.port)
+            print 'stream' + str(datetime.now() - d)
             self.is_connected = True
             self.stream.read_until(b"\n", callback=self.parse_response)
-            print 'connected'
+            logger.debug('client connected')
             self.ioloop.add_periodic(self.send_all)
             self.ioloop.add_periodic(self.callback)
             self.ioloop.add_periodic(self.subscribe)
@@ -144,7 +200,8 @@ class RPCClient():
             self.is_connected = False
         except Exception as ex:
             print ex
-            raise ex
+            self.is_connected = False
+            # raise ex
 
     @gen.coroutine
     def send_all(self):

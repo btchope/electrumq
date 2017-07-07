@@ -10,13 +10,12 @@ from tornado.ioloop import IOLoop as TornadoIOLoop, PeriodicCallback
 
 __author__ = 'zhouqi'
 
-
 logger = logging.getLogger('ioloop')
 
 MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 1
 
-class IOLoop(threading.Thread):
 
+class IOLoop(threading.Thread):
     _features = []
 
     def __init__(self):
@@ -24,6 +23,7 @@ class IOLoop(threading.Thread):
 
     def run(self):
         logger.debug('ioloop starting')
+
         def add_features():
             if not self._features:
                 pass
@@ -39,15 +39,21 @@ class IOLoop(threading.Thread):
     def add_feature(self, feature, callback=None):
         def nothing(**kwargs):
             pass
+
         if callback is None:
             callback = nothing
-        else:
-            feature.add_done_callback(callback)
-        self._features.append((feature, nothing))
-
+        # else:
+        #     feature.add_done_callback(callback)
+        self._features.append((feature, callback))
 
     def add_periodic(self, feature, interval=1000):
         PeriodicCallback(feature, interval, TornadoIOLoop.instance()).start()
+
+    def add_timeout(self, deadline, callback, *args, **kwargs):
+        TornadoIOLoop.instance().add_timeout(deadline, callback, *args, **kwargs)
+
+    def time(self):
+        return TornadoIOLoop.instance().time()
 
     def quit(self):
         logger.info('begin to quit')

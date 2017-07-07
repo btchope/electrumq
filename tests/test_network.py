@@ -3,7 +3,9 @@ from logging.config import fileConfig
 
 import time
 
-from network import NetWorkManager
+from tornado.testing import gen_test, AsyncTestCase
+
+from network import NetWorkManager, RPCClient
 from utils.parameter import set_testnet
 
 __author__ = 'zhouqi'
