@@ -29,7 +29,7 @@ __author__ = 'zhouqi'
 logger = logging.getLogger('rpcclient')
 
 
-class NetWorkManager():
+class NetWorkManager:
     """
     1. start/stop ioloop
     2. collect client
@@ -45,7 +45,8 @@ class NetWorkManager():
         signal.signal(signal.SIGINT, self.sig_handler)
 
     def start_ioloop(self):
-        self.ioloop = IOLoop()
+        if self.ioloop is not None:
+            self.ioloop = IOLoop()
         self.ioloop.start()
 
     def sig_handler(self, sig, frame):
@@ -64,7 +65,7 @@ class NetWorkManager():
             logger.debug('cannot resolve hostname')
         # ip, port = '176.9.108.141', 50001
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
-        self.ioloop.add_feature(self.client.connect2(), self.connect_callback)
+        self.ioloop.add_future(self.client.connect2(), self.connect_callback)
 
     def connect_callback(self, feature):
         if not self.client.is_connected:
@@ -101,7 +102,7 @@ class NetWorkManager():
         return host, port, protocol
 
     def init_header(self, callback=None):
-        self.ioloop.add_feature(self.init(), callback)
+        self.ioloop.add_future(self.init(), callback)
 
     @gen.coroutine
     def init(self):
@@ -116,8 +117,7 @@ class NetWorkManager():
                 raise gen.Return(response.body)
 
 
-
-class RPCClient():
+class RPCClient:
     ip, port = '176.9.108.141', 50001
     stream = None
     is_connected = False
@@ -130,8 +130,9 @@ class RPCClient():
     _subscribe_dict = {}
     ioloop = None
     connect_future = None
+    f = None
     connect_timeout = 0.5
-    connect_retry_time = 3
+    connect_retry_time = 0
     logger = logging.getLogger('rpcclient')
 
     timeout = None
@@ -149,8 +150,9 @@ class RPCClient():
 
     def try_connect(self):
         self.connect_future = Future()
-        self.ioloop.add_feature(TCPClient().connect(self.ip, self.port), self.connect_callback)
-        self.set_timout(timeout=1)
+        print 'ip & port', self.ip, self.port
+        self.ioloop.add_future(TCPClient().connect(self.ip, self.port), self.connect_callback)
+        # self.set_timout(timeout=1)
 
     def connect_callback(self, future):
         if future.exception() is None:
@@ -163,6 +165,7 @@ class RPCClient():
             self.ioloop.add_periodic(self.subscribe)
             self.connect_future.set_result(True)
         else:
+            print future.exception()
             if self.connect_retry_time > 0:
                 self.connect_retry_time -= 1
                 self.try_connect()
@@ -170,13 +173,16 @@ class RPCClient():
                 self.connect_future.set_result(False)
 
     def set_timout(self, timeout):
+        print 'set timeout'
         self.timeout = self.ioloop.add_timeout(self.ioloop.time() + timeout,
                                                 self.on_timeout)
 
     def on_timeout(self):
+        print 'triger timeout'
         self.timeout = None
         if self.connect_future is not None and not self.connect_future.done():
             self.connect_future.set_result(False)
+            self.f.set_exception(Exception())
 
     def clear_timeout(self):
         if self.timeout is not None:
@@ -226,7 +232,7 @@ class RPCClient():
                     feature = func(msg_id, msg, result)
                     if not is_future(feature):
                         raise Exception('callback must be a feature')
-                    self.ioloop.add_feature(feature)
+                    self.ioloop.add_future(feature)
                 except Exception as ex:
                     self.logger.exception(ex.message)
 
@@ -242,7 +248,7 @@ class RPCClient():
                         feature = func(params)
                         if not is_future(feature):
                             raise Exception('callback must be a feature')
-                        self.ioloop.add_feature(feature)
+                        self.ioloop.add_future(feature)
                     except Exception as ex:
                         self.logger.exception(ex.message)
 

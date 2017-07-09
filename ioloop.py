@@ -16,7 +16,7 @@ MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 1
 
 
 class IOLoop(threading.Thread):
-    _features = []
+    _futures = []
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -25,18 +25,18 @@ class IOLoop(threading.Thread):
         logger.debug('ioloop starting')
 
         def add_features():
-            if not self._features:
+            if not self._futures:
                 pass
             else:
-                need_add = self._features[:]
-                self._features = []
+                need_add = self._futures[:]
+                self._futures = []
                 for each in need_add:
                     TornadoIOLoop.instance().add_future(each[0], each[1])
 
         PeriodicCallback(add_features, 1000, TornadoIOLoop.instance()).start()
         TornadoIOLoop.instance().start()
 
-    def add_feature(self, feature, callback=None):
+    def add_future(self, future, callback=None):
         def nothing(**kwargs):
             pass
 
@@ -44,7 +44,7 @@ class IOLoop(threading.Thread):
             callback = nothing
         # else:
         #     feature.add_done_callback(callback)
-        self._features.append((feature, callback))
+        self._futures.append((future, callback))
 
     def add_periodic(self, feature, interval=1000):
         PeriodicCallback(feature, interval, TornadoIOLoop.instance()).start()
