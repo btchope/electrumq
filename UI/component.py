@@ -6,39 +6,12 @@ from PyQt4.QtGui import QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QWid
 __author__ = 'zhouqi'
 
 
-class AccountList(QWidget):
-    def __init__(self):
-        super(AccountList, self).__init__()
-
-        layout = QVBoxLayout()
-        accounts = ['btc', 'hd']
-        for account in accounts:
-            # button = QPushButton("Button %d" % (i + 1))
-            layout.addWidget(AccountIcon(account))
-        layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        self.setLayout(layout)
-
-    def add_account(self, account_name):
-        pass
-
-
 class AccountIcon(QPushButton):
     def __init__(self, account_name):
         super(AccountIcon, self).__init__()
         self.setFixedSize(50, 50)
         self.setText(account_name)
 
-
-class NavList(QWidget):
-    def __init__(self):
-        super(NavList, self).__init__()
-
-        layout = QVBoxLayout()
-        layout.addWidget(AddressView())
-        layout.addWidget(BalanceView())
-        layout.addWidget(FuncList())
-        layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        self.setLayout(layout)
 
 class AddressView(QWidget):
     def __init__(self):
@@ -73,9 +46,12 @@ class FuncList(QWidget):
         super(FuncList, self).__init__()
 
         layout = QVBoxLayout()
-        funcs = [u'交易记录', u'收币', u'发币']
-        for f in funcs:
-            layout.addWidget(FuncView(f))
+        self.tx_log_btn = FuncView(u'交易记录')
+        layout.addWidget(self.tx_log_btn)
+        self.receive_btn = FuncView(u'收币')
+        layout.addWidget(self.receive_btn)
+        self.send_btn = FuncView(u'发币')
+        layout.addWidget(self.send_btn)
         self.setLayout(layout)
 
 
@@ -84,15 +60,6 @@ class FuncView(QPushButton):
         super(FuncView, self).__init__()
         self.setText(func_name)
         self.setMaximumWidth(80)
-
-
-class TxList(QWidget):
-    def __init__(self):
-        super(TxList, self).__init__()
-        layout = QVBoxLayout()
-        layout.addWidget(TxFilterView())
-        layout.addWidget(TxTableView())
-        self.setLayout(layout)
 
 
 class TxFilterView(QWidget):
@@ -125,8 +92,8 @@ class TxTableView(QWidget):
         layout.addWidget(self.sourceView)
         self.setLayout(layout)
 
-
     is_verify, tx_date, tx_desc, tx_amount, tx_balance = range(5)
+
     def addItem(self, model, is_verify, tx_date, tx_desc, tx_amount, tx_balance):
         model.insertRow(0)
         model.setData(model.index(0, self.is_verify), is_verify)
@@ -134,7 +101,6 @@ class TxTableView(QWidget):
         model.setData(model.index(0, self.tx_desc), tx_desc)
         model.setData(model.index(0, self.tx_amount), tx_amount)
         model.setData(model.index(0, self.tx_balance), tx_balance)
-
 
     def create_model(self, parent):
         model = QStandardItemModel(0, 5, parent)

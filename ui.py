@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 
-from UI.base import EQApplication, EQMainWindow
+from UI.controller import EQApplication, EQMainWindow
 
 __author__ = 'zhouqi'
 

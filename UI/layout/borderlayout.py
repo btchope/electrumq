@@ -127,6 +127,19 @@ class BorderLayout(QLayout):
     def add(self, item, position):
         self.list.append(ItemWrapper(item, position))
 
+    def replace(self, item1, item2):
+        for each in self.list:
+            if each.item is item1:
+                each.item = item2
+
+    def remove(self, item):
+        be_remove_idx = None
+        for idx, each in enumerate(self.list):
+            if each.item is item:
+                be_remove_idx = idx
+        if be_remove_idx is not None:
+            self.list.pop(be_remove_idx)
+
     def calculateSize(self, sizeType):
         totalSize = QSize()
 
