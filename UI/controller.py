@@ -173,21 +173,22 @@ class TabController(QWidget):
         super(TabController, self).__init__()
         layout = QVBoxLayout()
         layout.addWidget(TxFilterView())
-        data_source = [["", QDateTime(QDate(2006, 12, 31), QTime(17, 3)), '', 1000, 1000],
-                       ["", QDateTime(QDate(2006, 12, 22), QTime(9, 44)), '', 1000, 1000],
-                       ["", QDateTime(QDate(2006, 12, 31), QTime(12, 50)), '', 1000, 1000],
-                       ]
+
         txs = Wallet().current_wallet.get_txs()
-
-        def dt_to_qdt(dt):
-            array = dt.timetuple()
-            return QDateTime(QDate(*array[:3]), QTime(*array[3:6]))
-
-        data_source = [[e['tx_hash'], dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
+        data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
         self.tx_table_view = TxTableView(data_source)
         layout.addWidget(self.tx_table_view)
+        # self.update_data_source()
         self.setLayout(layout)
 
+
+    def dt_to_qdt(self, dt):
+        array = dt.timetuple()
+        return QDateTime(QDate(*array[:3]), QTime(*array[3:6]))
+
+    def update_data_source(self):
+        txs = Wallet().current_wallet.get_txs()
+        data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
         self.tx_table_view.data_source = data_source
         self.tx_table_view.reload()
 

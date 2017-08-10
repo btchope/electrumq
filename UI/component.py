@@ -91,20 +91,18 @@ class TableView(QWidget):
         self.sourceView = QTreeView()
         self.sourceView.setRootIsDecorated(False)
         self.sourceView.setAlternatingRowColors(True)
-        self.model = QStandardItemModel(0, len(self.data_source[0]), self)
-        self.sourceView.setModel(self.model)
         layout.addWidget(self.sourceView)
-        self.draw_header()
-        for row in self.data_source:
-            self.draw_row(row)
+        self.reload()
         self.setLayout(layout)
 
     def reload(self):
-        self.model = QStandardItemModel(0, len(self.data_source[0]), self)
-        self.sourceView.setModel(self.model)
-        self.draw_header()
-        for row in self.data_source:
-            self.draw_row(row)
+        if len(self.data_source) > 0:
+            self.model = QStandardItemModel(0, len(self.data_source[0]), self)
+            self.sourceView.setModel(self.model)
+            self.draw_header()
+            for row in self.data_source:
+                self.draw_row(row)
+            self.update()
 
     def draw_header(self):
         pass
@@ -116,9 +114,6 @@ class TableView(QWidget):
 class TxTableView(TableView):
     def __init__(self, data_source):
         super(TxTableView, self).__init__(data_source)
-
-    def reload(self):
-        pass
 
     def draw_header(self):
         sizes = [200, 160, 80]
