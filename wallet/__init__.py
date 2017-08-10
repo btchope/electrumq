@@ -3,6 +3,8 @@ import random
 import traceback
 from functools import partial
 
+from datetime import datetime
+
 from blockchain import BlockChain
 from db.sqlite.block import BlockStore
 from db.sqlite.tx import TxStore
@@ -101,6 +103,13 @@ class BaseWallet(AbstractWallet):
                                                TxStore().get_unspend_outs(address=address)] for
                                            address in self.get_addresses()], [])
         return utxo
+
+    def get_txs(self):
+        txs = reduce(lambda x, y: x + y, [[
+            {'tx_hash': e[0], 'tx_time': datetime.now(), 'tx_delta': 10000} for e in
+            TxStore().get_txs(address=address)] for
+            address in self.get_addresses()], [])
+        return txs
 
     def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None):
         # check outputs

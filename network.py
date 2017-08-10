@@ -45,7 +45,7 @@ class NetWorkManager:
         signal.signal(signal.SIGINT, self.sig_handler)
 
     def start_ioloop(self):
-        if self.ioloop is not None:
+        if self.ioloop is None:
             self.ioloop = IOLoop()
         self.ioloop.start()
 

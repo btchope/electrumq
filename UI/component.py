@@ -17,28 +17,36 @@ class AddressView(QWidget):
     def __init__(self):
         super(AddressView, self).__init__()
         layout = QVBoxLayout()
-        addressTB = QTextEdit()
-        addressTB.setMaximumHeight(40)
-        addressTB.setMaximumWidth(160)
-        addressTB.setText('1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm')
+        self.addressTB = QTextEdit()
+        self.addressTB.setMaximumHeight(40)
+        self.addressTB.setMaximumWidth(160)
+        self.addressTB.setText('1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm')
         # addressTB.setMinimumHeight(50)
 
-        layout.addWidget(addressTB)
+        layout.addWidget(self.addressTB)
         self.setLayout(layout)
         self.setMaximumHeight(100)
+
+    def set_address(self, address):
+        self.addressTB.setText(address)
+        self.update()
 
 
 class BalanceView(QWidget):
     def __init__(self):
         super(BalanceView, self).__init__()
         layout = QVBoxLayout()
-        btc_balance_label = QLabel(u"余额：100 BTC")
-        btc_balance_label.setFrameStyle(QFrame.Shadow_Mask)
-        layout.addWidget(btc_balance_label)
+        self.btc_balance_label = QLabel(u"余额：100 BTC")
+        self.btc_balance_label.setFrameStyle(QFrame.Shadow_Mask)
+        layout.addWidget(self.btc_balance_label)
         fiat_balance_label = QLabel(u"余额：2,100,000 RMB")
         fiat_balance_label.setFrameStyle(QFrame.Shadow_Mask)
         layout.addWidget(fiat_balance_label)
         self.setLayout(layout)
+
+    def set_blance(self, balance):
+        self.btc_balance_label.setText(u'余额: %f BTC' % (balance * 1.0 / 100000000,))
+        self.update()
 
 
 class FuncList(QWidget):
@@ -74,52 +82,71 @@ class TxFilterView(QWidget):
         self.setLayout(layout)
 
 
-class TxTableView(QWidget):
-    def __init__(self):
-        super(TxTableView, self).__init__()
+class TableView(QWidget):
+    def __init__(self, data_source):
+        super(TableView, self).__init__()
 
+        self.data_source = data_source
         layout = QVBoxLayout()
         self.sourceView = QTreeView()
         self.sourceView.setRootIsDecorated(False)
         self.sourceView.setAlternatingRowColors(True)
-        model = self.create_model(self)
-        self.sourceView.setModel(model)
-        self.sourceView.setColumnWidth(0, 20)
-        self.sourceView.setColumnWidth(1, 120)
-        self.sourceView.setColumnWidth(2, 120)
-        self.sourceView.setColumnWidth(3, 80)
-        self.sourceView.setColumnWidth(4, 80)
+        self.model = QStandardItemModel(0, len(self.data_source[0]), self)
+        self.sourceView.setModel(self.model)
         layout.addWidget(self.sourceView)
+        self.draw_header()
+        for row in self.data_source:
+            self.draw_row(row)
         self.setLayout(layout)
 
-    is_verify, tx_date, tx_desc, tx_amount, tx_balance = range(5)
+    def reload(self):
+        self.model = QStandardItemModel(0, len(self.data_source[0]), self)
+        self.sourceView.setModel(self.model)
+        self.draw_header()
+        for row in self.data_source:
+            self.draw_row(row)
 
-    def addItem(self, model, is_verify, tx_date, tx_desc, tx_amount, tx_balance):
-        model.insertRow(0)
-        model.setData(model.index(0, self.is_verify), is_verify)
-        model.setData(model.index(0, self.tx_date), tx_date)
-        model.setData(model.index(0, self.tx_desc), tx_desc)
-        model.setData(model.index(0, self.tx_amount), tx_amount)
-        model.setData(model.index(0, self.tx_balance), tx_balance)
+    def draw_header(self):
+        pass
 
-    def create_model(self, parent):
-        model = QStandardItemModel(0, 5, parent)
+    def draw_row(self, row):
+        pass
 
-        model.setHeaderData(self.is_verify, Qt.Horizontal, "")
-        model.setHeaderData(self.tx_date, Qt.Horizontal, "Date")
-        model.setHeaderData(self.tx_desc, Qt.Horizontal, "Description")
-        model.setHeaderData(self.tx_amount, Qt.Horizontal, "Amount")
-        model.setHeaderData(self.tx_balance, Qt.Horizontal, "Balance")
 
-        self.addItem(model, "", QDateTime(QDate(2006, 12, 31), QTime(17, 3)), '', 1000, 1000)
-        self.addItem(model, "", QDateTime(QDate(2006, 12, 22), QTime(9, 44)), '', 1000, 1000)
-        self.addItem(model, "", QDateTime(QDate(2006, 12, 31), QTime(12, 50)), '', 1000, 1000)
-        self.addItem(model, "", QDateTime(QDate(2006, 12, 25), QTime(11, 39)), '', 1000, 1000)
-        self.addItem(model, "", QDateTime(QDate(2007, 1, 2), QTime(16, 5)), '', 1000, 1000)
-        self.addItem(model, "", QDateTime(QDate(2007, 1, 3), QTime(14, 18)), '', 1000, 1000)
-        self.addItem(model, "", QDateTime(QDate(2007, 1, 3), QTime(14, 26)), '', 1000, 1000)
-        self.addItem(model, "", QDateTime(QDate(2007, 1, 5), QTime(11, 33)), '', 1000, 1000)
-        self.addItem(model, "", QDateTime(QDate(2007, 1, 5), QTime(12, 0)), '', 1000, 1000)
-        self.addItem(model, "", QDateTime(QDate(2007, 1, 5), QTime(12, 1)), '', 1000, 1000)
+class TxTableView(TableView):
+    def __init__(self, data_source):
+        super(TxTableView, self).__init__(data_source)
 
-        return model
+    def reload(self):
+        pass
+
+    def draw_header(self):
+        sizes = [200, 160, 80]
+        headers = [(Qt.Horizontal, "Tx"), (Qt.Horizontal, "Date"), (Qt.Horizontal, "Amount")]
+        for idx, size in enumerate(sizes):
+            self.sourceView.setColumnWidth(idx, size)
+        for idx, (orientation, text) in enumerate(headers):
+            self.model.setHeaderData(idx, orientation, text)
+
+    def draw_row(self, row):
+        # self.model.insertRow(0)
+        self.model.appendRow(None)
+        last_idx = self.model.rowCount() - 1
+        for idx, val in enumerate(row):
+            self.model.setData(self.model.index(last_idx, idx), val)
+
+
+class SendView(QWidget):
+    def __init__(self):
+        super(SendView, self).__init__()
+
+        layout = QVBoxLayout()
+        dest_address_label = QLabel(u"目标地址")
+        layout.addWidget(dest_address_label)
+        dest_address_tb = QTextEdit()
+        dest_address_tb.setMaximumWidth(160)
+        layout.addWidget(dest_address_tb)
+
+        self.send_btn = FuncView(u'发送')
+        layout.addWidget(self.send_btn)
+        self.setLayout(layout)

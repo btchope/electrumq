@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
+import logging
 from PyQt4 import QtCore
+from PyQt4.QtCore import QDateTime, QDate, QTime
 from PyQt4.QtGui import *
 
 from UI.component import AccountIcon, AddressView, BalanceView, \
-    FuncList, TxFilterView, TxTableView
+    FuncList, TxFilterView, TxTableView, SendView
 from UI.layout.borderlayout import BorderLayout
+from db.sqlite import init
+from network import NetWorkManager
+from wallet import WalletConfig
+from wallet.manager import Wallet
+from wallet.single import SimpleWallet
 
 __author__ = 'zhouqi'
 
@@ -99,21 +106,30 @@ class NavController(QWidget):
         super(NavController, self).__init__()
         self.parent_controller = None
         layout = QVBoxLayout()
-        layout.addWidget(AddressView())
-        layout.addWidget(BalanceView())
-        func_list = FuncList()
-        layout.addWidget(func_list)
+        self.address_view = AddressView()
+        layout.addWidget(self.address_view)
+        self.balance_view = BalanceView()
+        layout.addWidget(self.balance_view)
+        self.func_list = FuncList()
+        layout.addWidget(self.func_list)
         layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.setLayout(layout)
 
-        self.tx_log_btn = func_list.tx_log_btn
-        self.receive_btn = func_list.receive_btn
-        self.send_btn = func_list.send_btn
+        self.tx_log_btn = self.func_list.tx_log_btn
+        self.receive_btn = self.func_list.receive_btn
+        self.send_btn = self.func_list.send_btn
+
+        self.show()
 
     def init_event(self):
         self.tx_log_btn.clicked.connect(self.parent_controller.show_tab)
         self.receive_btn.clicked.connect(self.parent_controller.show_receive)
         self.send_btn.clicked.connect(self.parent_controller.show_send)
+
+    def show(self):
+        super(NavController, self).show()
+        self.address_view.set_address(Wallet().current_wallet.address)
+        self.balance_view.set_blance(Wallet().current_wallet.balance)
 
 
 class DetailController(QWidget):
@@ -157,18 +173,37 @@ class TabController(QWidget):
         super(TabController, self).__init__()
         layout = QVBoxLayout()
         layout.addWidget(TxFilterView())
-        layout.addWidget(TxTableView())
+        data_source = [["", QDateTime(QDate(2006, 12, 31), QTime(17, 3)), '', 1000, 1000],
+                       ["", QDateTime(QDate(2006, 12, 22), QTime(9, 44)), '', 1000, 1000],
+                       ["", QDateTime(QDate(2006, 12, 31), QTime(12, 50)), '', 1000, 1000],
+                       ]
+        txs = Wallet().current_wallet.get_txs()
+
+        def dt_to_qdt(dt):
+            array = dt.timetuple()
+            return QDateTime(QDate(*array[:3]), QTime(*array[3:6]))
+
+        data_source = [[e['tx_hash'], dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
+        self.tx_table_view = TxTableView(data_source)
+        layout.addWidget(self.tx_table_view)
         self.setLayout(layout)
+
+        self.tx_table_view.data_source = data_source
+        self.tx_table_view.reload()
 
 
 class SendController(QWidget):
     def __init__(self):
         super(SendController, self).__init__()
         layout = QVBoxLayout()
-        layout.addWidget(TxFilterView())
-        layout.addWidget(AddressView())
+        layout.addWidget(SendView())
         self.setLayout(layout)
 
 
 class ReceiveController(QWidget):
-    pass
+    def __init__(self):
+        super(ReceiveController, self).__init__()
+        layout = QVBoxLayout()
+        layout.addWidget(TxFilterView())
+        layout.addWidget(AddressView())
+        self.setLayout(layout)

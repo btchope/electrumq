@@ -91,7 +91,7 @@ class TxStore():
 
 
     def get_balance(self, address):
-        return execute_one('select ifnull(sum(out_value),0) from outs WHERE out_status=0 AND out_address=?', address)[0]
+        return execute_one('select ifnull(sum(out_value),0) from outs WHERE out_status=0 AND out_address=?', (address,))[0]
 
     def get_unspend_outs(self, address):
         res = execute_all('select a.tx_hash,a.out_sn,a.out_script,a.out_value,a.out_address,b.block_no'
@@ -104,3 +104,6 @@ class TxStore():
         return execute_one(
             'SELECT ifnull(max(a.block_no),-1) FROM txs a, addresses_txs b WHERE b.address=? AND a.tx_hash=b.tx_hash',
             (address,))[0]
+
+    def get_txs(self, address):
+        return execute_all('SELECT tx_hash FROM addresses_txs WHERE address=?', (address,))

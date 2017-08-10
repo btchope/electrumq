@@ -5,6 +5,7 @@ import ecdsa
 from ecdsa import SECP256k1
 from ecdsa.util import string_to_number
 
+from db.sqlite.tx import TxStore
 from utils.base58 import Hash, public_key_to_p2pkh, b58decode_check, b58encode_check, \
     hash_160_to_bc_address
 from utils.bip32 import bip32_public_derivation, deserialize_xpub, CKD_pub, deserialize_xprv, \
@@ -240,6 +241,9 @@ class SimpleKeyStore(KeyStore):
         # for k, v in self.keypairs.items():
         b = pw_decode(self.encrypt_priv_key, old_password)
         self.encrypt_priv_key = pw_encode(b, new_password)
+
+    def get_txs(self):
+        return TxStore().get_txs(self.address)
 
 
 class WatchOnlySimpleKeyStore(SimpleKeyStore):

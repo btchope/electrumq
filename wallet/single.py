@@ -32,6 +32,10 @@ class SimpleWallet(BaseWallet):
     def address(self):
         return self.keystore.address
 
+    @property
+    def balance(self):
+        return TxStore().get_balance(self.address)
+
     def init(self):
         NetWorkManager().client.add_message(GetHistory([self.address]), self.history_callback)
 
