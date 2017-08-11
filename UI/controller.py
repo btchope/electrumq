@@ -3,6 +3,7 @@ import logging
 from PyQt4 import QtCore
 from PyQt4.QtCore import QDateTime, QDate, QTime
 from PyQt4.QtGui import *
+from datetime import datetime
 
 from UI.component import AccountIcon, AddressView, BalanceView, \
     FuncList, TxFilterView, TxTableView, SendView
@@ -183,7 +184,7 @@ class TabController(QWidget):
 
 
     def dt_to_qdt(self, dt):
-        array = dt.timetuple()
+        array = datetime.fromtimestamp(float(dt)).timetuple()
         return QDateTime(QDate(*array[:3]), QTime(*array[3:6]))
 
     def update_data_source(self):

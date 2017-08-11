@@ -33,6 +33,10 @@ class SimpleWallet(BaseWallet):
         return self.keystore.address
 
     @property
+    def display_address(self):
+        return self.address
+
+    @property
     def balance(self):
         return TxStore().get_balance(self.address)
 

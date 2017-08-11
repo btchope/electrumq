@@ -20,3 +20,12 @@ class Wallet(object):
         # hot_wallet.init()
         # todo: init from config
         self.current_wallet = SimpleWallet(WalletConfig(store_path='watch_only_simple_wallet.json'))
+
+    '''
+    wallet need show
+    1. wallet name
+    2. display address
+    3. balance 
+    4. tx  (tx_hash, tx_time, tx_delta for hole wallet)
+    '''
+

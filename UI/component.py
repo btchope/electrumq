@@ -97,8 +97,8 @@ class TableView(QWidget):
 
     def reload(self):
         if len(self.data_source) > 0:
-            self.model = QStandardItemModel(0, len(self.data_source[0]), self)
-            self.sourceView.setModel(self.model)
+            self.data_model = QStandardItemModel(0, len(self.data_source[0]), self)
+            self.sourceView.setModel(self.data_model)
             self.draw_header()
             for row in self.data_source:
                 self.draw_row(row)
@@ -121,14 +121,14 @@ class TxTableView(TableView):
         for idx, size in enumerate(sizes):
             self.sourceView.setColumnWidth(idx, size)
         for idx, (orientation, text) in enumerate(headers):
-            self.model.setHeaderData(idx, orientation, text)
+            self.data_model.setHeaderData(idx, orientation, text)
 
     def draw_row(self, row):
         # self.model.insertRow(0)
-        self.model.appendRow(None)
-        last_idx = self.model.rowCount() - 1
+        self.data_model.appendRow(None)
+        last_idx = self.data_model.rowCount() - 1
         for idx, val in enumerate(row):
-            self.model.setData(self.model.index(last_idx, idx), val)
+            self.data_model.setData(self.data_model.index(last_idx, idx), val)
 
 
 class SendView(QWidget):

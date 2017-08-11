@@ -63,12 +63,25 @@ class BaseWallet(AbstractWallet):
         self.receiving_addresses = []
         self.change_addresses = []
         self.load_addresses()
+        # todo: wallet name logic
+        self.wallet_name = 'abc'
 
     def can_import(self):
         if self.keystore is None:
             return True
         else:
             return self.keystore.can_import()
+
+    @property
+    def display_address(self):
+        pass
+
+    @property
+    def balance(self):
+        pass
+
+    def get_txs(self):
+        pass
 
     @property
     def is_segwit(self):
@@ -105,8 +118,9 @@ class BaseWallet(AbstractWallet):
         return utxo
 
     def get_txs(self):
+        l = TxStore().get_txs(address=self.get_addresses()[0])
         txs = reduce(lambda x, y: x + y, [[
-            {'tx_hash': e[0], 'tx_time': datetime.now(), 'tx_delta': 10000} for e in
+            {'tx_hash': e[0], 'tx_time': e[1], 'tx_delta': 10000} for e in
             TxStore().get_txs(address=address)] for
             address in self.get_addresses()], [])
         return txs

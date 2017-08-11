@@ -106,4 +106,4 @@ class TxStore():
             (address,))[0]
 
     def get_txs(self, address):
-        return execute_all('SELECT tx_hash FROM addresses_txs WHERE address=?', (address,))
+        return execute_all("SELECT b.tx_hash, ifnull(b.tx_time, strftime('%s', 'now')) tx_time FROM addresses_txs a,txs b WHERE a.address=? and a.tx_hash=b.tx_hash", (address,))
