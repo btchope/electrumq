@@ -91,12 +91,21 @@ def set_testnet():
     # HEADERS_URL = "https://headers.electrum.org/testnet_headers"
     Parameter().HEADERS_URL = 'http://127.0.0.1:8866/files/testnet_headers'
 
+    # Parameter().DEFAULT_PORTS = {'t': '51001', 's': '51002'}
+    # Parameter().DEFAULT_SERVERS = {
+    #     '14.3.140.101': Parameter().DEFAULT_PORTS,
+    #     'testnet.hsmiths.com': {'t': '53011', 's': '53012'},
+    #     'electrum.akinbo.org': Parameter().DEFAULT_PORTS,
+    #     'ELEX05.blackpole.online': {'t': '52011', 's': '52002'},
+    # }
     Parameter().DEFAULT_PORTS = {'t': '51001', 's': '51002'}
     Parameter().DEFAULT_SERVERS = {
-        '14.3.140.101': Parameter().DEFAULT_PORTS,
-        'testnet.hsmiths.com': {'t': '53011', 's': '53012'},
+        'testnetnode.arihanc.com': Parameter().DEFAULT_PORTS,
+        'testnet1.bauerj.eu': Parameter().DEFAULT_PORTS,
+        # '14.3.140.101': Parameter().DEFAULT_PORTS,
+        # 'testnet.hsmiths.com': {'t': '53011', 's': '53012'},
         'electrum.akinbo.org': Parameter().DEFAULT_PORTS,
-        'ELEX05.blackpole.online': {'t': '52011', 's': '52002'},
+        # 'ELEX05.blackpole.online': {'t': '52011', 's': '52002'},
     }
 
 

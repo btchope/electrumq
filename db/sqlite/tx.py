@@ -23,7 +23,8 @@ class TxStore():
         with Connection.gen_db() as conn:
             c = conn.cursor()
             if c.execute('select count(0) from txs WHERE tx_hash=?', (tx,)).fetchone()[0] == 0:
-                c.execute('insert into txs(tx_hash, block_no, source) VALUES (?, ?, ?)', (tx, block_height, 0))
+                block_time = None#c.execute('select block_time from blocks WHERE block_no=?', (block_height,)).fetchone()[0]
+                c.execute('insert into txs(tx_hash, block_no, tx_time, source) VALUES (?, ?, ?, ?)', (tx, block_height, block_time, 0))
             if c.execute('select count(0) from addresses_txs WHERE tx_hash=? and address=?', (tx, address)).fetchone()[0] == 0:
                 c.execute('insert into addresses_txs(tx_hash, address) VALUES (?, ?)', (tx, address))
         # if address in self.address_tx_dict:

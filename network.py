@@ -266,6 +266,7 @@ class RPCClient:
                 if 'jsonrpc' in j:
                     j.pop('jsonrpc')
                 self.logger.debug('receive:' + json.dumps(j).replace(' ', ''))
+                print j['id'], 'sent result has received'
                 self._response_list.append((j['id'], self._sent_dict.pop(j['id']), j['result']))
         except Exception as ex:
             self.logger.exception('error message:' + content)
