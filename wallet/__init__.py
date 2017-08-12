@@ -108,22 +108,32 @@ class BaseWallet(AbstractWallet):
 
     def get_utxo(self):
         utxo = reduce(lambda x, y: x + y, [[
-                                               {'prevout_hash': e[0], 'prevout_n': e[1],
-                                                'scriptSig': e[2], 'value': e[3],
-                                                'address': e[4],
-                                                'coinbase': False,
-                                                'height': e[5]} for e in
-                                               TxStore().get_unspend_outs(address=address)] for
-                                           address in self.get_addresses()], [])
+            {'prevout_hash': e[0], 'prevout_n': e[1],
+             'scriptSig': e[2], 'value': e[3],
+             'address': e[4],
+             'coinbase': False,
+             'height': e[5]} for e in
+            TxStore().get_unspend_outs(address=address)] for
+            address in self.get_addresses()], [])
         return utxo
 
     def get_txs(self):
-        l = TxStore().get_txs(address=self.get_addresses()[0])
-        txs = reduce(lambda x, y: x + y, [[
-            {'tx_hash': e[0], 'tx_time': e[1], 'tx_delta': 10000} for e in
-            TxStore().get_txs(address=address)] for
-            address in self.get_addresses()], [])
-        return txs
+        txs = TxStore().get_all_txs(self.get_addresses())
+        receives = {row[0]: row[1] for row in TxStore().get_all_tx_receive(self.get_addresses())}
+        spents = {row[0]: row[1] for row in TxStore().get_all_tx_spent(self.get_addresses())}
+        result = []
+        for row in txs:
+            receive = 0
+            if row[0] in receives:
+                receive = receives[row[0]]
+            spent = 0
+            if row[0] in spents:
+                spent = spents[row[0]]
+            delta = receive - spent
+            result.append(
+                {'tx_hash': row[0], 'tx_time': row[1], 'tx_delta': delta, 'tx_receive': receive,
+                 'tx_spent': spent})
+        return result
 
     def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None):
         # check outputs
@@ -204,9 +214,9 @@ class BaseWallet(AbstractWallet):
             # try:
             if k.can_sign(tx):
                 k.sign_transaction(tx, password)
-            # except Exception as ex:
-            #     traceback.print_stack()
-            #     continue
+                # except Exception as ex:
+                #     traceback.print_stack()
+                #     continue
 
     def get_num_tx(self, address):
         # todo:
@@ -219,7 +229,7 @@ class BaseWallet(AbstractWallet):
         return fee
 
     def add_input_info(self, txin):
-        txin['type'] = self.txin_type #'p2pkh'
+        txin['type'] = self.txin_type  # 'p2pkh'
         # Add address for utxo that are in wallet
         if txin.get('scriptSig') == '':
             coins = self.get_spendable_coins()
@@ -306,7 +316,8 @@ class BaseWallet(AbstractWallet):
         for addr in domain:
             utxos = self.get_addr_utxo(addr)
             for x in utxos:
-                if mature and x['coinbase'] and x['height'] + COINBASE_MATURITY > self.get_local_height():
+                if mature and x['coinbase'] and x[
+                    'height'] + COINBASE_MATURITY > self.get_local_height():
                     continue
                 coins.append(x)
                 continue

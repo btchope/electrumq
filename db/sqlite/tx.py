@@ -107,3 +107,25 @@ class TxStore():
 
     def get_txs(self, address):
         return execute_all("SELECT b.tx_hash, ifnull(b.tx_time, strftime('%s', 'now')) tx_time FROM addresses_txs a,txs b WHERE a.address=? and a.tx_hash=b.tx_hash", (address,))
+
+    def get_all_txs(self, addresses):
+        seq = ','.join(['?']*len(addresses))
+        sql = "SELECT b.tx_hash, ifnull(b.tx_time, strftime('%s', 'now')) tx_time " \
+              "  FROM addresses_txs a,txs b " \
+              "  WHERE a.tx_hash=b.tx_hash and a.address in ({seq}) ".format(seq=seq)
+        return execute_all(sql, addresses)
+
+    def get_all_tx_spent(self, addresses):
+        seq = ','.join(['?'] * len(addresses))
+        sql = 'SELECT b.tx_hash,sum(a.out_value) spent' \
+              '  FROM outs a, ins b ' \
+              '  WHERE a.tx_hash=b.prev_tx_hash and a.out_sn=b.prev_out_sn and a.out_address IN ({seq}) ' \
+              '  GROUP BY a.tx_hash'.format(seq=seq)
+        return execute_all(sql, addresses)
+
+    def get_all_tx_receive(self, addresses):
+        seq = ','.join(['?'] * len(addresses))
+        sql = 'SELECT a.tx_hash,sum(a.out_value) receive' \
+              '  FROM outs a ' \
+              '  WHERE a.out_address IN ({seq}) GROUP BY a.tx_hash'.format(seq=seq)
+        return execute_all(sql, addresses)
