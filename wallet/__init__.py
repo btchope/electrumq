@@ -5,9 +5,14 @@ from functools import partial
 
 from datetime import datetime
 
+from tornado import gen
+
 from blockchain import BlockChain
 from db.sqlite.block import BlockStore
 from db.sqlite.tx import TxStore
+from message.blockchain.address import *
+from message.blockchain.transaction import *
+from network import NetWorkManager
 from utils import coinchooser
 from utils.base58 import is_address, public_key_to_p2pkh, hash160_to_p2sh, hash_160
 from utils.parameter import TYPE_ADDRESS, COINBASE_MATURITY, Parameter
@@ -375,3 +380,43 @@ class BaseWallet(AbstractWallet):
             return BlockStore().height - tx_age > age_limit
         else:
             return False
+
+    # sync
+    def init(self):
+        NetWorkManager().client.add_message(GetHistory([self.address]), self.history_callback)
+
+    @gen.coroutine
+    def history_callback(self, msg_id, msg, param):
+        for each in param:
+            TxStore().add(msg['params'][0], each['tx_hash'], each['height'])
+        for tx, height in TxStore().unverify_tx_list:
+            NetWorkManager().client.add_message(GetMerkle([tx, height]), self.get_merkle_callback)
+        for tx in TxStore().unfetch_tx:
+            NetWorkManager().client.add_message(Get([tx]), self.get_tx_callback)
+
+    @gen.coroutine
+    def get_merkle_callback(self, msg_id, msg, param):
+        tx_hash = msg['params'][0]
+        height = msg['params'][1]
+        block_root = BlockChain().get_block_root(height)
+        if block_root is not None:
+            result = TxStore().verify_merkle(tx_hash, param, block_root)
+            if result:
+                TxStore().verified_tx(tx_hash)
+
+    @gen.coroutine
+    def get_tx_callback(self, msg_id, msg, param):
+        tx_hash = msg['params'][0]
+        tx = Transaction(param)
+        try:
+            tx.deserialize()
+            TxStore().add_tx_detail(tx_hash, tx)
+            if len(self.wallet_tx_changed_event) > 0:
+                for event in self.wallet_tx_changed_event:
+                    event()
+            print self.address, 'balance', TxStore().get_balance(self.address)
+        except Exception:
+            self.print_msg("cannot deserialize transaction, skipping", tx_hash)
+            return
+
+    wallet_tx_changed_event = []

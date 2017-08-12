@@ -40,42 +40,12 @@ class SimpleWallet(BaseWallet):
     def balance(self):
         return TxStore().get_balance(self.address)
 
-    def init(self):
-        NetWorkManager().client.add_message(GetHistory([self.address]), self.history_callback)
+
 
     def get_receiving_addresses(self):
         return [self.address, ]
 
-    @gen.coroutine
-    def history_callback(self, msg_id, msg, param):
-        for each in param:
-            TxStore().add(msg['params'][0], each['tx_hash'], each['height'])
-        for tx, height in TxStore().unverify_tx_list:
-            NetWorkManager().client.add_message(GetMerkle([tx, height]), self.get_merkle_callback)
-        for tx in TxStore().unfetch_tx:
-            NetWorkManager().client.add_message(Get([tx]), self.get_tx_callback)
 
-    @gen.coroutine
-    def get_merkle_callback(self, msg_id, msg, param):
-        tx_hash = msg['params'][0]
-        height = msg['params'][1]
-        block_root = BlockChain().get_block_root(height)
-        if block_root is not None:
-            result = TxStore().verify_merkle(tx_hash, param, block_root)
-            if result:
-                TxStore().verified_tx(tx_hash)
-
-    @gen.coroutine
-    def get_tx_callback(self, msg_id, msg, param):
-        tx_hash = msg['params'][0]
-        tx = Transaction(param)
-        try:
-            tx.deserialize()
-            TxStore().add_tx_detail(tx_hash, tx)
-            print self.address, 'balance', TxStore().get_balance(self.address)
-        except Exception:
-            self.print_msg("cannot deserialize transaction, skipping", tx_hash)
-            return
 
 
 class WatchOnlySimpleWallet(SimpleWallet):

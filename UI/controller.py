@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 import logging
+
+import qrcode
 from PyQt4 import QtCore
 from PyQt4.QtCore import QDateTime, QDate, QTime
 from PyQt4.QtGui import *
 from datetime import datetime
 
 from UI.component import AccountIcon, AddressView, BalanceView, \
-    FuncList, TxFilterView, TxTableView, SendView
+    FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView
 from UI.layout.borderlayout import BorderLayout
 from db.sqlite import init
 from network import NetWorkManager
@@ -107,8 +109,9 @@ class NavController(QWidget):
         super(NavController, self).__init__()
         self.parent_controller = None
         layout = QVBoxLayout()
-        self.address_view = AddressView()
+        self.address_view = MainAddressView()
         layout.addWidget(self.address_view)
+
         self.balance_view = BalanceView()
         layout.addWidget(self.balance_view)
         self.func_list = FuncList()
@@ -121,6 +124,7 @@ class NavController(QWidget):
         self.send_btn = self.func_list.send_btn
 
         self.show()
+        Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
 
     def init_event(self):
         self.tx_log_btn.clicked.connect(self.parent_controller.show_tab)
@@ -181,6 +185,7 @@ class TabController(QWidget):
         layout.addWidget(self.tx_table_view)
         # self.update_data_source()
         self.setLayout(layout)
+        Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
 
 
     def dt_to_qdt(self, dt):

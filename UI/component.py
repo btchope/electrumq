@@ -17,19 +17,68 @@ class AddressView(QWidget):
     def __init__(self):
         super(AddressView, self).__init__()
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.setMargin(0)
+        # layout.insertStretch(-1, 1)
         self.addressTB = QTextEdit()
+        # self.addressTB.setContentsMargins(0,0,0,0)
         self.addressTB.setMaximumHeight(40)
         self.addressTB.setMaximumWidth(160)
-        self.addressTB.setText('1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm')
-        # addressTB.setMinimumHeight(50)
+        self.address = '1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm'
+        self.addressTB.setText(self.address)
 
         layout.addWidget(self.addressTB)
+
         self.setLayout(layout)
-        self.setMaximumHeight(100)
+
+        self.setMaximumHeight(60)
 
     def set_address(self, address):
-        self.addressTB.setText(address)
+        self.address = address
+        self.addressTB.setText(self.address)
         self.update()
+
+
+class MainAddressView(QWidget):
+    def __init__(self):
+        super(MainAddressView, self).__init__()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.setMargin(0)
+        # layout.insertStretch(-1, 1)
+        self.addressTB = QTextEdit()
+        # self.addressTB.setContentsMargins(0,0,0,0)
+        self.addressTB.setMaximumHeight(40)
+        self.addressTB.setMaximumWidth(160)
+        self.address = '1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm'
+        self.addressTB.setText(self.address)
+
+        layout.addWidget(self.addressTB)
+        self.qr_btn = QPushButton()
+        self.qr_btn.setMaximumWidth(80)
+        self.qr_btn.setMaximumHeight(20)
+        self.qr_btn.setText("qr")
+        layout.addWidget(self.qr_btn)
+
+        self.setLayout(layout)
+
+        self.setMaximumHeight(60)
+
+        self.qr_btn.clicked.connect(self.show_qr)
+
+    def set_address(self, address):
+        self.address = address
+        self.addressTB.setText(self.address)
+        self.update()
+
+    def show_qr(self):
+        dialog = QRDialog(parent=self, address=self.address)
+        if dialog.exec_():
+            pass
+
+        dialog.destroy()
 
 
 class BalanceView(QWidget):
@@ -144,4 +193,53 @@ class SendView(QWidget):
 
         self.send_btn = FuncView(u'发送')
         layout.addWidget(self.send_btn)
+
+        self.qrcode = QLabel(self)
+        layout.addWidget(self.qrcode)
         self.setLayout(layout)
+
+        self.qrcode.setPixmap(
+            qrcode.make('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj', image_factory=Image).pixmap())
+
+
+from PyQt4 import QtGui, QtCore
+import qrcode
+
+class Image(qrcode.image.base.BaseImage):
+    def __init__(self, border, width, box_size):
+        self.border = border
+        self.width = width
+        self.box_size = box_size
+        size = (width + border * 2) * box_size
+        self._image = QtGui.QImage(
+            size, size, QtGui.QImage.Format_RGB16)
+        self._image.fill(QtCore.Qt.white)
+
+    def pixmap(self):
+        return QtGui.QPixmap.fromImage(self._image)
+
+    def drawrect(self, row, col):
+        painter = QtGui.QPainter(self._image)
+        painter.fillRect(
+            (col + self.border) * self.box_size,
+            (row + self.border) * self.box_size,
+            self.box_size, self.box_size,
+            QtCore.Qt.black)
+
+    def save(self, stream, kind=None):
+        pass
+
+
+class QRDialog(QtGui.QDialog):
+    def __init__(self, parent=None, address=''):
+        QtGui.QDialog.__init__(self, parent)
+        self.resize(240, 200)
+
+        layout = QVBoxLayout()
+
+        self.qrcode = QLabel(self)
+        layout.addWidget(self.qrcode)
+        self.setLayout(layout)
+
+        self.qrcode.setPixmap(
+            qrcode.make(address, image_factory=Image).pixmap())

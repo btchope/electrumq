@@ -121,7 +121,7 @@ class RPCClient:
     ip, port = '176.9.108.141', 50001
     stream = None
     is_connected = False
-    sequence = 1
+    sequence = 0
     _message_list = deque()
     _sent_dict = {}
     _response_list = deque()
@@ -273,15 +273,15 @@ class RPCClient:
         self.stream.read_until(b"\n", callback=self.parse_response)
 
     def add_message(self, message, callback=None):
-        message["id"] = self.sequence
         self.sequence += 1
+        message["id"] = self.sequence
         if callback is not None:
             self._callback_dict[message['id']] = callback
         self._message_list.append(message)
 
     def add_subscribe(self, message, callback=None, subscribe=None):
-        message["id"] = self.sequence
         self.sequence += 1
+        message["id"] = self.sequence
         if callback is not None:
             self._callback_dict[message['id']] = callback
         if subscribe is not None:
