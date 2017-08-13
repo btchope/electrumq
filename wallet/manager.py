@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
+import ConfigParser
 
-from blockchain import BlockChain
 from db.sqlite import init
 from network import NetWorkManager
 from utils import Singleton
@@ -24,12 +24,24 @@ class Wallet(object):
         network.start_ioloop()
         network.start_client()
 
-        # hot_wallet = SimpleWallet(WalletConfig(store_path='watch_only_simple_wallet.json'))
-        # hot_wallet.init()
         # todo: init from config
-        self.current_wallet = SimpleWallet(WalletConfig(store_path='watch_only_simple_wallet.json'))
+        self.conf = ConfigParser.ConfigParser()
+        self.conf.read("electrumq.conf")
+        self.wallet_dict = {}
+        for k,v in self.conf.items('wallet'):
+            if k.startswith('wallet_name_'):
+                wallet_name = k[12:]
+                wallet_type = self.conf.get('wallet','wallet_type_' + wallet_name)
+                wallet_config_file = v#self.conf.get('wallet', k)
+                self.wallet_dict[wallet_name] = self._init_wallet(wallet_type, wallet_config_file)
+        self._current = self.conf.get('wallet','current')
+        self.current_wallet = self.wallet_dict[self._current]
         self.current_wallet.init()
 
+    def _init_wallet(self, wallet_type, wallet_config_file):
+        if wallet_type == 'simple':
+            return SimpleWallet(WalletConfig(store_path=wallet_config_file))
+        return None
     '''
     wallet need show
     1. wallet name
