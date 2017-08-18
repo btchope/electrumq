@@ -11,6 +11,7 @@ import signal
 import logging
 from logging.config import dictConfig
 
+import sys
 import tornado
 from tornado import gen
 from tornado.concurrent import is_future, Future
@@ -50,7 +51,10 @@ class NetWorkManager:
         self.ioloop.start()
 
     def sig_handler(self, sig, frame):
-        # logging.warning('Caught signal: %s', sig)
+        logging.warning('Caught signal: %s', sig)
+        self.quit()
+
+    def quit(self):
         if self.ioloop is not None:
             self.ioloop.quit()
 

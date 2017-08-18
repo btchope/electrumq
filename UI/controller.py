@@ -2,6 +2,9 @@
 import logging
 
 import qrcode
+import signal
+
+import sys
 from PyQt4 import QtCore
 from PyQt4.QtCore import QDateTime, QDate, QTime
 from PyQt4.QtGui import *
@@ -9,6 +12,7 @@ from datetime import datetime
 
 from UI.component import AccountIcon, AddressView, BalanceView, \
     FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView
+from UI.dialog import NewAccountDialog
 from UI.layout.borderlayout import BorderLayout
 from db.sqlite import init
 from network import NetWorkManager
@@ -40,7 +44,8 @@ DEFAULT_MAIN_SIZE = (800, 600)
 
 
 class EQApplication(QApplication):
-    pass
+    def __init__(self, List, *__args):
+        super(EQApplication, self).__init__(List, *__args)
 
 
 class EQMainWindow(QMainWindow):
@@ -94,14 +99,17 @@ class AccountController(QWidget):
         super(AccountController, self).__init__()
 
         layout = QVBoxLayout()
-        accounts = ['btc', 'hd']
+        accounts = ['btc', 'hd', '+']
         for account in accounts:
-            layout.addWidget(AccountIcon(account))
+            btn = AccountIcon(account)
+            layout.addWidget(btn)
+            btn.clicked.connect(self.add_account)
         layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.setLayout(layout)
 
-    def add_account(self, account_name):
-        pass
+    def add_account(self, account_name=''):
+        tabdialog = NewAccountDialog()
+        tabdialog.exec_()
 
 
 class NavController(QWidget):
