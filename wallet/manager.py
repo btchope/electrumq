@@ -11,6 +11,7 @@ from wallet.single import SimpleWallet
 
 __author__ = 'zhouqi'
 
+conf_path = 'electrumq.conf'
 
 class Wallet(object):
     __metaclass__ = Singleton
@@ -26,7 +27,7 @@ class Wallet(object):
 
         # todo: init from config
         self.conf = ConfigParser.ConfigParser()
-        self.conf.read("electrumq.conf")
+        self.conf.read(conf_path)
         self.wallet_dict = {}
         for k,v in self.conf.items('wallet'):
             if k.startswith('wallet_name_'):
@@ -42,6 +43,27 @@ class Wallet(object):
         if wallet_type == 'simple':
             return SimpleWallet(WalletConfig(store_path=wallet_config_file))
         return None
+
+    def new_wallet(self, wallet_name, wallet_type, wallet_config_file):
+        self.wallet_dict[wallet_name] = self._init_wallet(wallet_type, wallet_config_file)
+        self.conf.set("wallet", "wallet_name_" + wallet_name, wallet_config_file)
+        self.conf.set("wallet", "wallet_type_" + wallet_name, wallet_type)
+        self.conf.write(open(conf_path, "w"))
+        if len(self.new_wallet_event) > 0:
+            for event in self.new_wallet_event:
+                event(wallet_name)
+        return self.wallet_dict[wallet_name]
+
+    def change_current_wallet(self, idx):
+        if idx < len(self.wallet_dict.keys()):
+            self.current_wallet = self.wallet_dict[self.wallet_dict.keys()[idx]]
+            if len(self.current_wallet_changed_event) > 0:
+                for event in self.current_wallet_changed_event:
+                    event()
+
+    new_wallet_event = []
+    current_wallet_changed_event = []
+
     '''
     wallet need show
     1. wallet name

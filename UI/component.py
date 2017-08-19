@@ -152,6 +152,8 @@ class TableView(QWidget):
             for row in self.data_source:
                 self.draw_row(row)
             self.update()
+        else:
+            pass
 
     def draw_header(self):
         pass

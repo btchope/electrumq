@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+from functools import partial
 
 import qrcode
 import signal
@@ -99,17 +100,40 @@ class AccountController(QWidget):
         super(AccountController, self).__init__()
 
         layout = QVBoxLayout()
-        accounts = ['btc', 'hd', '+']
+        accounts = Wallet().wallet_dict.keys()
         for account in accounts:
             btn = AccountIcon(account)
             layout.addWidget(btn)
-            btn.clicked.connect(self.add_account)
+            btn.clicked.connect(partial(self.switch_account, btn))
+
+
+        self.current_account_idx = 0
+
+        self.add_account_btn = QPushButton()
+        self.add_account_btn.setFixedSize(50, 50)
+        self.add_account_btn.setText('+')
+        self.add_account_btn.clicked.connect(self.add_account)
+        layout.addWidget(self.add_account_btn)
+
         layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.setLayout(layout)
+
+        Wallet.new_wallet_event.append(self.add_wallet)
+
+    def switch_account(self, btn):
+        this_idx = self.layout().indexOf(btn)
+        if self.current_account_idx != this_idx:
+            Wallet().change_current_wallet(this_idx)
+            self.current_account_idx = this_idx
 
     def add_account(self, account_name=''):
         tabdialog = NewAccountDialog()
         tabdialog.exec_()
+
+
+    def add_wallet(self, wallet_name):
+        btn = AccountIcon(wallet_name)
+        self.layout().insertWidget(self.layout().count() - 2, btn)
 
 
 class NavController(QWidget):
@@ -133,6 +157,7 @@ class NavController(QWidget):
 
         self.show()
         Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
+        Wallet().current_wallet_changed_event.append(self.show)
 
     def init_event(self):
         self.tx_log_btn.clicked.connect(self.parent_controller.show_tab)
@@ -194,6 +219,7 @@ class TabController(QWidget):
         # self.update_data_source()
         self.setLayout(layout)
         Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
+        Wallet().current_wallet_changed_event.append(self.update_data_source)
 
 
     def dt_to_qdt(self, dt):
