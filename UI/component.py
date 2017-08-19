@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pyperclip
 from PyQt4.QtCore import QDateTime, QDate, QTime, Qt
 from PyQt4.QtGui import QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QWidget, QHBoxLayout, \
     QTextEdit, QLabel, QFrame, QTreeView, QStandardItemModel
@@ -62,11 +63,18 @@ class MainAddressView(QWidget):
         self.qr_btn.setText("qr")
         layout.addWidget(self.qr_btn)
 
+        self.clipboard_btn = QPushButton()
+        self.clipboard_btn.setMaximumWidth(80)
+        self.clipboard_btn.setMaximumHeight(20)
+        self.clipboard_btn.setText("clipboard")
+        layout.addWidget(self.clipboard_btn)
+
         self.setLayout(layout)
 
-        self.setMaximumHeight(60)
+        self.setMaximumHeight(80)
 
         self.qr_btn.clicked.connect(self.show_qr)
+        self.clipboard_btn.clicked.connect(self.copy_clipboard)
 
     def set_address(self, address):
         self.address = address
@@ -79,6 +87,9 @@ class MainAddressView(QWidget):
             pass
 
         dialog.destroy()
+
+    def copy_clipboard(self):
+        pyperclip.copy(self.address)
 
 
 class BalanceView(QWidget):
