@@ -2,6 +2,7 @@
 import logging
 import ConfigParser
 
+from blockchain import BlockChain
 from db.sqlite import init
 from network import NetWorkManager
 from utils import Singleton
@@ -21,9 +22,10 @@ class Wallet(object):
         logging.config.fileConfig('logging.conf')
         init()
         network = NetWorkManager()
-        # BlockChain().init_header()
         network.start_ioloop()
         network.start_client()
+        # BlockChain().init_header()
+
 
         # todo: init from config
         self.conf = ConfigParser.ConfigParser()

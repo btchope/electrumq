@@ -4,6 +4,7 @@ import sys
 import logging
 
 import signal
+import traceback
 
 from PyQt4.QtCore import QTimer
 
@@ -35,8 +36,9 @@ if __name__ == '__main__':
         app.exec_()
     except (KeyboardInterrupt, SystemExit):
         app.exit()
-    except Exception:
-        pass
+    except Exception as ex:
+        print ex
+        traceback.print_stack()
     finally:
         NetWorkManager().quit()
         sys.exit()

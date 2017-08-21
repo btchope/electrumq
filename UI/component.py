@@ -2,7 +2,7 @@
 import pyperclip
 from PyQt4.QtCore import QDateTime, QDate, QTime, Qt
 from PyQt4.QtGui import QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QWidget, QHBoxLayout, \
-    QTextEdit, QLabel, QFrame, QTreeView, QStandardItemModel
+    QTextEdit, QLabel, QFrame, QTreeView, QStandardItemModel, QLineEdit
 
 __author__ = 'zhouqi'
 
@@ -200,19 +200,23 @@ class SendView(QWidget):
         layout = QVBoxLayout()
         dest_address_label = QLabel(u"目标地址")
         layout.addWidget(dest_address_label)
-        dest_address_tb = QTextEdit()
-        dest_address_tb.setMaximumWidth(160)
-        layout.addWidget(dest_address_tb)
+        self.dest_address_tb = QTextEdit()
+        self.dest_address_tb.setMaximumWidth(300)
+        self.dest_address_tb.setMaximumHeight(40)
+        layout.addWidget(self.dest_address_tb)
+
+        output_value_label = QLabel(u'发送金额')
+        layout.addWidget(output_value_label)
+        self.output_value_edit = QLineEdit()
+        layout.addWidget(self.output_value_edit)
 
         self.send_btn = FuncView(u'发送')
         layout.addWidget(self.send_btn)
 
-        self.qrcode = QLabel(self)
-        layout.addWidget(self.qrcode)
+        layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
         self.setLayout(layout)
 
-        self.qrcode.setPixmap(
-            qrcode.make('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj', image_factory=Image).pixmap())
 
 
 from PyQt4 import QtGui, QtCore

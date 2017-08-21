@@ -419,4 +419,8 @@ class BaseWallet(AbstractWallet):
             self.print_msg("cannot deserialize transaction, skipping", tx_hash)
             return
 
+    def broadcast(self, tx):
+        print Broadcast([str(tx)])
+        NetWorkManager().client.add_message(Broadcast([str(tx)]))
+
     wallet_tx_changed_event = []

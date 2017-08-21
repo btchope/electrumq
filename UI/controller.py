@@ -13,10 +13,11 @@ from datetime import datetime
 
 from UI.component import AccountIcon, AddressView, BalanceView, \
     FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView
-from UI.dialog import NewAccountDialog
+from UI.dialog import NewAccountDialog, TxDetailDialog
 from UI.layout.borderlayout import BorderLayout
 from db.sqlite import init
 from network import NetWorkManager
+from utils.parameter import TYPE_ADDRESS
 from wallet import WalletConfig
 from wallet.manager import Wallet
 from wallet.single import SimpleWallet
@@ -218,8 +219,8 @@ class TabController(QWidget):
         layout.addWidget(self.tx_table_view)
         # self.update_data_source()
         self.setLayout(layout)
-        Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
-        Wallet().current_wallet_changed_event.append(self.update_data_source)
+        # Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
+        # Wallet().current_wallet_changed_event.append(self.update_data_source)
 
 
     def dt_to_qdt(self, dt):
@@ -227,24 +228,59 @@ class TabController(QWidget):
         return QDateTime(QDate(*array[:3]), QTime(*array[3:6]))
 
     def update_data_source(self):
-        txs = Wallet().current_wallet.get_txs()
-        data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
-        self.tx_table_view.data_source = data_source
-        self.tx_table_view.reload()
+        pass
+        # txs = Wallet().current_wallet.get_txs()
+        # data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
+        # self.tx_table_view.data_source = data_source
+        # self.tx_table_view.reload()
 
 
 class SendController(QWidget):
     def __init__(self):
         super(SendController, self).__init__()
         layout = QVBoxLayout()
-        layout.addWidget(SendView())
+        self.send_view = SendView()
+        layout.addWidget(self.send_view)
         self.setLayout(layout)
+
+        self.send_view.send_btn.clicked.connect(self.send)
+        self.send_view.dest_address_tb.setText('mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i')
+
+    def send(self):
+        outputs = [(TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000)]
+        tx = Wallet().current_wallet.make_unsigned_transaction(Wallet().current_wallet.get_utxo(), outputs, {})
+        Wallet().current_wallet.sign_transaction(tx, None)
+        tx_detail_dialog = TxDetailDialog(self)
+        tx_detail_dialog.tx_detail_view.show_tx(tx)
+        tx_detail_dialog.exec_()
 
 
 class ReceiveController(QWidget):
     def __init__(self):
         super(ReceiveController, self).__init__()
+
+        self.address = Wallet().current_wallet.address#'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'
         layout = QVBoxLayout()
-        layout.addWidget(TxFilterView())
-        layout.addWidget(AddressView())
+
+        self.addressTB = QTextEdit()
+        self.addressTB.setMaximumHeight(20)
+        self.addressTB.setMaximumWidth(300)
+        self.addressTB.setText(self.address)
+        layout.addWidget(self.addressTB)
+
+        self.qrcode = QLabel(self)
+        self.qrcode.setMaximumWidth(300)
+        self.qrcode.setMaximumHeight(300)
+        layout.addWidget(self.qrcode)
+        self.qrcode.setPixmap(
+            qrcode.make(self.address, image_factory=Image, box_size=8).pixmap())
+        layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.setLayout(layout)
+
+        Wallet().current_wallet_changed_event.append(self.update_address)
+
+    def update_address(self):
+        self.address = Wallet().current_wallet.address
+        self.addressTB.setText(self.address)
+        self.qrcode.setPixmap(
+            qrcode.make(self.address, image_factory=Image, box_size=8).pixmap())

@@ -98,3 +98,58 @@ class HDWalletTab(QWidget):
         mainLayout.addWidget(ownerGroup)
         mainLayout.addStretch(1)
         self.setLayout(mainLayout)
+
+
+class TxDetailDialog(QDialog):
+    def __init__(self, parent=None):
+        super(TxDetailDialog, self).__init__(parent)
+
+        self.tx_detail_view = TxDetailView()
+
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self.tx_detail_view)
+        main_layout.addWidget(button_box)
+        self.setLayout(main_layout)
+
+        self.setWindowTitle("Transaction Detail")
+
+    def accept(self):
+        Wallet().current_wallet.broadcast(self.tx_detail_view.tx)
+        self.close()
+
+
+class TxDetailView(QWidget):
+    def __init__(self):
+        super(TxDetailView, self).__init__()
+        main_layout = QHBoxLayout()
+        self.tx_hash = QLabel()
+        main_layout.addWidget(self.tx_hash)
+        self.in_group = QGroupBox("Inputs")
+        self.in_layout = QGridLayout()
+        self.in_group.setLayout(self.in_layout)
+        main_layout.addWidget(self.in_group)
+
+        self.out_group = QGroupBox("Outputs")
+        self.out_layout = QGridLayout()
+        self.out_group.setLayout(self.out_layout)
+        main_layout.addWidget(self.out_group)
+        self.setLayout(main_layout)
+
+    def show_tx(self, tx):
+        self.tx = tx
+        for idx, each_in in enumerate(tx._inputs):
+            in_address = QLabel(each_in['address'])
+            self.in_layout.addWidget(in_address, idx, 0)
+            in_value = QLabel(str(each_in['value']))
+            self.in_layout.addWidget(in_value, idx, 1)
+        for idx, each_out in enumerate(tx._outputs):
+            out_address = QLabel(each_out[1])
+            self.out_layout.addWidget(out_address, idx, 0)
+            out_value = QLabel(str(each_out[2]))
+            self.out_layout.addWidget(out_value, idx, 1)
+        # self.tx_hash.setText(tx['tx_hash'])
