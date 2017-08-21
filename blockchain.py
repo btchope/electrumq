@@ -27,7 +27,8 @@ class BlockChain():
         pass
 
     def init_header(self):
-        NetWorkManager().init_header(self.init_header_callback)
+        if BlockStore().height <= 0:
+            NetWorkManager().init_header(self.init_header_callback)
 
     def init_header_callback(self, future):
         try:

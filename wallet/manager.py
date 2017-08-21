@@ -23,9 +23,8 @@ class Wallet(object):
         init()
         network = NetWorkManager()
         network.start_ioloop()
+        BlockChain().init_header()
         network.start_client()
-        # BlockChain().init_header()
-
 
         # todo: init from config
         self.conf = ConfigParser.ConfigParser()
