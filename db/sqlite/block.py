@@ -23,7 +23,6 @@ class BlockStore():
     def height(self):
         return execute_one('SELECT ifnull(max(block_no),-1) FROM blocks')[0]
 
-
     def save_block_item(self, block_item):
         sql = 'INSERT INTO blocks(block_no, block_hash, block_root, block_ver, block_bits, block_nonce, block_time, block_prev, is_main) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);'
         with Connection.gen_db() as conn:
@@ -43,21 +42,22 @@ class BlockStore():
             block_hashes = list(set([block.block_hash for block in block_item_list]))
             each_time = 999
             exist_blocks = set([])
-            for i in xrange(len(block_hashes) / each_time + int(len(block_hashes) % each_time > 0)):
-                seq = ','.join(['?'] * len(block_hashes[i * each_time:i * each_time + each_time]))
-                exist_blocks ^= set([row[0] for row in c.execute(
-                    'SELECT block_hash FROM blocks WHERE block_hash in ({seq})'.format(seq=seq),
-                    block_hashes[i * each_time:i * each_time + each_time]).fetchall()])
+            # for i in xrange(len(block_hashes) / each_time + int(len(block_hashes) % each_time > 0)):
+            #     seq = ','.join(['?'] * len(block_hashes[i * each_time:i * each_time + each_time]))
+            #     exist_blocks ^= set([row[0] for row in c.execute(
+            #         'SELECT block_hash FROM blocks WHERE block_hash in ({seq})'.format(seq=seq),
+            #         block_hashes[i * each_time:i * each_time + each_time]).fetchall()])
             params = [(block.block_no, block.block_hash, block.block_root,
                        block.block_ver, block.block_bits, block.block_nonce,
                        block.block_time, block.block_prev, block.is_main) for block in
                       block_item_list if block.block_hash not in exist_blocks]
             c.executemany(sql, params)
+            conn.commit()
 
     def get_block(self, block_no):
-        b = execute_one('select block_no, block_hash, block_root, block_ver, block_bits'
+        b = execute_one('SELECT block_no, block_hash, block_root, block_ver, block_bits'
                         '  , block_nonce, block_time, block_prev, is_main '
-                        '  from blocks WHERE block_no=? and blocks.is_main=1', (block_no,))
+                        '  FROM blocks WHERE block_no=? AND blocks.is_main=1', (block_no,))
         if b is None:
             return None
         block = BlockItem()
@@ -67,7 +67,7 @@ class BlockStore():
 
     def get_block_root(self, block_no):
         return execute_one(
-            'select block_root from blocks WHERE block_no=? and blocks.is_main=1', (block_no,))[0]
+            'SELECT block_root FROM blocks WHERE block_no=? AND blocks.is_main=1', (block_no,))[0]
 
     def get_target(self, index, chain=None):
         if index == 0:
@@ -102,7 +102,6 @@ class BlockStore():
             bitsBase >>= 8
         new_bits = bitsN << 24 | bitsBase
         return new_bits, bitsBase << (8 * (bitsN - 3))
-
 
     def verify_header(self, header, prev_header, bits, target):
         if prev_header is None:
@@ -179,16 +178,16 @@ class BlockStore():
 
     def verify_chunk(self, index, data):
         num = len(data) / 80
-        prev_header = None
-        if index != 0:
-            prev_header = self.get_block(index * 2016 - 1)
-        bits, target = self.get_target(index)
+        # prev_header = None
+        # if index != 0:
+        #     prev_header = self.get_block(index * 2016 - 1)
+        # bits, target = self.get_target(index)
         result = []
         for i in range(num):
             raw_header = data[i * 80:(i + 1) * 80]
             block = BlockItem(raw_header)
             block.block_no = index * 2016 + i
-            verified = True#self.verify_header(block, prev_header, bits, target)
+            verified = True  # self.verify_header(block, prev_header, bits, target)
             if not verified:
                 return []
             block.is_main = 1

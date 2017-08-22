@@ -2,9 +2,10 @@
 import os
 
 import sqlite3
+import struct
 from datetime import datetime, timedelta
 
-from utils.base58 import double_sha256
+from utils.base58 import double_sha256, double_sha256_2
 from utils.parser import read_uint32, write_uint32
 
 __author__ = 'zhouqi'
@@ -28,6 +29,7 @@ def header_dict_to_block_item(header):
     block.block_hash = double_sha256(block.serialize())[::-1].encode('hex')
     return block
 
+
 class BlockItem(BaseItem):
     block_no = -1
     block_hash = ''
@@ -39,8 +41,14 @@ class BlockItem(BaseItem):
     block_prev = ''
     is_main = 0
 
-    def __init__(self, raw=None):
+    def __init__(self, raw=None, offset=0):
         if raw is not None:
+            self.block_ver, self.block_prev, self.block_root, self.block_time, self.block_bits, \
+            self.block_nonce = struct.unpack_from('<I32s32sIII', raw, offset)
+            self.block_prev = self.block_prev.encode('hex')
+            self.block_root = self.block_root.encode('hex')
+            self.block_hash = double_sha256_2(raw[offset:offset + 80])[::-1].encode('hex')
+        elif raw is not None and offset is None:
             self.block_ver = read_uint32(raw[0:4])
             self.block_prev = raw[4:36][::-1].encode('hex')
             self.block_root = raw[36:68][::-1].encode('hex')
@@ -57,6 +65,7 @@ class BlockItem(BaseItem):
             + write_uint32(self.block_bits) \
             + write_uint32(self.block_nonce)
         return s
+
 
 class TxItem(BaseItem):
     tx_hash = ''
@@ -150,7 +159,8 @@ def init():
     if not os.path.exists(sqlite_path):
         conn = sqlite3.connect(sqlite_path)
         c = conn.cursor()
-        for sql in [blocks_sql, index_blocks_block_no_sql, index_blocks_block_hash_sql, index_blocks_block_prev_sql,
+        for sql in [blocks_sql, index_blocks_block_no_sql, index_blocks_block_hash_sql,
+                    index_blocks_block_prev_sql,
                     txs_sql, index_txs_block_no_sql,
                     addresses_txs_sql,
                     ins_sql, index_ins_prev_tx_hash_sql,
@@ -168,7 +178,7 @@ def drop():
 class Connection():
     @classmethod
     def gen_db(cls):
-        return sqlite3.connect(sqlite_path)
+        return sqlite3.connect(sqlite_path, isolation_level='EXCLUSIVE')
 
 
 def execute_one(sql, params=None):
@@ -180,7 +190,7 @@ def execute_one(sql, params=None):
     return res.fetchone()
 
 
-def execute_all(sql, params = None):
+def execute_all(sql, params=None):
     conn = Connection.gen_db()
     if params is None:
         res = conn.execute(sql)

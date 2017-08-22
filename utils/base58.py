@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import hashlib
 from hashlib import sha256
 
 import Crypto.Hash.SHA256 as SHA256
@@ -166,6 +166,9 @@ def hash_to_integer(hash_str=''):
 
 def double_sha256(s):
     return SHA256.new(SHA256.new(s).digest()).digest()
+
+def double_sha256_2(s):
+    return hashlib.sha256(hashlib.sha256(s).digest()).digest()
 
 def Hash(x):
     if type(x) is unicode:
