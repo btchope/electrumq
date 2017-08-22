@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import random
+
 from PyQt4.QtCore import QFileInfo, QString
 from PyQt4.QtGui import *
 
@@ -30,7 +32,8 @@ class NewAccountDialog(QDialog):
         self.setWindowTitle("New Account")
 
     def accept(self):
-        wallet = Wallet().new_wallet(str(len(Wallet().wallet_dict.keys())), 'simple', str(len(Wallet().wallet_dict.keys())) + '.json')
+        wallet_id = str(len(Wallet().wallet_dict.keys())) + str(random.randint(0,9))
+        wallet = Wallet().new_wallet(wallet_id, 'simple', wallet_id + '.json')
         s = self.tab_widget.currentWidget().get_secret()
         secret = s.decode('hex')
         wallet.init_key_store(

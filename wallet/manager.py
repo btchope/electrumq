@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import logging
 import ConfigParser
+from functools import partial
 
 from blockchain import BlockChain
 from db.sqlite import init
 from network import NetWorkManager
 from utils import Singleton
 from utils.parameter import set_testnet
-from wallet import WalletConfig
+from wallet import WalletConfig, EVENT_QUEUE
 from wallet.single import SimpleWallet
 
 __author__ = 'zhouqi'
@@ -51,16 +52,18 @@ class Wallet(object):
         self.conf.set("wallet", "wallet_type_" + wallet_name, wallet_type)
         self.conf.write(open(conf_path, "w"))
         if len(self.new_wallet_event) > 0:
+            global EVENT_QUEUE
             for event in self.new_wallet_event:
-                event(wallet_name)
+                EVENT_QUEUE.put(partial(event, wallet_name))
         return self.wallet_dict[wallet_name]
 
     def change_current_wallet(self, idx):
         if idx < len(self.wallet_dict.keys()):
             self.current_wallet = self.wallet_dict[self.wallet_dict.keys()[idx]]
+            global EVENT_QUEUE
             if len(self.current_wallet_changed_event) > 0:
                 for event in self.current_wallet_changed_event:
-                    event()
+                    EVENT_QUEUE.put(event)
 
     new_wallet_event = []
     current_wallet_changed_event = []

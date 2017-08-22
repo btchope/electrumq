@@ -7,7 +7,7 @@ import signal
 
 import sys
 from PyQt4 import QtCore
-from PyQt4.QtCore import QDateTime, QDate, QTime
+from PyQt4.QtCore import QDateTime, QDate, QTime, QTimer
 from PyQt4.QtGui import *
 from datetime import datetime
 
@@ -21,6 +21,7 @@ from utils.parameter import TYPE_ADDRESS
 from wallet import WalletConfig
 from wallet.manager import Wallet
 from wallet.single import SimpleWallet
+from wallet import EVENT_QUEUE
 
 __author__ = 'zhouqi'
 
@@ -48,6 +49,15 @@ DEFAULT_MAIN_SIZE = (800, 600)
 class EQApplication(QApplication):
     def __init__(self, List, *__args):
         super(EQApplication, self).__init__(List, *__args)
+
+        self.timer = QTimer()
+        self.timer.start(50)  # You may change this if you wish.
+        self.timer.timeout.connect(self.ui_loop)
+
+    def ui_loop(self):
+        global EVENT_QUEUE
+        while not EVENT_QUEUE.empty():
+            EVENT_QUEUE.get()()
 
 
 class EQMainWindow(QMainWindow):
@@ -119,7 +129,7 @@ class AccountController(QWidget):
         layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.setLayout(layout)
 
-        Wallet.new_wallet_event.append(self.add_wallet)
+        Wallet().new_wallet_event.append(self.add_wallet)
 
     def switch_account(self, btn):
         this_idx = self.layout().indexOf(btn)
@@ -130,7 +140,6 @@ class AccountController(QWidget):
     def add_account(self, account_name=''):
         tabdialog = NewAccountDialog()
         tabdialog.exec_()
-
 
     def add_wallet(self, wallet_name):
         btn = AccountIcon(wallet_name)
@@ -217,10 +226,10 @@ class TabController(QWidget):
         data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
         self.tx_table_view = TxTableView(data_source)
         layout.addWidget(self.tx_table_view)
-        # self.update_data_source()
+        self.update_data_source()
         self.setLayout(layout)
-        # Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
-        # Wallet().current_wallet_changed_event.append(self.update_data_source)
+        Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
+        Wallet().current_wallet_changed_event.append(self.update_data_source)
 
 
     def dt_to_qdt(self, dt):
@@ -228,11 +237,10 @@ class TabController(QWidget):
         return QDateTime(QDate(*array[:3]), QTime(*array[3:6]))
 
     def update_data_source(self):
-        pass
-        # txs = Wallet().current_wallet.get_txs()
-        # data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
-        # self.tx_table_view.data_source = data_source
-        # self.tx_table_view.reload()
+        txs = Wallet().current_wallet.get_txs()
+        data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
+        self.tx_table_view.data_source = data_source
+        self.tx_table_view.reload()
 
 
 class SendController(QWidget):

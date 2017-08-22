@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import random
 import traceback
+from Queue import Queue
 from functools import partial
 
 from datetime import datetime
@@ -33,6 +34,7 @@ class WalletConfig(object):
             if k in kwargs:
                 self.__setattr__(k, kwargs[k])
 
+EVENT_QUEUE = Queue()
 
 class AbstractWallet(object):
     def __init__(self, wallet_config):
@@ -411,9 +413,10 @@ class BaseWallet(AbstractWallet):
         try:
             tx.deserialize()
             TxStore().add_tx_detail(tx_hash, tx)
+            global EVENT_QUEUE
             if len(self.wallet_tx_changed_event) > 0:
                 for event in self.wallet_tx_changed_event:
-                    event()
+                    EVENT_QUEUE.put(event)
             print self.address, 'balance', TxStore().get_balance(self.address)
         except Exception:
             self.print_msg("cannot deserialize transaction, skipping", tx_hash)

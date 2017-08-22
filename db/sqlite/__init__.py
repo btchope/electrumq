@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS blocks
 '''
 
 index_blocks_block_no_sql = 'CREATE INDEX idx_blocks_block_no ON blocks (block_no);'
+index_blocks_block_hash_sql = 'CREATE INDEX idx_blocks_block_hash ON blocks (block_hash);'
 index_blocks_block_prev_sql = 'CREATE INDEX idx_blocks_block_prev ON blocks (block_prev);'
 txs_sql = '''
 CREATE TABLE IF NOT EXISTS txs
@@ -149,7 +150,7 @@ def init():
     if not os.path.exists(sqlite_path):
         conn = sqlite3.connect(sqlite_path)
         c = conn.cursor()
-        for sql in [blocks_sql, index_blocks_block_no_sql, index_blocks_block_prev_sql,
+        for sql in [blocks_sql, index_blocks_block_no_sql, index_blocks_block_hash_sql, index_blocks_block_prev_sql,
                     txs_sql, index_txs_block_no_sql,
                     addresses_txs_sql,
                     ins_sql, index_ins_prev_tx_hash_sql,

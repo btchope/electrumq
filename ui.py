@@ -14,6 +14,7 @@ from db.sqlite import init
 from network import NetWorkManager
 from wallet import WalletConfig
 from wallet.single import SimpleWallet
+from wallet import EVENT_QUEUE
 
 __author__ = 'zhouqi'
 
@@ -28,10 +29,6 @@ if __name__ == '__main__':
 
         signal.signal(signal.SIGTERM, lambda sig, frame: app.quit())
         signal.signal(signal.SIGINT, lambda sig, frame: app.quit())
-
-        timer = QTimer()
-        timer.start(500)  # You may change this if you wish.
-        timer.timeout.connect(lambda: None)
 
         app.exec_()
     except (KeyboardInterrupt, SystemExit):
