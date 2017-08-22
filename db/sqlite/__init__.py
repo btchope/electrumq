@@ -43,10 +43,10 @@ class BlockItem(BaseItem):
 
     def __init__(self, raw=None, offset=0):
         if raw is not None:
-            self.block_ver, self.block_prev, self.block_root, self.block_time, self.block_bits, \
+            self.block_ver, self.block_prev_raw, self.block_root_raw, self.block_time, self.block_bits, \
             self.block_nonce = struct.unpack_from('<I32s32sIII', raw, offset)
-            self.block_prev = self.block_prev.encode('hex')
-            self.block_root = self.block_root.encode('hex')
+            self.block_prev = self.block_prev_raw[::-1].encode('hex')
+            self.block_root = self.block_root_raw[::-1].encode('hex')
             self.block_hash = double_sha256_2(raw[offset:offset + 80])[::-1].encode('hex')
         elif raw is not None and offset is None:
             self.block_ver = read_uint32(raw[0:4])

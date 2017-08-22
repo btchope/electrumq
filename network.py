@@ -45,6 +45,10 @@ class NetWorkManager:
         signal.signal(signal.SIGTERM, self.sig_handler)
         signal.signal(signal.SIGINT, self.sig_handler)
 
+    def start(self):
+        self.start_ioloop()
+        self.start_client()
+
     def start_ioloop(self):
         if self.ioloop is None:
             self.ioloop = IOLoop()
@@ -125,7 +129,7 @@ class RPCClient:
     ip, port = '176.9.108.141', 50001
     stream = None
     is_connected = False
-    sequence = 0
+    sequence = xrange(sys.maxint).__iter__()
     _message_list = deque()
     _sent_dict = {}
     _response_list = deque()
@@ -277,15 +281,13 @@ class RPCClient:
         self.stream.read_until(b"\n", callback=self.parse_response)
 
     def add_message(self, message, callback=None):
-        self.sequence += 1
-        message["id"] = self.sequence
+        message["id"] = self.sequence.next()
         if callback is not None:
             self._callback_dict[message['id']] = callback
         self._message_list.append(message)
 
     def add_subscribe(self, message, callback=None, subscribe=None):
-        self.sequence += 1
-        message["id"] = self.sequence
+        message["id"] = self.sequence.next()
         if callback is not None:
             self._callback_dict[message['id']] = callback
         if subscribe is not None:

@@ -12,6 +12,7 @@ from db.sqlite import header_dict_to_block_item
 from db.sqlite.block import BlockStore
 from network import NetWorkManager
 from utils import Singleton
+from message.all import headers_subscribe
 
 __author__ = 'zhouqi'
 
@@ -29,6 +30,9 @@ class BlockChain():
     def init_header(self):
         if BlockStore().height <= 0:
             NetWorkManager().init_header(self.init_header_callback)
+        else:
+            NetWorkManager().client.add_subscribe(headers_subscribe([]), callback=self.catch_up,
+                                                  subscribe=self.receive_header)  # do not have id
 
     def init_header_callback(self, future):
         try:
@@ -44,7 +48,6 @@ class BlockChain():
                                                            block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL + idx) * 80:(
                                                                                                                    block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL + idx) * 80 + 80],
                                                     height)
-            from message.all import headers_subscribe
             NetWorkManager().client.add_subscribe(headers_subscribe([]), callback=self.catch_up,
                                                   subscribe=self.receive_header)  # do not have id
         except Exception as ex:

@@ -42,11 +42,11 @@ class BlockStore():
             block_hashes = list(set([block.block_hash for block in block_item_list]))
             each_time = 999
             exist_blocks = set([])
-            # for i in xrange(len(block_hashes) / each_time + int(len(block_hashes) % each_time > 0)):
-            #     seq = ','.join(['?'] * len(block_hashes[i * each_time:i * each_time + each_time]))
-            #     exist_blocks ^= set([row[0] for row in c.execute(
-            #         'SELECT block_hash FROM blocks WHERE block_hash in ({seq})'.format(seq=seq),
-            #         block_hashes[i * each_time:i * each_time + each_time]).fetchall()])
+            for i in xrange(len(block_hashes) / each_time + int(len(block_hashes) % each_time > 0)):
+                seq = ','.join(['?'] * len(block_hashes[i * each_time:i * each_time + each_time]))
+                exist_blocks ^= set([row[0] for row in c.execute(
+                    'SELECT block_hash FROM blocks WHERE block_hash in ({seq})'.format(seq=seq),
+                    block_hashes[i * each_time:i * each_time + each_time]).fetchall()])
             params = [(block.block_no, block.block_hash, block.block_root,
                        block.block_ver, block.block_bits, block.block_nonce,
                        block.block_time, block.block_prev, block.is_main) for block in
@@ -135,8 +135,9 @@ class BlockStore():
                     self.save_block_item_batch(result)
                     logger.debug('save chunk to chain %d' % idx)
                 else:
+                    self.save_block_item_batch(result)
                     # todo store unchain
-                    logger.debug('save chunk to unchain %d' % idx)
+                    logger.debug('save chunk to chain %d, but length is %d' % (idx, len(result)))
         except BaseException as ex:
             print ex
             traceback.print_exc()

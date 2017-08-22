@@ -27,14 +27,6 @@ class TxStore():
                 c.execute('insert into txs(tx_hash, block_no, tx_time, source) VALUES (?, ?, ?, ?)', (tx, block_height, block_time, 0))
             if c.execute('select count(0) from addresses_txs WHERE tx_hash=? and address=?', (tx, address)).fetchone()[0] == 0:
                 c.execute('insert into addresses_txs(tx_hash, address) VALUES (?, ?)', (tx, address))
-        # if address in self.address_tx_dict:
-        #     self.address_tx_dict[address].append(tx)
-        # else:
-        #     self.address_tx_dict[address] = [tx, ]
-        # if tx not in self.tx_detail:
-        #     self.unfetch_tx.add(tx)
-        # if tx not in self.verified_tx_list:
-        #     self.unverify_tx_list.add((tx, block_height))
 
     def verify_merkle(self, tx, merkle, block_root):
         # Verify the hash of the server-provided merkle branch to a

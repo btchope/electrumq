@@ -23,9 +23,8 @@ class Wallet(object):
         logging.config.fileConfig('logging.conf')
         init()
         network = NetWorkManager()
-        network.start_ioloop()
+        network.start()
         BlockChain().init_header()
-        network.start_client()
 
         # todo: init from config
         self.conf = ConfigParser.ConfigParser()
