@@ -158,13 +158,15 @@ class TableView(QWidget):
     def reload(self):
         if len(self.data_source) > 0:
             self.data_model = QStandardItemModel(0, len(self.data_source[0]), self)
-            self.sourceView.setModel(self.data_model)
-            self.draw_header()
-            for row in self.data_source:
-                self.draw_row(row)
-            self.update()
         else:
-            pass
+            self.data_model = QStandardItemModel(0, 0, self)
+        self.sourceView.setModel(self.data_model)
+        self.draw_header()
+        for row in self.data_source:
+            self.draw_row(row)
+        self.update()
+        # else:
+        #     pass
 
     def draw_header(self):
         pass
