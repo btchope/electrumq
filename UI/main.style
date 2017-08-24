@@ -1,0 +1,7 @@
+QWidget {
+    background-color: gray;
+}
+
+AccountIcon {
+    background-color: red;
+}

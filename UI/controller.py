@@ -64,6 +64,7 @@ class EQMainWindow(QMainWindow):
     def __init__(self, **kwargs):
         super(EQMainWindow, self).__init__()
         self.view = MainController()
+        self.view.setContentsMargins(0, 0, 0, 0)
         self.setObjectName(_fromUtf8("MainWindow"))
         self.resize(*DEFAULT_MAIN_SIZE)
         self.setCentralWidget(self.view)
@@ -77,6 +78,10 @@ class MainController(QWidget):
         # doesn't take ownership of the widgets until setLayout() is called.
         # Therefore we keep a local reference to each label to prevent it being
         # garbage collected too soon.
+        self.widget = QWidget(self)
+        bg_layout = QVBoxLayout(self)
+        bg_layout.setMargin(0)
+        bg_layout.addWidget(self.widget)
 
         layout = BorderLayout()
         self.account_ctr = AccountController()
@@ -90,8 +95,10 @@ class MainController(QWidget):
         self.detail_ctr = DetailController()
         layout.addWidget(self.detail_ctr, BorderLayout.Center)
 
-        self.setLayout(layout)
+        self.widget.setLayout(layout)
         self.setWindowTitle("ElectrumQ")
+
+        self.widget.setStyleSheet(open('UI/main.style').read())
 
     def show_tab(self):
         self.detail_ctr.show_tab()
@@ -116,7 +123,6 @@ class AccountController(QWidget):
             btn = AccountIcon(account)
             layout.addWidget(btn)
             btn.clicked.connect(partial(self.switch_account, btn))
-
 
         self.current_account_idx = 0
 
@@ -231,7 +237,6 @@ class TabController(QWidget):
         Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
         Wallet().current_wallet_changed_event.append(self.update_data_source)
 
-
     def dt_to_qdt(self, dt):
         array = datetime.fromtimestamp(float(dt)).timetuple()
         return QDateTime(QDate(*array[:3]), QTime(*array[3:6]))
@@ -256,7 +261,8 @@ class SendController(QWidget):
 
     def send(self):
         outputs = [(TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000)]
-        tx = Wallet().current_wallet.make_unsigned_transaction(Wallet().current_wallet.get_utxo(), outputs, {})
+        tx = Wallet().current_wallet.make_unsigned_transaction(Wallet().current_wallet.get_utxo(),
+                                                               outputs, {})
         Wallet().current_wallet.sign_transaction(tx, None)
         tx_detail_dialog = TxDetailDialog(self)
         tx_detail_dialog.tx_detail_view.show_tx(tx)
@@ -267,7 +273,7 @@ class ReceiveController(QWidget):
     def __init__(self):
         super(ReceiveController, self).__init__()
 
-        self.address = Wallet().current_wallet.address#'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'
+        self.address = Wallet().current_wallet.address  # 'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'
         layout = QVBoxLayout()
 
         self.addressTB = QTextEdit()
