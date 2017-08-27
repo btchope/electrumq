@@ -1,44 +1,60 @@
 # -*- coding: utf-8 -*-
 import logging
 import ConfigParser
+import os
 from functools import partial
+
+import sys
+from appdirs import AppDirs
 
 from blockchain import BlockChain
 from db.sqlite import init
 from network import NetWorkManager
 from utils import Singleton
+from utils.configuration import log_conf_path, conf_path
 from utils.parameter import set_testnet
 from wallet import WalletConfig, EVENT_QUEUE
 from wallet.single import SimpleWallet
 
 __author__ = 'zhouqi'
 
-conf_path = 'electrumq.conf'
+
+class MyConfigParser(ConfigParser.RawConfigParser):
+    def get(self, section, option):
+        try:
+            return ConfigParser.RawConfigParser.get(self, section, option)
+        except ConfigParser.NoOptionError:
+            return None
+
 
 class Wallet(object):
     __metaclass__ = Singleton
 
     def __init__(self):
         set_testnet()
-        logging.config.fileConfig('logging.conf')
+        logging.config.fileConfig(log_conf_path)
         init()
         network = NetWorkManager()
         network.start()
         BlockChain().init_header()
 
         # todo: init from config
-        self.conf = ConfigParser.ConfigParser()
+        self.conf = MyConfigParser()
         self.conf.read(conf_path)
         self.wallet_dict = {}
-        for k,v in self.conf.items('wallet'):
+        for k, v in self.conf.items('wallet'):
             if k.startswith('wallet_name_'):
                 wallet_name = k[12:]
-                wallet_type = self.conf.get('wallet','wallet_type_' + wallet_name)
-                wallet_config_file = v#self.conf.get('wallet', k)
+                wallet_type = self.conf.get('wallet', 'wallet_type_' + wallet_name)
+                wallet_config_file = v  # self.conf.get('wallet', k)
                 self.wallet_dict[wallet_name] = self._init_wallet(wallet_type, wallet_config_file)
-        self._current = self.conf.get('wallet','current')
-        self.current_wallet = self.wallet_dict[self._current]
-        self.current_wallet.init()
+
+        self._current = self.conf.get('wallet', 'current')
+        if self._current is not None:
+            self.current_wallet = self.wallet_dict[self._current]
+            self.current_wallet.init()
+        else:
+            self.current_wallet = None
 
     def _init_wallet(self, wallet_type, wallet_config_file):
         if wallet_type == 'simple':
@@ -74,4 +90,3 @@ class Wallet(object):
     3. balance 
     4. tx  (tx_hash, tx_time, tx_delta for hole wallet)
     '''
-

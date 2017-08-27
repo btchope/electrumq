@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+from functools import partial
+
 import pyperclip
 from PyQt4.QtCore import QDateTime, QDate, QTime, Qt
 from PyQt4.QtGui import QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QWidget, QHBoxLayout, \
-    QTextEdit, QLabel, QFrame, QTreeView, QStandardItemModel, QLineEdit
+    QTextEdit, QLabel, QFrame, QTreeView, QStandardItemModel, QLineEdit, QGridLayout
 
 __author__ = 'zhouqi'
 
@@ -12,6 +14,7 @@ class AccountIcon(QPushButton):
         super(AccountIcon, self).__init__()
         self.setFixedSize(50, 50)
         self.setText(account_name)
+        self.setProperty('class', 'accountIcon AccountIcon')
 
 
 class AddressView(QWidget):
@@ -45,33 +48,32 @@ class MainAddressView(QWidget):
     def __init__(self):
         super(MainAddressView, self).__init__()
         layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
         layout.setMargin(0)
-        # layout.insertStretch(-1, 1)
-        self.addressTB = QTextEdit()
-        # self.addressTB.setContentsMargins(0,0,0,0)
-        self.addressTB.setMaximumHeight(40)
-        self.addressTB.setMaximumWidth(160)
-        self.address = '1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm'
+        layout.setSpacing(0)
+        self.addressTB = QLabel()
+        self.addressTB.setProperty('class', 'address QLabel')
+        # self.addressTB.setMaximumHeight(40)
+        # self.addressTB.setMaximumWidth(160)
+        # self.address = '1Zho uQKM ethP\nQLYa QYcS sqqM\nNCgb NTYV m'
+        self.address = '1Zho uQKM ethP QLYa\nQYcS sqqM NCgb NTYV\nm'
+        self.addressTB.setMargin(10)
         self.addressTB.setText(self.address)
-
         layout.addWidget(self.addressTB)
+
+        btn_layout = QHBoxLayout()
+        btn_layout.setMargin(0)
+        btn_layout.setSpacing(0)
         self.qr_btn = QPushButton()
-        self.qr_btn.setMaximumWidth(80)
-        self.qr_btn.setMaximumHeight(20)
-        self.qr_btn.setText("qr")
-        layout.addWidget(self.qr_btn)
+        self.qr_btn.setText(u"二维码")
+        btn_layout.addWidget(self.qr_btn)
 
         self.clipboard_btn = QPushButton()
-        self.clipboard_btn.setMaximumWidth(80)
-        self.clipboard_btn.setMaximumHeight(20)
-        self.clipboard_btn.setText("clipboard")
-        layout.addWidget(self.clipboard_btn)
+        self.clipboard_btn.setText(u"复制")
+        btn_layout.addWidget(self.clipboard_btn)
+
+        layout.addLayout(btn_layout)
 
         self.setLayout(layout)
-
-        self.setMaximumHeight(80)
 
         self.qr_btn.clicked.connect(self.show_qr)
         self.clipboard_btn.clicked.connect(self.copy_clipboard)
@@ -95,13 +97,26 @@ class MainAddressView(QWidget):
 class BalanceView(QWidget):
     def __init__(self):
         super(BalanceView, self).__init__()
-        layout = QVBoxLayout()
-        self.btc_balance_label = QLabel(u"余额：100 BTC")
-        self.btc_balance_label.setFrameStyle(QFrame.Shadow_Mask)
-        layout.addWidget(self.btc_balance_label)
-        fiat_balance_label = QLabel(u"余额：2,100,000 RMB")
-        fiat_balance_label.setFrameStyle(QFrame.Shadow_Mask)
-        layout.addWidget(fiat_balance_label)
+        layout = QGridLayout()
+        layout.setMargin(0)
+        self.btc_balance_label = QLabel(u"100")
+        self.btc_balance_label.setProperty('class', 'balanceAmt QLabel')
+        # self.btc_balance_label.setFrameStyle(QFrame.Shadow_Mask)
+        layout.addWidget(self.btc_balance_label, 0, 0)
+        self.fiat_balance_label = QLabel(u"2,100,000")
+        self.fiat_balance_label.setProperty('class', 'balanceAmt QLabel')
+        # self.fiat_balance_label.setFrameStyle(QFrame.Shadow_Mask)
+        layout.addWidget(self.fiat_balance_label, 0, 1)
+
+        btc_unit_label = QLabel(u'BTC')
+        btc_unit_label.setProperty('class', 'balanceUnit QLabel')
+        layout.addWidget(btc_unit_label, 1, 0)
+
+        fiat_unit_label = QLabel(u'RMB')
+        fiat_unit_label.setProperty('class', 'balanceUnit QLabel')
+        layout.addWidget(fiat_unit_label, 1, 1)
+
+
         self.setLayout(layout)
 
     def set_blance(self, balance):
@@ -113,14 +128,24 @@ class FuncList(QWidget):
     def __init__(self):
         super(FuncList, self).__init__()
 
-        layout = QVBoxLayout()
+        layout = QGridLayout()
+        layout.setMargin(0)
         self.tx_log_btn = FuncView(u'交易记录')
-        layout.addWidget(self.tx_log_btn)
+        layout.addWidget(self.tx_log_btn, 0, 0)
         self.receive_btn = FuncView(u'收币')
-        layout.addWidget(self.receive_btn)
+        layout.addWidget(self.receive_btn, 1, 0)
         self.send_btn = FuncView(u'发币')
-        layout.addWidget(self.send_btn)
+        layout.addWidget(self.send_btn, 2, 0)
+        self.func_btn_list = [self.tx_log_btn, self.receive_btn, self.send_btn]
         self.setLayout(layout)
+
+        self.tx_log_btn.clicked.connect(partial(self.clicked, self.tx_log_btn))
+        self.receive_btn.clicked.connect(partial(self.clicked, self.receive_btn))
+        self.send_btn.clicked.connect(partial(self.clicked, self.send_btn))
+
+    def clicked(self, btn):
+        for each in self.func_btn_list:
+            each.setChecked(each is btn)
 
 
 class FuncView(QPushButton):
@@ -128,13 +153,15 @@ class FuncView(QPushButton):
         super(FuncView, self).__init__()
         self.setText(func_name)
         self.setMaximumWidth(80)
+        self.setCheckable(True)
+        self.setProperty('class', 'navFunc FuncView')
 
 
 class TxFilterView(QWidget):
     def __init__(self):
         super(TxFilterView, self).__init__()
         layout = QHBoxLayout()
-        texts = [u'查询条件1', u'查询条件2', u'查询条件3']
+        texts = []
         for t in texts:
             label = QLabel()
             label.setText(t)

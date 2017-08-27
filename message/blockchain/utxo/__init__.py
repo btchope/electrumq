@@ -6,4 +6,4 @@ __author__ = 'zhouqi'
 
 class GetAddress(BaseMessage):
     def __init__(self, params, **kwargs):
-        super(GetAddress, self).__init__(params, **kwargs)
+        super(GetAddress, self).__init__(params, __name__, **kwargs)

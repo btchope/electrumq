@@ -35,7 +35,7 @@ if __name__ == '__main__':
         app.exit()
     except Exception as ex:
         print ex
-        traceback.print_stack()
+        traceback.print_exc()
     finally:
         NetWorkManager().quit()
         sys.exit()

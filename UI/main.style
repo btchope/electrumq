@@ -1,7 +1,145 @@
 QWidget {
     background-color: gray;
+    padding:0px;
 }
 
-AccountIcon {
+/* account controller */
+AccountController > QWidget {
+    background-color: #2f2e30;
+}
+
+.accountIcon {
+    background-color: #2f2e30;
+    color: white;
+    max-width:120;
+    min-width:120;
+
+    border-style: none;
+}
+
+.accountIcon:checked {
+    background-color: #2f2e30;
+    color: white;
+    max-width:120;
+    min-width:120;
+
+    border-style: solid;
+    border-top-width:0;
+
+    border-left-width:5;
+    border-left-color:red;
+
+    border-right-width:0;
+    border-bottom-width:0;
+}
+
+.addAccount {
+    background-color: #2f2e30;
+    color: white;
+    max-width:120;
+    min-width:120;
+    border-style: none;
+    font: bold 14px;
+}
+
+
+/* nav controller */
+NavController > QWidget {
+    background-color: white;
+}
+
+NavController .addressDesc {
+    background-color: white;
+    color: black;
+    font: bold 12px;
+}
+
+MainAddressView {
+    background-color: black;
+}
+
+MainAddressView .address {
+    background-color: #eff0f0;
+
+    font-family: Monaco;
+    font: 12px;
+
+    border-style: solid;
+    border-width: 1px;
+    border-color: #e0e0e0;
+}
+
+MainAddressView > QPushButton {
+    background-color: white;
+
+    font: 12px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #e0e0e0;
+}
+
+NavController .balanceDesc {
+    background-color: white;
+    color: black;
+    font: bold 12px;
+}
+
+NavController .balanceAmt {
+    background-color: white;
+    color: black;
+    font: 12px;
+}
+
+NavController .balanceUnit {
+    background-color: white;
+    color: #e0e0e0;
+    font: 12px;
+}
+
+.navFunc {
+    background-color: #303030;
+    color: white;
+    max-width: 130px;
+    min-width: 130px;
+    border-style: none;
+    font: 12px;
+    margin: 10px;
+    spacing: 10px;
+
+}
+
+.navFunc:checked {
+    background-color: #fb5f63;
+}
+
+.navFunc:clicked {
+    background-color: #fb5f63;
+}
+
+/* tx table controller*/
+TxFilterView {
+    background-color: black;
+    max-height: 50;
+    min-height: 50;
+}
+
+TxTableView {
+    background-color: red;
+}
+
+/* receive */
+AddressView {
+    background-color: black;
+}
+
+AddressView > QTextEdit{
+    background-color: black;
+}
+
+AddressView > QTextEdit{
+    background-color: black;
+}
+
+.bigQRCode {
     background-color: red;
 }

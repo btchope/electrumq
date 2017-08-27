@@ -5,4 +5,4 @@ __author__ = 'zhouqi'
 
 class Subscribe(BaseMessage):
     def __init__(self, params, **kwargs):
-        super(Subscribe, self).__init__(params, **kwargs)
+        super(Subscribe, self).__init__(params, __name__, **kwargs)

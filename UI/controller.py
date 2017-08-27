@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import os
 from functools import partial
 
 import qrcode
@@ -17,6 +18,7 @@ from UI.dialog import NewAccountDialog, TxDetailDialog
 from UI.layout.borderlayout import BorderLayout
 from db.sqlite import init
 from network import NetWorkManager
+from utils.configuration import style_path
 from utils.parameter import TYPE_ADDRESS
 from wallet import WalletConfig
 from wallet.manager import Wallet
@@ -117,7 +119,13 @@ class AccountController(QWidget):
     def __init__(self):
         super(AccountController, self).__init__()
 
+        self.widget = QWidget(self)
+        bg_layout = QVBoxLayout(self)
+        bg_layout.setMargin(0)
+        bg_layout.addWidget(self.widget)
+
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 50, 0, 50)
         accounts = Wallet().wallet_dict.keys()
         for account in accounts:
             btn = AccountIcon(account)
@@ -127,13 +135,13 @@ class AccountController(QWidget):
         self.current_account_idx = 0
 
         self.add_account_btn = QPushButton()
-        self.add_account_btn.setFixedSize(50, 50)
-        self.add_account_btn.setText('+')
+        self.add_account_btn.setText(u'新建账户')
+        self.add_account_btn.setProperty('class', 'addAccount QPushButton')
         self.add_account_btn.clicked.connect(self.add_account)
         layout.addWidget(self.add_account_btn)
 
         layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        self.setLayout(layout)
+        self.widget.setLayout(layout)
 
         Wallet().new_wallet_event.append(self.add_wallet)
 
@@ -155,25 +163,41 @@ class AccountController(QWidget):
 class NavController(QWidget):
     def __init__(self):
         super(NavController, self).__init__()
+
+        self.widget = QWidget(self)
+        bg_layout = QVBoxLayout(self)
+        bg_layout.setMargin(0)
+        bg_layout.addWidget(self.widget)
+
         self.parent_controller = None
         layout = QVBoxLayout()
+
+        addressDesc = QLabel(u"我的地址")
+        addressDesc.setProperty('class', 'addressDesc QLabel')
+        layout.addWidget(addressDesc)
         self.address_view = MainAddressView()
         layout.addWidget(self.address_view)
+        # layout.setContentsMargins(20, 0, 20, 0)
 
+        balanceDesc = QLabel(u"余额")
+        balanceDesc.setProperty('class', 'balanceDesc QLabel')
+        layout.addWidget(balanceDesc)
         self.balance_view = BalanceView()
         layout.addWidget(self.balance_view)
         self.func_list = FuncList()
         layout.addWidget(self.func_list)
         layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        self.setLayout(layout)
+        self.widget.setLayout(layout)
 
         self.tx_log_btn = self.func_list.tx_log_btn
+        self.tx_log_btn.setChecked(True)
         self.receive_btn = self.func_list.receive_btn
         self.send_btn = self.func_list.send_btn
 
         self.show()
-        Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
-        Wallet().current_wallet_changed_event.append(self.show)
+        if Wallet().current_wallet is not None:
+            Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
+            Wallet().current_wallet_changed_event.append(self.show)
 
     def init_event(self):
         self.tx_log_btn.clicked.connect(self.parent_controller.show_tab)
@@ -182,8 +206,9 @@ class NavController(QWidget):
 
     def show(self):
         super(NavController, self).show()
-        self.address_view.set_address(Wallet().current_wallet.address)
-        self.balance_view.set_blance(Wallet().current_wallet.balance)
+        if Wallet().current_wallet is not None:
+            self.address_view.set_address(Wallet().current_wallet.address)
+            self.balance_view.set_blance(Wallet().current_wallet.balance)
 
 
 class DetailController(QWidget):
@@ -228,24 +253,24 @@ class TabController(QWidget):
         layout = QVBoxLayout()
         layout.addWidget(TxFilterView())
 
-        txs = Wallet().current_wallet.get_txs()
-        data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
-        self.tx_table_view = TxTableView(data_source)
+        self.tx_table_view = TxTableView([])
         layout.addWidget(self.tx_table_view)
         self.update_data_source()
         self.setLayout(layout)
-        Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
-        Wallet().current_wallet_changed_event.append(self.update_data_source)
+        if Wallet().current_wallet is not None:
+            Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
+            Wallet().current_wallet_changed_event.append(self.update_data_source)
 
     def dt_to_qdt(self, dt):
         array = datetime.fromtimestamp(float(dt)).timetuple()
         return QDateTime(QDate(*array[:3]), QTime(*array[3:6]))
 
     def update_data_source(self):
-        txs = Wallet().current_wallet.get_txs()
-        data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
-        self.tx_table_view.data_source = data_source
-        self.tx_table_view.reload()
+        if Wallet().current_wallet is not None:
+            txs = Wallet().current_wallet.get_txs()
+            data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
+            self.tx_table_view.data_source = data_source
+            self.tx_table_view.reload()
 
 
 class SendController(QWidget):
@@ -273,7 +298,10 @@ class ReceiveController(QWidget):
     def __init__(self):
         super(ReceiveController, self).__init__()
 
-        self.address = Wallet().current_wallet.address  # 'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'
+        if Wallet().current_wallet is not None:
+            self.address = Wallet().current_wallet.address  # 'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'
+        else:
+            self.address = ''
         layout = QVBoxLayout()
 
         self.addressTB = QTextEdit()
@@ -285,6 +313,7 @@ class ReceiveController(QWidget):
         self.qrcode = QLabel(self)
         self.qrcode.setMaximumWidth(300)
         self.qrcode.setMaximumHeight(300)
+        self.qrcode.setProperty('class', 'bigQRCode QLabel')
         layout.addWidget(self.qrcode)
         self.qrcode.setPixmap(
             qrcode.make(self.address, image_factory=Image, box_size=8).pixmap())
