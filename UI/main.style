@@ -14,7 +14,20 @@ AccountController > QWidget {
     max-width:120;
     min-width:120;
 
-    border-style: none;
+    margin: 15 0 15 0;
+    padding: 5 0 5 0;
+
+    border-style: solid;
+    border-top-width:0;
+
+    border-left-width:5;
+    border-left-color:#2f2e30;
+
+    border-right-width:5;
+    border-right-color:#2f2e30;
+    border-bottom-width:0;
+
+    font: bold 14px;
 }
 
 .accountIcon:checked {
@@ -29,13 +42,15 @@ AccountController > QWidget {
     border-left-width:5;
     border-left-color:red;
 
-    border-right-width:0;
+    border-right-width:5;
+    border-right-color:#2f2e30;
     border-bottom-width:0;
 }
 
 .addAccount {
     background-color: #2f2e30;
     color: white;
+    margin: 15 0 15 0;
     max-width:120;
     min-width:120;
     border-style: none;
@@ -103,28 +118,46 @@ NavController .balanceUnit {
     min-width: 130px;
     border-style: none;
     font: 12px;
-    margin: 10px;
-    spacing: 10px;
-
+    padding: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
 
 .navFunc:checked {
     background-color: #fb5f63;
 }
 
-.navFunc:clicked {
+.navFunc:pressed {
     background-color: #fb5f63;
 }
 
-/* tx table controller*/
-TxFilterView {
-    background-color: black;
-    max-height: 50;
-    min-height: 50;
+/* detail controller*/
+
+DetailController > QWidget {
+    background-color: white;
 }
 
-TxTableView {
-    background-color: red;
+/* tx table controller*/
+TxFilterView > QWidget {
+    background-color: #f0f0f0;
+    max-height: 30;
+    min-height: 30;
+}
+
+TxTableView > QTreeView {
+    show-decoration-selected: 0;
+    outline: none;
+    background-color: white;
+    alternate-background-color: #f0f0f0;
+}
+
+TxTableView > QTreeView::item {
+    height: 30px;
+}
+
+TxTableView > QTreeView > QHeaderView {
+    height: 30px;
+    background-color: white;
 }
 
 /* receive */

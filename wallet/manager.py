@@ -65,11 +65,15 @@ class Wallet(object):
         self.wallet_dict[wallet_name] = self._init_wallet(wallet_type, wallet_config_file)
         self.conf.set("wallet", "wallet_name_" + wallet_name, wallet_config_file)
         self.conf.set("wallet", "wallet_type_" + wallet_name, wallet_type)
+        if self.current_wallet is None:
+            self.conf.set('wallet', 'current', wallet_name)
         self.conf.write(open(conf_path, "w"))
         if len(self.new_wallet_event) > 0:
             global EVENT_QUEUE
             for event in self.new_wallet_event:
                 EVENT_QUEUE.put(partial(event, wallet_name))
+        if self.current_wallet is None:
+            self.change_current_wallet(0)
         return self.wallet_dict[wallet_name]
 
     def change_current_wallet(self, idx):

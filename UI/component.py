@@ -4,7 +4,10 @@ from functools import partial
 import pyperclip
 from PyQt4.QtCore import QDateTime, QDate, QTime, Qt
 from PyQt4.QtGui import QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QWidget, QHBoxLayout, \
-    QTextEdit, QLabel, QFrame, QTreeView, QStandardItemModel, QLineEdit, QGridLayout
+    QTextEdit, QLabel, QFrame, QTreeView, QStandardItemModel, QLineEdit, QGridLayout, QTableView, \
+    QItemSelectionModel
+
+from UI import address_show_format
 
 __author__ = 'zhouqi'
 
@@ -12,8 +15,9 @@ __author__ = 'zhouqi'
 class AccountIcon(QPushButton):
     def __init__(self, account_name):
         super(AccountIcon, self).__init__()
-        self.setFixedSize(50, 50)
-        self.setText(account_name)
+        # self.setFixedSize(50, 50)
+        self.setCheckable(True)
+        self.setText(u'账户' + account_name)
         self.setProperty('class', 'accountIcon AccountIcon')
 
 
@@ -57,6 +61,7 @@ class MainAddressView(QWidget):
         # self.address = '1Zho uQKM ethP\nQLYa QYcS sqqM\nNCgb NTYV m'
         self.address = '1Zho uQKM ethP QLYa\nQYcS sqqM NCgb NTYV\nm'
         self.addressTB.setMargin(10)
+        self.addressTB.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.addressTB.setText(self.address)
         layout.addWidget(self.addressTB)
 
@@ -80,7 +85,7 @@ class MainAddressView(QWidget):
 
     def set_address(self, address):
         self.address = address
-        self.addressTB.setText(self.address)
+        self.addressTB.setText(address_show_format(self.address))
         self.update()
 
     def show_qr(self):
@@ -160,13 +165,20 @@ class FuncView(QPushButton):
 class TxFilterView(QWidget):
     def __init__(self):
         super(TxFilterView, self).__init__()
+
+        self.widget = QWidget(self)
+        bg_layout = QVBoxLayout(self)
+        bg_layout.setMargin(0)
+        bg_layout.addWidget(self.widget)
+
         layout = QHBoxLayout()
+        layout.setMargin(0)
         texts = []
         for t in texts:
             label = QLabel()
             label.setText(t)
             layout.addWidget(label)
-        self.setLayout(layout)
+        self.widget.setLayout(layout)
 
 
 class TableView(QWidget):
@@ -175,6 +187,7 @@ class TableView(QWidget):
 
         self.data_source = data_source
         layout = QVBoxLayout()
+        layout.setMargin(0)
         self.sourceView = QTreeView()
         self.sourceView.setRootIsDecorated(False)
         self.sourceView.setAlternatingRowColors(True)
@@ -186,7 +199,7 @@ class TableView(QWidget):
         if len(self.data_source) > 0:
             self.data_model = QStandardItemModel(0, len(self.data_source[0]), self)
         else:
-            self.data_model = QStandardItemModel(0, 0, self)
+            self.data_model = QStandardItemModel(0, 3, self)
         self.sourceView.setModel(self.data_model)
         self.draw_header()
         for row in self.data_source:

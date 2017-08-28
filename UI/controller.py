@@ -127,15 +127,18 @@ class AccountController(QWidget):
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 50, 0, 50)
         accounts = Wallet().wallet_dict.keys()
+        is_first = True
         for account in accounts:
             btn = AccountIcon(account)
+            btn.setChecked(is_first)
+            is_first = False
             layout.addWidget(btn)
             btn.clicked.connect(partial(self.switch_account, btn))
 
         self.current_account_idx = 0
 
         self.add_account_btn = QPushButton()
-        self.add_account_btn.setText(u'新建账户')
+        self.add_account_btn.setText(u'新建')
         self.add_account_btn.setProperty('class', 'addAccount QPushButton')
         self.add_account_btn.clicked.connect(self.add_account)
         layout.addWidget(self.add_account_btn)
@@ -214,6 +217,12 @@ class NavController(QWidget):
 class DetailController(QWidget):
     def __init__(self):
         super(DetailController, self).__init__()
+
+        self.widget = QWidget(self)
+        bg_layout = QVBoxLayout(self)
+        bg_layout.setMargin(0)
+        bg_layout.addWidget(self.widget)
+
         layout = QVBoxLayout()
         self.tab_ctr = TabController()
         self.send_ctr = SendController()
@@ -225,7 +234,7 @@ class DetailController(QWidget):
         for c in self.ctl_list:
             c.setVisible(False)
         self.show_ctl(self.tab_ctr)
-        self.setLayout(layout)
+        self.widget.setLayout(layout)
 
     def show_ctl(self, ctl):
         for c in self.ctl_list:
@@ -251,6 +260,7 @@ class TabController(QWidget):
     def __init__(self):
         super(TabController, self).__init__()
         layout = QVBoxLayout()
+        layout.setMargin(0)
         layout.addWidget(TxFilterView())
 
         self.tx_table_view = TxTableView([])
