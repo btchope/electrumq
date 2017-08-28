@@ -33,12 +33,13 @@ class NewAccountDialog(QDialog):
 
     def accept(self):
         wallet_id = str(len(Wallet().wallet_dict.keys())) + str(random.randint(0,9))
-        wallet = Wallet().new_wallet(wallet_id, 'simple', wallet_id + '.json')
+        wallet = Wallet().init_wallet('simple', wallet_id + '.json')
         s = self.tab_widget.currentWidget().get_secret()
         secret = s.decode('hex')
         wallet.init_key_store(
             SimpleKeyStore.create(SecretToASecret(secret, True), None))
         wallet.init()
+        Wallet().new_wallet(wallet_id, 'simple', wallet_id + '.json', wallet)
         self.close()
 
 
@@ -47,7 +48,7 @@ class SimpleWalletTab(QWidget):
         super(SimpleWalletTab, self).__init__(parent)
 
         random_label = QLabel("Random:")
-        self.random_edit = QLineEdit('0'*62 + '01')
+        self.random_edit = QLineEdit('2012100909090909090909090909090909090909090909090909090909090909')
         self.random_edit.setMinimumWidth(500)
 
         mainLayout = QVBoxLayout()

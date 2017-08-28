@@ -47,7 +47,7 @@ class Wallet(object):
                 wallet_name = k[12:]
                 wallet_type = self.conf.get('wallet', 'wallet_type_' + wallet_name)
                 wallet_config_file = v  # self.conf.get('wallet', k)
-                self.wallet_dict[wallet_name] = self._init_wallet(wallet_type, wallet_config_file)
+                self.wallet_dict[wallet_name] = self.init_wallet(wallet_type, wallet_config_file)
 
         self._current = self.conf.get('wallet', 'current')
         if self._current is not None:
@@ -56,13 +56,13 @@ class Wallet(object):
         else:
             self.current_wallet = None
 
-    def _init_wallet(self, wallet_type, wallet_config_file):
+    def init_wallet(self, wallet_type, wallet_config_file):
         if wallet_type == 'simple':
             return SimpleWallet(WalletConfig(store_path=wallet_config_file))
         return None
 
-    def new_wallet(self, wallet_name, wallet_type, wallet_config_file):
-        self.wallet_dict[wallet_name] = self._init_wallet(wallet_type, wallet_config_file)
+    def new_wallet(self, wallet_name, wallet_type, wallet_config_file, wallet):
+        self.wallet_dict[wallet_name] = wallet
         self.conf.set("wallet", "wallet_name_" + wallet_name, wallet_config_file)
         self.conf.set("wallet", "wallet_type_" + wallet_name, wallet_type)
         if self.current_wallet is None:

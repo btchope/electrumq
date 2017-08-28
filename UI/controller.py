@@ -145,6 +145,7 @@ class AccountController(QWidget):
 
         layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.widget.setLayout(layout)
+        self.account_layout = layout
 
         Wallet().new_wallet_event.append(self.add_wallet)
 
@@ -160,7 +161,8 @@ class AccountController(QWidget):
 
     def add_wallet(self, wallet_name):
         btn = AccountIcon(wallet_name)
-        self.layout().insertWidget(self.layout().count() - 2, btn)
+        self.account_layout.insertWidget(self.account_layout.count() - 2, btn)
+        btn.setChecked(True)
 
 
 class NavController(QWidget):
