@@ -88,8 +88,8 @@ def set_testnet():
     Parameter().ADDRTYPE_P2WPKH = 3
     Parameter().XPRV_HEADER = 0x04358394
     Parameter().XPUB_HEADER = 0x043587cf
-    # HEADERS_URL = "https://headers.electrum.org/testnet_headers"
-    Parameter().HEADERS_URL = 'http://127.0.0.1:8866/files/testnet_headers'
+    Parameter().HEADERS_URL = "https://headers.electrum.org/testnet_headers"
+    # Parameter().HEADERS_URL = 'http://127.0.0.1:8866/files/testnet_headers'
 
     # Parameter().DEFAULT_PORTS = {'t': '51001', 's': '51002'}
     # Parameter().DEFAULT_SERVERS = {

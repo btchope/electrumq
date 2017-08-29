@@ -117,7 +117,11 @@ class NetWorkManager:
         retry = 5
         while retry > 0:
             try:
-                response = yield AsyncHTTPClient().fetch(Parameter().HEADERS_URL)
+                request = tornado.httpclient.HTTPRequest(url=Parameter().HEADERS_URL, connect_timeout=20.0,
+                                                         request_timeout=60*10)
+                response = yield tornado.gen.Task(AsyncHTTPClient().fetch, request)
+                #
+                # response = yield AsyncHTTPClient().fetch(Parameter().HEADERS_URL)
             except Exception as ex:
                 print ex.message
                 retry -= 1

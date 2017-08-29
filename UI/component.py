@@ -33,7 +33,7 @@ class AddressView(QWidget):
         # self.addressTB.setContentsMargins(0,0,0,0)
         self.addressTB.setMaximumHeight(40)
         self.addressTB.setMaximumWidth(160)
-        self.address = '1ZhouQKMethPQLYaQYcSsqqMNCgbNTYVm'
+        self.address = '-' * 32
         self.addressTB.setText(self.address)
 
         layout.addWidget(self.addressTB)
@@ -59,10 +59,10 @@ class MainAddressView(QWidget):
         # self.addressTB.setMaximumHeight(40)
         # self.addressTB.setMaximumWidth(160)
         # self.address = '1Zho uQKM ethP\nQLYa QYcS sqqM\nNCgb NTYV m'
-        self.address = '1Zho uQKM ethP QLYa\nQYcS sqqM NCgb NTYV\nm'
+        self.address = '-' * 34
         self.addressTB.setMargin(10)
         self.addressTB.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.addressTB.setText(self.address)
+        self.addressTB.setText(address_show_format(self.address))
         layout.addWidget(self.addressTB)
 
         btn_layout = QHBoxLayout()
@@ -104,11 +104,11 @@ class BalanceView(QWidget):
         super(BalanceView, self).__init__()
         layout = QGridLayout()
         layout.setMargin(0)
-        self.btc_balance_label = QLabel(u"100")
+        self.btc_balance_label = QLabel(u"0")
         self.btc_balance_label.setProperty('class', 'balanceAmt QLabel')
         # self.btc_balance_label.setFrameStyle(QFrame.Shadow_Mask)
         layout.addWidget(self.btc_balance_label, 0, 0)
-        self.fiat_balance_label = QLabel(u"2,100,000")
+        self.fiat_balance_label = QLabel(u"-")
         self.fiat_balance_label.setProperty('class', 'balanceAmt QLabel')
         # self.fiat_balance_label.setFrameStyle(QFrame.Shadow_Mask)
         layout.addWidget(self.fiat_balance_label, 0, 1)
@@ -125,7 +125,7 @@ class BalanceView(QWidget):
         self.setLayout(layout)
 
     def set_blance(self, balance):
-        self.btc_balance_label.setText(u'余额: %f BTC' % (balance * 1.0 / 100000000,))
+        self.btc_balance_label.setText(u'%f' % (balance * 1.0 / 100000000,))
         self.update()
 
 

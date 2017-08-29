@@ -11,7 +11,7 @@ from blockchain import BlockChain
 from db.sqlite import init
 from network import NetWorkManager
 from utils import Singleton
-from utils.configuration import log_conf_path, conf_path
+from utils.configuration import log_conf_path, conf_path, dirs
 from utils.parameter import set_testnet
 from wallet import WalletConfig, EVENT_QUEUE
 from wallet.single import SimpleWallet
@@ -58,7 +58,7 @@ class Wallet(object):
 
     def init_wallet(self, wallet_type, wallet_config_file):
         if wallet_type == 'simple':
-            return SimpleWallet(WalletConfig(store_path=wallet_config_file))
+            return SimpleWallet(WalletConfig(store_path=dirs.user_data_dir + '/' + wallet_config_file))
         return None
 
     def new_wallet(self, wallet_name, wallet_type, wallet_config_file, wallet):
@@ -70,7 +70,7 @@ class Wallet(object):
         self.conf.write(open(conf_path, "w"))
         if len(self.new_wallet_event) > 0:
             global EVENT_QUEUE
-            for event in self.new_wallet_event:
+            for event in set(self.new_wallet_event):
                 EVENT_QUEUE.put(partial(event, wallet_name))
         if self.current_wallet is None:
             self.change_current_wallet(0)
@@ -81,7 +81,7 @@ class Wallet(object):
             self.current_wallet = self.wallet_dict[self.wallet_dict.keys()[idx]]
             global EVENT_QUEUE
             if len(self.current_wallet_changed_event) > 0:
-                for event in self.current_wallet_changed_event:
+                for event in set(self.current_wallet_changed_event):
                     EVENT_QUEUE.put(event)
 
     new_wallet_event = []

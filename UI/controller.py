@@ -200,9 +200,10 @@ class NavController(QWidget):
         self.send_btn = self.func_list.send_btn
 
         self.show()
+        Wallet().current_wallet_changed_event.append(self.show)
         if Wallet().current_wallet is not None:
             Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
-            Wallet().current_wallet_changed_event.append(self.show)
+
 
     def init_event(self):
         self.tx_log_btn.clicked.connect(self.parent_controller.show_tab)
@@ -212,6 +213,7 @@ class NavController(QWidget):
     def show(self):
         super(NavController, self).show()
         if Wallet().current_wallet is not None:
+            Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
             self.address_view.set_address(Wallet().current_wallet.address)
             self.balance_view.set_blance(Wallet().current_wallet.balance)
 
@@ -269,9 +271,9 @@ class TabController(QWidget):
         layout.addWidget(self.tx_table_view)
         self.update_data_source()
         self.setLayout(layout)
+        Wallet().current_wallet_changed_event.append(self.update_data_source)
         if Wallet().current_wallet is not None:
             Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
-            Wallet().current_wallet_changed_event.append(self.update_data_source)
 
     def dt_to_qdt(self, dt):
         array = datetime.fromtimestamp(float(dt)).timetuple()
@@ -279,6 +281,7 @@ class TabController(QWidget):
 
     def update_data_source(self):
         if Wallet().current_wallet is not None:
+            Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
             txs = Wallet().current_wallet.get_txs()
             data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
             self.tx_table_view.data_source = data_source

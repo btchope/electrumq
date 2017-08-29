@@ -415,7 +415,7 @@ class BaseWallet(AbstractWallet):
             TxStore().add_tx_detail(tx_hash, tx)
             global EVENT_QUEUE
             if len(self.wallet_tx_changed_event) > 0:
-                for event in self.wallet_tx_changed_event:
+                for event in set(self.wallet_tx_changed_event):
                     EVENT_QUEUE.put(event)
             print self.address, 'balance', TxStore().get_balance(self.address)
         except Exception:
