@@ -100,7 +100,7 @@ class MainController(QWidget):
         self.widget.setLayout(layout)
         self.setWindowTitle("ElectrumQ")
 
-        self.widget.setStyleSheet(open('UI/main.style').read())
+        self.widget.setStyleSheet(open(style_path).read())
 
     def show_tab(self):
         self.detail_ctr.show_tab()
