@@ -8,11 +8,11 @@ from tornado import gen
 # from db.mem.blockstore import BlockStore
 from tornado.concurrent import Future
 
-from db.sqlite import header_dict_to_block_item
-from db.sqlite.block import BlockStore
-from network import NetWorkManager
-from utils import Singleton
-from message.all import headers_subscribe
+from electrumq.db.sqlite import header_dict_to_block_item
+from electrumq.db.sqlite.block import BlockStore
+from electrumq.network import NetWorkManager
+from electrumq.utils import Singleton
+from electrumq.message.all import headers_subscribe
 
 __author__ = 'zhouqi'
 
@@ -66,7 +66,7 @@ class BlockChain():
         height = result['block_height']
         local_height = BlockStore().height
         if height > local_height:
-            from message.all import GetHeader, GetChunk
+            from electrumq.message.all import GetHeader, GetChunk
             next_height = min(height,
                               local_height / BLOCK_INTERVAL * BLOCK_INTERVAL + BLOCK_INTERVAL - 1)
             logger.debug('catch up trunc from %d to %d' % (
@@ -112,7 +112,7 @@ class MemBlockChain(BlockChain):
                     BlockStore().connect_header(header, height)
                     print height
             print datetime.now() - dt
-            from message.all import headers_subscribe
+            from electrumq.message.all import headers_subscribe
             NetWorkManager().client.add_subscribe(headers_subscribe([]), callback=self.catch_up,
                                                   subscribe=self.receive_header)  # do not have id
         except Exception as ex:
@@ -131,7 +131,7 @@ class MemBlockChain(BlockChain):
         height = result['block_height']
         local_height = BlockStore().height
         if height > local_height:
-            from message.all import GetHeader, GetChunk
+            from electrumq.message.all import GetHeader, GetChunk
             next_height = min(height, local_height / BLOCK_INTERVAL * BLOCK_INTERVAL + 2015)
             # logger.debug('catch up header from %d to %d' % (local_height + 1, next_height))
             # for h in xrange(local_height + 1, next_height + 1):

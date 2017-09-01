@@ -5,17 +5,17 @@ import ecdsa
 from ecdsa import SECP256k1
 from ecdsa.util import string_to_number
 
-from db.sqlite.tx import TxStore
-from utils.base58 import Hash, public_key_to_p2pkh, b58decode_check, b58encode_check, \
+from electrumq.db.sqlite.tx import TxStore
+from electrumq.utils.base58 import Hash, public_key_to_p2pkh, b58decode_check, b58encode_check, \
     hash_160_to_bc_address
-from utils.bip32 import bip32_public_derivation, deserialize_xpub, CKD_pub, deserialize_xprv, \
+from electrumq.utils.bip32 import bip32_public_derivation, deserialize_xpub, CKD_pub, deserialize_xprv, \
     xpub_from_xprv, bip32_root, bip32_private_derivation, bip32_private_key
-from utils.key import is_compressed, public_key_from_private_key, pw_encode, InvalidPassword, \
+from electrumq.utils.key import is_compressed, public_key_from_private_key, pw_encode, InvalidPassword, \
     pw_decode
-from utils.key import regenerate_key
-from utils.mnemonic import Mnemonic, is_new_seed, is_old_seed
-from utils.parameter import Parameter
-from utils.parser import write_uint16, read_uint16
+from electrumq.utils.key import regenerate_key
+from electrumq.utils.mnemonic import Mnemonic, is_new_seed, is_old_seed
+from electrumq.utils.parameter import Parameter
+from electrumq.utils.parser import write_uint16, read_uint16
 
 __author__ = 'zhouqi'
 

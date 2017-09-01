@@ -5,9 +5,9 @@ import sqlite3
 import struct
 from datetime import datetime, timedelta
 
-from utils.base58 import double_sha256, double_sha256_2
-from utils.configuration import sqlite_path
-from utils.parser import read_uint32, write_uint32
+from electrumq.utils.base58 import double_sha256, double_sha256_2
+from electrumq.utils.configuration import sqlite_path
+from electrumq.utils.parser import read_uint32, write_uint32
 
 __author__ = 'zhouqi'
 

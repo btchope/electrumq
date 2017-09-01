@@ -12,18 +12,18 @@ from PyQt4.QtCore import QDateTime, QDate, QTime, QTimer
 from PyQt4.QtGui import *
 from datetime import datetime
 
-from UI.component import AccountIcon, AddressView, BalanceView, \
+from electrumq.UI.component import AccountIcon, AddressView, BalanceView, \
     FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView
-from UI.dialog import NewAccountDialog, TxDetailDialog
-from UI.layout.borderlayout import BorderLayout
-from db.sqlite import init
-from network import NetWorkManager
-from utils.configuration import style_path
-from utils.parameter import TYPE_ADDRESS
-from wallet import WalletConfig
-from wallet.manager import Wallet
-from wallet.single import SimpleWallet
-from wallet import EVENT_QUEUE
+from electrumq.UI.dialog import NewAccountDialog, TxDetailDialog
+from electrumq.UI.layout.borderlayout import BorderLayout
+from electrumq.db.sqlite import init
+from electrumq.network import NetWorkManager
+from electrumq.utils.configuration import style_path
+from electrumq.utils.parameter import TYPE_ADDRESS
+from electrumq.wallet import WalletConfig
+from electrumq.wallet.manager import Wallet
+from electrumq.wallet.single import SimpleWallet
+from electrumq.wallet import EVENT_QUEUE
 
 __author__ = 'zhouqi'
 

@@ -2,8 +2,8 @@
 
 import struct
 
-from utils.opcode import *
-from utils.base58 import hash_160_to_bc_address, public_key_to_bc_address, hash_160
+from electrumq.utils.opcode import *
+from electrumq.utils.base58 import hash_160_to_bc_address, public_key_to_bc_address, hash_160
 
 __author__ = 'zhouqi'
 

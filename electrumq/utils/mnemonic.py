@@ -34,8 +34,8 @@ import ecdsa
 import pbkdf2
 
 # http://www.asahi-net.or.jp/~ax2s-kmtn/ref/unicode/e_asia.html
-from utils import print_error
-from utils.parameter import Parameter
+from electrumq.utils import print_error
+from electrumq.utils.parameter import Parameter
 
 CJK_INTERVALS = [
     (0x4E00, 0x9FFF, 'CJK Unified Ideographs'),

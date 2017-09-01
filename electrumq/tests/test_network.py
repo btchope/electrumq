@@ -5,8 +5,8 @@ import time
 
 from tornado.testing import gen_test, AsyncTestCase
 
-from network import NetWorkManager, RPCClient
-from utils.parameter import set_testnet
+from electrumq.network import NetWorkManager, RPCClient
+from electrumq.utils.parameter import set_testnet
 
 __author__ = 'zhouqi'
 

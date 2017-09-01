@@ -36,9 +36,9 @@ from math import floor, log10
 # so if sending twice from the same UTXO set we choose the same UTXOs
 # to spend.  This prevents attacks on users by malicious or stale
 # servers.
-from utils.base58 import hash256
-from utils.tx import Transaction
-from utils.parameter import COIN, TYPE_ADDRESS
+from electrumq.utils.base58 import hash256
+from electrumq.utils.tx import Transaction
+from electrumq.utils.parameter import COIN, TYPE_ADDRESS
 
 
 class PRNG:

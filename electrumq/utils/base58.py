@@ -5,7 +5,7 @@ from hashlib import sha256
 import Crypto.Hash.SHA256 as SHA256
 import Crypto.Hash.RIPEMD as RIPEMD160
 
-from utils.parameter import Parameter
+from electrumq.utils.parameter import Parameter
 
 __author__ = 'zhouqi'
 

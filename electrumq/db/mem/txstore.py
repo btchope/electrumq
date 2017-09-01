@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from utils import Singleton, hash_decode, hash_encode, Hash
+from electrumq.utils import Singleton, hash_decode, hash_encode, Hash
 
 __author__ = 'zhouqi'
 

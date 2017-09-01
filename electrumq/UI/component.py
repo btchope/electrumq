@@ -7,7 +7,7 @@ from PyQt4.QtGui import QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QWid
     QTextEdit, QLabel, QFrame, QTreeView, QStandardItemModel, QLineEdit, QGridLayout, QTableView, \
     QItemSelectionModel
 
-from UI import address_show_format
+from electrumq.UI import address_show_format
 
 __author__ = 'zhouqi'
 

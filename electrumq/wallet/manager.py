@@ -7,14 +7,14 @@ from functools import partial
 import sys
 from appdirs import AppDirs
 
-from blockchain import BlockChain
-from db.sqlite import init
-from network import NetWorkManager
-from utils import Singleton
-from utils.configuration import log_conf_path, conf_path, dirs
-from utils.parameter import set_testnet
-from wallet import WalletConfig, EVENT_QUEUE
-from wallet.single import SimpleWallet
+from electrumq.blockchain import BlockChain
+from electrumq.db.sqlite import init
+from electrumq.network import NetWorkManager
+from electrumq.utils import Singleton
+from electrumq.utils.configuration import log_conf_path, conf_path, dirs
+from electrumq.utils.parameter import set_testnet
+from electrumq.wallet import WalletConfig, EVENT_QUEUE
+from electrumq.wallet.single import SimpleWallet
 
 __author__ = 'zhouqi'
 

@@ -2,9 +2,9 @@
 import logging
 import traceback
 
-from db.sqlite import execute_one, BlockItem, Connection, header_dict_to_block_item
-from utils.parameter import Parameter
-from utils import Singleton
+from electrumq.db.sqlite import execute_one, BlockItem, Connection, header_dict_to_block_item
+from electrumq.utils.parameter import Parameter
+from electrumq.utils import Singleton
 
 __author__ = 'zhouqi'
 

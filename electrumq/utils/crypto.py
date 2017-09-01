@@ -5,7 +5,7 @@ from ecdsa import rfc6979, util, SigningKey, VerifyingKey, numbertheory
 from ecdsa.curves import Curve
 from ecdsa.ecdsa import Public_key, curve_secp256k1, Private_key, generator_secp256k1
 from ecdsa.ellipticcurve import CurveFp, Point
-from utils.base58 import double_sha256, public_key_to_bc_address
+from electrumq.utils.base58 import double_sha256, public_key_to_bc_address
 from hashlib import sha256
 
 __author__ = 'zhouqi'

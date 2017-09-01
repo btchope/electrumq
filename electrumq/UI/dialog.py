@@ -4,9 +4,9 @@ import random
 from PyQt4.QtCore import QFileInfo, QString
 from PyQt4.QtGui import *
 
-from utils.key import public_key_from_private_key, SecretToASecret
-from utils.key_store import SimpleKeyStore
-from wallet.manager import Wallet
+from electrumq.utils.key import public_key_from_private_key, SecretToASecret
+from electrumq.utils.key_store import SimpleKeyStore
+from electrumq.wallet.manager import Wallet
 
 __author__ = 'zhouqi'
 

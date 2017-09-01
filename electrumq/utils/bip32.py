@@ -8,11 +8,11 @@ from ecdsa import VerifyingKey
 from ecdsa.ecdsa import generator_secp256k1
 from ecdsa.util import string_to_number, number_to_string
 
-from utils.base58 import hash_160, b58encode_check, b58decode_check
-from utils.key import SecretToASecret, GetPubKey, EC_KEY, ser_to_point
-from utils.mnemonic import Mnemonic
-from utils.parameter import Parameter
-from utils.parser import write_uint32
+from electrumq.utils.base58 import hash_160, b58encode_check, b58decode_check
+from electrumq.utils.key import SecretToASecret, GetPubKey, EC_KEY, ser_to_point
+from electrumq.utils.mnemonic import Mnemonic
+from electrumq.utils.parameter import Parameter
+from electrumq.utils.parser import write_uint32
 
 __author__ = 'zhouqi'
 

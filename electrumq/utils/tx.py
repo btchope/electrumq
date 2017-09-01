@@ -6,14 +6,14 @@ import types
 
 from ecdsa import SECP256k1, ecdsa, util
 
-from utils import *
-from utils.base58 import hash160_to_p2sh, hash160_to_p2pkh, hash_160, \
+from electrumq.utils import *
+from electrumq.utils.base58 import hash160_to_p2sh, hash160_to_p2pkh, hash_160, \
     bc_address_to_type_and_hash_160, public_key_to_p2pkh, double_sha256
-from utils.key import public_key_from_private_key, MySigningKey, MyVerifyingKey, point_to_ser
-from utils.key import regenerate_key
-from utils.key_store import xpubkey_to_pubkey, xpubkey_to_address
-from utils.parameter import TYPE_SCRIPT, TYPE_ADDRESS, TYPE_PUBKEY, Parameter
-from utils.parser import int_to_hex, op_push, write_uint32, write_uint64
+from electrumq.utils.key import public_key_from_private_key, MySigningKey, MyVerifyingKey, point_to_ser
+from electrumq.utils.key import regenerate_key
+from electrumq.utils.key_store import xpubkey_to_pubkey, xpubkey_to_address
+from electrumq.utils.parameter import TYPE_SCRIPT, TYPE_ADDRESS, TYPE_PUBKEY, Parameter
+from electrumq.utils.parser import int_to_hex, op_push, write_uint32, write_uint64
 
 __author__ = 'zhouqi'
 

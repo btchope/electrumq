@@ -4,8 +4,8 @@ import unittest
 from sqlite3 import Connection
 
 import utils
-from db.sqlite import drop, init
-from utils import base58
+from electrumq.db.sqlite import drop, init
+from electrumq.utils import base58
 
 __author__ = 'zhouqi'
 

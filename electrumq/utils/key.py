@@ -12,10 +12,10 @@ from ecdsa.ecdsa import generator_secp256k1
 from ecdsa.ellipticcurve import Point
 from ecdsa.util import string_to_number, number_to_string
 
-from utils.base58 import b58decode_check, b58encode_check, public_key_to_p2pkh, hash256, \
+from electrumq.utils.base58 import b58decode_check, b58encode_check, public_key_to_p2pkh, hash256, \
     __b58chars, double_sha256
-from utils.parameter import Parameter
-from utils.parser import write_compact_size
+from electrumq.utils.parameter import Parameter
+from electrumq.utils.parser import write_compact_size
 
 __author__ = 'zhouqi'
 

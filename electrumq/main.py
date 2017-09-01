@@ -4,19 +4,19 @@ import time
 
 from tornado import gen
 
-from blockchain import BlockChain
-from db.sqlite import init
-from db.sqlite.tx import TxStore
-from message.all import *
-from network import NetWorkManager
-from utils.base58 import public_key_to_p2pkh
-from utils.key import SecretToASecret, public_key_from_private_key
-from utils.key_store import SimpleKeyStore, WatchOnlySimpleKeyStore, \
+from electrumq.blockchain import BlockChain
+from electrumq.db.sqlite import init
+from electrumq.db.sqlite.tx import TxStore
+from electrumq.message.all import *
+from electrumq.network import NetWorkManager
+from electrumq.utils.base58 import public_key_to_p2pkh
+from electrumq.utils.key import SecretToASecret, public_key_from_private_key
+from electrumq.utils.key_store import SimpleKeyStore, WatchOnlySimpleKeyStore, \
     ImportedKeyStore, from_seed, BIP32KeyHotStore
-from utils.parameter import set_testnet, TYPE_ADDRESS
-from wallet import WalletConfig
-from wallet.hd import HDWallet, HDWatchOnlyWallet
-from wallet.single import ColdSimpleWallet, WatchOnlySimpleWallet, SimpleWallet
+from electrumq.utils.parameter import set_testnet, TYPE_ADDRESS
+from electrumq.wallet import WalletConfig
+from electrumq.wallet.hd import HDWallet, HDWatchOnlyWallet
+from electrumq.wallet.single import ColdSimpleWallet, WatchOnlySimpleWallet, SimpleWallet
 
 __author__ = 'zhouqi'
 

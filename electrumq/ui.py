@@ -8,13 +8,13 @@ import traceback
 
 from PyQt4.QtCore import QTimer
 
-from UI import controller
-from UI.controller import EQApplication, EQMainWindow
-from db.sqlite import init
-from network import NetWorkManager
-from wallet import WalletConfig
-from wallet.single import SimpleWallet
-from wallet import EVENT_QUEUE
+from electrumq.UI import controller
+from electrumq.UI.controller import EQApplication, EQMainWindow
+from electrumq.db.sqlite import init
+from electrumq.network import NetWorkManager
+from electrumq.wallet import WalletConfig
+from electrumq.wallet.single import SimpleWallet
+from electrumq.wallet import EVENT_QUEUE
 
 __author__ = 'zhouqi'
 

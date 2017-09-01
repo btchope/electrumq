@@ -19,10 +19,10 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.iostream import StreamClosedError
 from tornado.tcpclient import TCPClient
 
-from ioloop import IOLoop
-from message.server import Version
-from utils import Singleton
-from utils.parameter import Parameter
+from electrumq.ioloop import IOLoop
+from electrumq.message.server import Version
+from electrumq.utils import Singleton
+from electrumq.utils.parameter import Parameter
 
 __author__ = 'zhouqi'
 

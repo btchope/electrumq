@@ -2,10 +2,10 @@
 import logging
 import traceback
 
-from utils import Parameter
-from utils import Singleton, hash_encode, Hash
-from utils.base58 import reverse_hex_str
-from utils.parser import write_uint64
+from electrumq.utils import Parameter
+from electrumq.utils import Singleton, hash_encode, Hash
+from electrumq.utils.base58 import reverse_hex_str
+from electrumq.utils.parser import write_uint64
 
 __author__ = 'zhouqi'
 
@@ -208,7 +208,7 @@ class BlockStore():
             #                 self.connect_header(height, result[(len(result) / (80 * 2016) * 2016 + idx) * 80:(len(result) / (80 * 2016) * 2016 + idx) * 80 + 80])
             #                 print height
             #         print datetime.now() - dt
-            #         from message.all import headers_subscribe
+            #         from electrumq.message.all import headers_subscribe
             #         NetWorkManager().client.add_subscribe(headers_subscribe([]), callback=self.catch_up,
             #                                      subscribe=self.recieve_header)  # do not have id
             #     except Exception as ex:
@@ -222,7 +222,7 @@ class BlockStore():
             #     local_height = len(self.headers) - 1
             #     if height > local_height:
             #         for h in xrange(local_height, height + 1):
-            #             from message.all import GetHeader
+            #             from electrumq.message.all import GetHeader
             #             NetWorkManager().client.add_message(GetHeader([h]), self.connect_header2)
             #
             #

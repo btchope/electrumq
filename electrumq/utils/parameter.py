@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from utils import Singleton
+from electrumq.utils import Singleton
 
 __author__ = 'zhouqi'
 

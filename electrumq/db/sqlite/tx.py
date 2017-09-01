@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from db.sqlite import Connection, execute_all, execute_one
-from utils import Singleton
-from utils.base58 import Hash
+from electrumq.db.sqlite import Connection, execute_all, execute_one
+from electrumq.utils import Singleton
+from electrumq.utils.base58 import Hash
 
 __author__ = 'zhouqi'
 
