@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/Users/zhouqi/anaconda/bin/python
 
 import sys, re, shutil, os, hashlib
 import imp
