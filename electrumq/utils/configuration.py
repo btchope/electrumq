@@ -7,6 +7,9 @@ __author__ = 'zhouqi'
 
 dirs = AppDirs("ElectrumQ", "zhouqi", version="pre1.0")
 
+if not os.path.exists(dirs.user_data_dir):
+    os.mkdir(dirs.user_data_dir)
+
 conf_path = dirs.user_data_dir + '/electrumq.conf'
 log_conf_path = dirs.user_data_dir + '/logging.conf'
 sqlite_path = dirs.user_data_dir + '/tx.sqlite'

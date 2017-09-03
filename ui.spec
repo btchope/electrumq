@@ -1,12 +1,6 @@
 # -*- mode: python -*-
-
-block_cipher = None
-
-
 a = Analysis(['ui.py'],
-             pathex=['/Users/zhouqi/work/electrumq'],
-             binaries=[],
-             datas=[],
+             pathex=['Z:\\Users\\zhouqi\\work\\electrumq'],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
