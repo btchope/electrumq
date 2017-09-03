@@ -7,8 +7,17 @@ __author__ = 'zhouqi'
 
 dirs = AppDirs("ElectrumQ", "zhouqi", version="pre1.0")
 
+
+def _mkdir_recursive(path):
+    sub_path = os.path.dirname(path)
+    if not os.path.exists(sub_path):
+        _mkdir_recursive(sub_path)
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
 if not os.path.exists(dirs.user_data_dir):
-    os.mkdir(dirs.user_data_dir)
+    _mkdir_recursive(dirs.user_data_dir)
 
 conf_path = dirs.user_data_dir + '/electrumq.conf'
 log_conf_path = dirs.user_data_dir + '/logging.conf'
