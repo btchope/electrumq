@@ -151,6 +151,7 @@ class AccountController(QWidget):
 
     def switch_account(self, btn):
         this_idx = self.layout().indexOf(btn)
+        btn.setChecked(True)
         if self.current_account_idx != this_idx:
             Wallet().change_current_wallet(this_idx)
             self.current_account_idx = this_idx

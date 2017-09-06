@@ -36,9 +36,12 @@ def init_configuration():
         f.write(log_conf_content)
         f.close()
 
-    if not os.path.exists(style_path):
+    if True or not os.path.exists(style_path):
         f = open(style_path, 'w')
-        f.write(style_content)
+        if os.path.exists('electrumq/UI/main.style'):
+            f.write(open('electrumq/UI/main.style').read())
+        else:
+            f.write(style_content)
         f.close()
 
 

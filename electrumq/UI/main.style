@@ -1,5 +1,5 @@
 QWidget {
-    background-color: gray;
+    margin: 0px;
     padding:0px;
 }
 
@@ -14,7 +14,7 @@ AccountController > QWidget {
     max-width:120;
     min-width:120;
 
-    margin: 150 0 150 0;
+    margin: 10 0 10 0;
     padding: 5 0 5 0;
 
     border-style: solid;
@@ -40,7 +40,7 @@ AccountController > QWidget {
     border-top-width:0;
 
     border-left-width:5;
-    border-left-color:ff5e5e;
+    border-left-color: #ff5e5e;
 
     border-right-width:5;
     border-right-color:#303030;
@@ -93,6 +93,10 @@ MainAddressView > QPushButton {
     border-color: #e0e0e0;
 }
 
+MainAddressView > QPushButton::pressed {
+    background-color: #e0e0e0;
+}
+
 NavController .balanceDesc {
     background-color: white;
     color: black;
@@ -124,11 +128,11 @@ NavController .balanceUnit {
 }
 
 .navFunc:checked {
-    background-color: #fb5f63;
+    background-color: #ff5e5e;
 }
 
 .navFunc:pressed {
-    background-color: #fb5f63;
+    background-color: #ff5e5e;
 }
 
 /* detail controller*/
