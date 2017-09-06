@@ -27,7 +27,7 @@ class BaseMessage(dict):
     def __init__(self, params, name, **kwargs):
         super(BaseMessage, self).__init__(**kwargs)
         if self.__class__.__method is None:
-            self.__class__.__method = name[8:] + '.' \
+            self.__class__.__method = name[18:] + '.' \
                                       + camel_to_underline(self.__class__.__name__)
             self.__class__.__is_subscribe = self.__class__.__method.endswith('subscribe')
         self["params"] = params
