@@ -127,11 +127,10 @@ class AccountController(QWidget):
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 50, 0, 50)
         accounts = Wallet().wallet_dict.keys()
-        is_first = True
-        for account in accounts:
+        for idx, account in enumerate(accounts):
             btn = AccountIcon(account)
-            btn.setChecked(is_first)
-            is_first = False
+            btn.idx = idx
+            btn.setChecked(idx == 0)
             layout.addWidget(btn)
             btn.clicked.connect(partial(self.switch_account, btn))
 
@@ -148,13 +147,20 @@ class AccountController(QWidget):
         self.account_layout = layout
 
         Wallet().new_wallet_event.append(self.add_wallet)
+        # Wallet().current_wallet_changed_event.append(self.selected_account)
 
     def switch_account(self, btn):
-        this_idx = self.layout().indexOf(btn)
         btn.setChecked(True)
-        if self.current_account_idx != this_idx:
-            Wallet().change_current_wallet(this_idx)
-            self.current_account_idx = this_idx
+        if self.current_account_idx != btn.idx:
+            Wallet().change_current_wallet(btn.idx)
+            self.selected_account(btn.idx)
+
+    def selected_account(self, idx):
+        self.current_account_idx = idx
+        for i in xrange(self.account_layout.count()):
+            widget = self.account_layout.itemAt(i).widget()
+            if widget.__class__ is AccountIcon:
+                widget.setChecked(i == idx)
 
     def add_account(self, account_name=''):
         tabdialog = NewAccountDialog()
@@ -162,8 +168,10 @@ class AccountController(QWidget):
 
     def add_wallet(self, wallet_name):
         btn = AccountIcon(wallet_name)
-        self.account_layout.insertWidget(self.account_layout.count() - 2, btn)
-        btn.setChecked(True)
+        btn.idx = len(Wallet().wallet_dict.keys()) - 1
+        self.account_layout.insertWidget(btn.idx, btn)
+        btn.clicked.connect(partial(self.switch_account, btn))
+        self.switch_account(btn)
 
 
 class NavController(QWidget):
@@ -211,7 +219,7 @@ class NavController(QWidget):
         self.receive_btn.clicked.connect(self.parent_controller.show_receive)
         self.send_btn.clicked.connect(self.parent_controller.show_send)
 
-    def show(self):
+    def show(self, **kwargs):
         super(NavController, self).show()
         if Wallet().current_wallet is not None:
             Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
@@ -280,7 +288,7 @@ class TabController(QWidget):
         array = datetime.fromtimestamp(float(dt)).timetuple()
         return QDateTime(QDate(*array[:3]), QTime(*array[3:6]))
 
-    def update_data_source(self):
+    def update_data_source(self, **kwargs):
         if Wallet().current_wallet is not None:
             Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
             txs = Wallet().current_wallet.get_txs()
@@ -338,7 +346,7 @@ class ReceiveController(QWidget):
 
         Wallet().current_wallet_changed_event.append(self.update_address)
 
-    def update_address(self):
+    def update_address(self, **kwargs):
         self.address = Wallet().current_wallet.address
         self.addressTB.setText(self.address)
         self.qrcode.setPixmap(

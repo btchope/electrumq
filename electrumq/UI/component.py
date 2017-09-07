@@ -19,6 +19,7 @@ class AccountIcon(QPushButton):
         self.setCheckable(True)
         self.setText(u'账户' + account_name)
         self.setProperty('class', 'accountIcon AccountIcon')
+        self.idx = -1
 
 
 class AddressView(QWidget):

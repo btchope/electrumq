@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import random
 
 from PyQt4.QtCore import QFileInfo, QString
@@ -51,9 +52,13 @@ class SimpleWalletTab(QWidget):
         self.random_edit = QLineEdit('2012100909090909090909090909090909090909090909090909090909090909')
         self.random_edit.setMinimumWidth(500)
 
+        self.random_btn = QPushButton('random again')
+        self.random_btn.clicked.connect(self.random)
+
         mainLayout = QVBoxLayout()
         mainLayout.addWidget(random_label)
         mainLayout.addWidget(self.random_edit)
+        mainLayout.addWidget(self.random_btn)
         mainLayout.addStretch(1)
         self.setLayout(mainLayout)
 
@@ -61,6 +66,9 @@ class SimpleWalletTab(QWidget):
         qs = QString()
 
         return str(self.random_edit.text())
+
+    def random(self):
+        self.random_edit.setText(os.urandom(32).encode('hex'))
 
 
 class HDWalletTab(QWidget):

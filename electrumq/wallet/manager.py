@@ -6,6 +6,7 @@ from functools import partial
 
 import sys
 from appdirs import AppDirs
+from sortedcontainers import SortedDict
 
 from electrumq.blockchain import BlockChain
 from electrumq.db.sqlite import init
@@ -41,7 +42,7 @@ class Wallet(object):
         # todo: init from config
         self.conf = MyConfigParser()
         self.conf.read(conf_path)
-        self.wallet_dict = {}
+        self.wallet_dict = SortedDict()
         for k, v in self.conf.items('wallet'):
             if k.startswith('wallet_name_'):
                 wallet_name = k[12:]
@@ -82,7 +83,7 @@ class Wallet(object):
             global EVENT_QUEUE
             if len(self.current_wallet_changed_event) > 0:
                 for event in set(self.current_wallet_changed_event):
-                    EVENT_QUEUE.put(event)
+                    EVENT_QUEUE.put(partial(event, idx=idx))
 
     new_wallet_event = []
     current_wallet_changed_event = []
