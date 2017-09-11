@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from sqlite3 import Connection
+# from sqlite3 import Connection
 
-import utils
-from electrumq.db.sqlite import drop, init
+from electrumq.db.sqlite import drop, init, Connection
 from electrumq.utils import base58
+from electrumq.utils.base58 import Hash
+from electrumq import utils
 
 __author__ = 'zhouqi'
 
@@ -23,16 +24,6 @@ class TestBlockchain(unittest.TestCase):
 
     def test_header(self):
         pass
-
-
-class TestUtil(unittest.TestCase):
-    def test_Hash(self):
-        s = 'abc'
-        print base58.Hash(s)
-        self.assertEqual(base58.Hash(s), utils.Hash(s))
-        s = u'周琪'
-        print base58.Hash(s)
-        self.assertEqual(base58.Hash(s), utils.Hash(s))
 
 
 class TestConnection(unittest.TestCase):
