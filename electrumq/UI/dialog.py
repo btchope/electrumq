@@ -5,6 +5,7 @@ import random
 from PyQt4.QtCore import QFileInfo, QString
 from PyQt4.QtGui import *
 
+from electrumq.db.sqlite.tx import TxStore
 from electrumq.utils.key import public_key_from_private_key, SecretToASecret
 from electrumq.utils.key_store import SimpleKeyStore
 from electrumq.wallet.manager import Wallet
@@ -131,7 +132,10 @@ class TxDetailDialog(QDialog):
         self.setWindowTitle("Transaction Detail")
 
     def accept(self):
-        Wallet().current_wallet.broadcast(self.tx_detail_view.tx)
+        self.tx_detail_view.tx._inputs = None
+        self.tx_detail_view.tx.deserialize()
+        TxStore().add_unconfirm_tx(self.tx_detail_view.tx)
+        # Wallet().current_wallet.broadcast(self.tx_detail_view.tx)
         self.close()
 
 

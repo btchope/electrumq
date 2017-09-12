@@ -32,8 +32,34 @@ class TxStore():
                 c.execute('INSERT INTO addresses_txs(tx_hash, address) VALUES (?, ?)',
                           (tx, address))
 
-    def add_unconfirm_tx(self):
-        pass
+    def add_unconfirm_tx(self, tx):
+        tx_hash = tx.txid()
+        with Connection.gen_db() as conn:
+            c = conn.cursor()
+            if c.execute('SELECT count(0) FROM txs WHERE tx_hash=?', (tx_hash,)).fetchone()[0] == 0:
+                block_time = None  # c.execute('select block_time from blocks WHERE block_no=?', (block_height,)).fetchone()[0]
+                c.execute('INSERT INTO txs(tx_hash, tx_ver, tx_locktime, block_no, tx_time, source) VALUES (?, ?, ?, ?, ?, ?)',
+                          (tx_hash, tx.tx_ver, tx.locktime, 0, block_time, 1))
+            for idx, out in enumerate(tx.outputs()):
+                spent = c.execute('SELECT count(0) FROM ins WHERE prev_tx_hash=? AND prev_out_sn=?',
+                                  (tx_hash, idx)).fetchone()[0]
+                c.execute(
+                    'INSERT INTO outs(tx_hash, out_sn, out_script, out_value, out_status, out_address) VALUES (?, ?, ?, ?, ?, ?)',
+                    (tx_hash, idx, out[3], out[2], spent, out[1]))
+                if c.execute('SELECT count(0) FROM addresses_txs WHERE tx_hash=? AND address=?',
+                             (tx_hash, out[1])).fetchone()[0] == 0:
+                    c.execute('INSERT INTO addresses_txs(tx_hash, address) VALUES (?, ?)',
+                              (tx_hash, out[1]))
+            for idx, tx_in in enumerate(tx.inputs()):
+                prevout_hash = tx_in['prevout_hash']
+                prevout_n = tx_in['prevout_n']
+                in_signature = tx_in['scriptSig']
+                in_sequence = tx_in['sequence']
+                c.execute(
+                    'INSERT INTO ins(tx_hash, in_sn, prev_tx_hash, prev_out_sn, in_signature, in_sequence) VALUES (?, ?, ?, ?, ?, ?)',
+                    (tx_hash, idx, prevout_hash, prevout_n, in_signature, in_sequence))
+                c.execute('UPDATE outs SET out_status=1 WHERE tx_hash=? AND out_sn=?',
+                          (prevout_hash, prevout_n))
 
     def verify_merkle(self, tx, merkle, block_root):
         # Verify the hash of the server-provided merkle branch to a

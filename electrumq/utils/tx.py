@@ -112,11 +112,12 @@ class Transaction:
         return d
 
     @classmethod
-    def from_io(klass, inputs, outputs, locktime=0):
+    def from_io(klass, inputs, outputs, locktime=0, tx_ver=1):
         self = klass(None)
         self._inputs = inputs
         self._outputs = outputs
         self.locktime = locktime
+        self.tx_ver = tx_ver
         return self
 
     @classmethod
@@ -225,7 +226,10 @@ class Transaction:
         self._outputs.sort(key=lambda o: (o[2], self.pay_script(o[0], o[1])))
 
     def serialize_output(self, output):
-        output_type, addr, amount = output
+        if len(output) == 3:
+            output_type, addr, amount = output
+        elif len(output) == 4:
+            output_type, addr, amount,script = output
         s = write_uint64(amount).encode('hex')
         script = self.pay_script(output_type, addr)
         s += int_to_hex(len(script) / 2)
