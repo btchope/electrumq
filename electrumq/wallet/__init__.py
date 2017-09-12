@@ -34,7 +34,9 @@ class WalletConfig(object):
             if k in kwargs:
                 self.__setattr__(k, kwargs[k])
 
+
 EVENT_QUEUE = Queue()
+
 
 class AbstractWallet(object):
     def __init__(self, wallet_config):
