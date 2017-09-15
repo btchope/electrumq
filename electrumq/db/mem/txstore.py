@@ -80,12 +80,12 @@ class TxStore():
     def add_tx_detail(self, tx_hash, tx_detail):
         self.unfetch_tx.remove(tx_hash)
         self.tx_detail[tx_hash] = tx_detail
-        for idx, out in enumerate(tx_detail.outputs()):
+        for idx, out in enumerate(tx_detail.output_list()):
             if (tx_hash, idx) not in self.all_ins:
-                self.unspent_out.append((tx_hash, idx, out[1], out[2], out[0]))
-        for idx, tx_in in enumerate(tx_detail.inputs()):
-            prevout_hash = tx_in['prevout_hash']
-            prevout_n = tx_in['prevout_n']
+                self.unspent_out.append((tx_hash, idx, out.out_address, out.out_value, out.address_type))
+        for idx, tx_in in enumerate(tx_detail.input_list()):
+            prevout_hash = tx_in.prev_tx_hash
+            prevout_n = tx_in.prev_out_sn
             self.unspent_out = filter(lambda x: not (x[0] == prevout_hash and x[1] == prevout_n),
                                       self.unspent_out)
             self.all_ins.add((prevout_hash, prevout_n))

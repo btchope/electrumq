@@ -14,6 +14,7 @@ from electrumq.utils.key import SecretToASecret, public_key_from_private_key
 from electrumq.utils.key_store import SimpleKeyStore, WatchOnlySimpleKeyStore, \
     ImportedKeyStore, from_seed, BIP32KeyHotStore
 from electrumq.utils.parameter import set_testnet, TYPE_ADDRESS
+from electrumq.utils.tx import Output
 from electrumq.wallet import WalletConfig
 from electrumq.wallet.hd import HDWallet, HDWatchOnlyWallet
 from electrumq.wallet.single import ColdSimpleWallet, WatchOnlySimpleWallet, SimpleWallet
@@ -129,7 +130,7 @@ def test_cold_hot_wallet():
          'coinbase': False,
          'height': 10000} for e in TxStore().get_unspend_outs('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj')]
     outputs = []
-    outputs.append((TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000))
+    outputs.append(Output((TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000)))
     tx = hot_wallet.make_unsigned_transaction(inputs, outputs, {})
     print tx
     cold_wallet = ColdSimpleWallet(WalletConfig(store_path='cold_simple_wallet.json'))
@@ -191,7 +192,7 @@ def test_hd_cold_hot_wallet():
     hot_wallet.synchronize()
     print hot_wallet.get_change_addresses()
     print hot_wallet.get_receiving_addresses()
-    outputs = [(TYPE_ADDRESS, 'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj', 100000)]
+    outputs = [Output((TYPE_ADDRESS, 'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj', 100000))]
     tx = hot_wallet.make_unsigned_transaction(hot_wallet.get_utxo(), outputs, {})
     print tx
     cold_wallet = HDWallet(WalletConfig(store_path='hd_cold_wallet.json'))

@@ -158,14 +158,14 @@ class TxDetailView(QWidget):
 
     def show_tx(self, tx):
         self.tx = tx
-        for idx, each_in in enumerate(tx._inputs):
-            in_address = QLabel(each_in['address'])
+        for idx, each_in in enumerate(tx.input_list()):
+            in_address = QLabel(each_in.in_address)
             self.in_layout.addWidget(in_address, idx, 0)
-            in_value = QLabel(str(each_in['value']))
+            in_value = QLabel(str(each_in.in_value))
             self.in_layout.addWidget(in_value, idx, 1)
-        for idx, each_out in enumerate(tx._outputs):
-            out_address = QLabel(each_out[1])
+        for idx, each_out in enumerate(tx.output_list()):
+            out_address = QLabel(each_out.out_address)
             self.out_layout.addWidget(out_address, idx, 0)
-            out_value = QLabel(str(each_out[2]))
+            out_value = QLabel(str(each_out.out_value))
             self.out_layout.addWidget(out_value, idx, 1)
         # self.tx_hash.setText(tx['tx_hash'])

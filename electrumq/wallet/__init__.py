@@ -18,7 +18,7 @@ from electrumq.utils import coinchooser
 from electrumq.utils.base58 import is_address, public_key_to_p2pkh, hash160_to_p2sh, hash_160
 from electrumq.utils.parameter import TYPE_ADDRESS, COINBASE_MATURITY, Parameter
 from electrumq.utils.storage import WalletStorage
-from electrumq.utils.tx import Transaction
+from electrumq.utils.tx import Transaction, Input
 
 __author__ = 'zhouqi'
 
@@ -117,11 +117,11 @@ class BaseWallet(AbstractWallet):
 
     def get_utxo(self):
         utxo = reduce(lambda x, y: x + y, [[
-            {'prevout_hash': e[0], 'prevout_n': e[1],
+            Input({'prevout_hash': e[0], 'prevout_n': e[1],
              'scriptSig': e[2], 'value': e[3],
              'address': e[4],
              'coinbase': False,
-             'height': e[5]} for e in
+             'height': e[5]}) for e in
             TxStore().get_unspend_outs(address=address)] for
             address in self.get_addresses()], [])
         return utxo
@@ -148,7 +148,7 @@ class BaseWallet(AbstractWallet):
         # check outputs
         i_max = None
         for i, o in enumerate(outputs):
-            _type, data, value = o
+            _type, data, value = o.address_type, o.out_address, o.out_value
             if _type == TYPE_ADDRESS:
                 if not is_address(data):
                     raise BaseException("Invalid bitcoin address:" + data)
@@ -181,7 +181,7 @@ class BaseWallet(AbstractWallet):
                 if not change_addrs:
                     change_addrs = [random.choice(addrs)]
             else:
-                change_addrs = [inputs[0]['address']]
+                change_addrs = [inputs[0].in_address]
 
         # Fee estimator
         if fixed_fee is None:
@@ -197,12 +197,14 @@ class BaseWallet(AbstractWallet):
                                       fee_estimator, self.dust_threshold())
         else:
             sendable = sum(map(lambda x: x['value'], inputs))
-            _type, data, value = outputs[i_max]
-            outputs[i_max] = (_type, data, 0)
+            # _type, data, value = outputs[i_max]
+            # outputs[i_max] = (_type, data, 0)
+            outputs[i_max].out_value = 0
             tx = Transaction.from_io(inputs, outputs[:])
             fee = fee_estimator(tx.estimated_size())
             amount = max(0, sendable - tx.output_value() - fee)
-            outputs[i_max] = (_type, data, amount)
+            # outputs[i_max] = (_type, data, amount)
+            outputs[i_max].out_value = amount
             tx = Transaction.from_io(inputs, outputs[:])
 
         # Sort the inputs and outputs deterministically
@@ -238,17 +240,31 @@ class BaseWallet(AbstractWallet):
         return fee
 
     def add_input_info(self, txin):
-        txin['type'] = self.txin_type  # 'p2pkh'
+        if txin.in_dict is None:
+            txin.in_dict = {}
+        txin.in_dict['type'] = self.txin_type  # 'p2pkh'
         # Add address for utxo that are in wallet
-        if txin.get('scriptSig') == '':
+        if txin.in_dict.get('scriptSig') == '':
             coins = self.get_spendable_coins()
             for item in coins:
-                if txin.get('prevout_hash') == item.get('prevout_hash') \
-                        and txin.get('prevout_n') == item.get('prevout_n'):
-                    txin['address'] = item.get('address')
-        address = txin['address']
+                if txin.prev_tx_hash == item.prev_tx_hash \
+                        and txin.prev_out_sn == item.prev_out_sn:
+                    txin.in_address = item.in_address
+        address = txin.in_address
         if self.is_mine(address):
             self.add_input_sig_info(txin, address)
+    # def add_input_info(self, txin):
+    #     txin['type'] = self.txin_type  # 'p2pkh'
+    #     # Add address for utxo that are in wallet
+    #     if txin.get('scriptSig') == '':
+    #         coins = self.get_spendable_coins()
+    #         for item in coins:
+    #             if txin.get('prevout_hash') == item.get('prevout_hash') \
+    #                     and txin.get('prevout_n') == item.get('prevout_n'):
+    #                 txin['address'] = item.get('address')
+    #     address = txin['address']
+    #     if self.is_mine(address):
+    #         self.add_input_sig_info(txin, address)
 
     def add_input_sig_info(self, txin, address):
         if not self.can_import():
@@ -256,9 +272,9 @@ class BaseWallet(AbstractWallet):
             x_pubkey = self.keystore.get_xpubkey(*derivation)
         else:
             x_pubkey = self.get_public_key(address)
-        txin['x_pubkeys'] = [x_pubkey]
-        txin['signatures'] = [None]
-        txin['num_sig'] = 1
+        txin.in_dict['x_pubkeys'] = [x_pubkey]
+        txin.in_dict['signatures'] = [None]
+        txin.in_dict['num_sig'] = 1
 
     def get_address_index(self, address):
         # todo: need review
@@ -325,8 +341,7 @@ class BaseWallet(AbstractWallet):
         for addr in domain:
             utxos = self.get_addr_utxo(addr)
             for x in utxos:
-                if mature and x['coinbase'] and x[
-                    'height'] + COINBASE_MATURITY > self.get_local_height():
+                if mature and x.is_coinbase and x.height + COINBASE_MATURITY > self.get_local_height():
                     continue
                 coins.append(x)
                 continue
@@ -360,7 +375,7 @@ class BaseWallet(AbstractWallet):
                 'height': tx_height,
                 'coinbase': is_cb
             }
-            out.append(x)
+            out.append(Input(x))
         return out
 
     def get_addr_io(self, address):

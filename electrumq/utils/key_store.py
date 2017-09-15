@@ -79,16 +79,16 @@ class KeyStore(object):
 
     def _get_tx_derivations(self, tx):
         keypairs = {}
-        for txin in tx.inputs():
-            num_sig = txin.get('num_sig')
+        for txin in tx.input_list():
+            num_sig = txin.in_dict.get('num_sig')
             if num_sig is None:
                 continue
-            x_signatures = txin['signatures']
+            x_signatures = txin.in_dict['signatures']
             signatures = filter(None, x_signatures)
             if len(signatures) == num_sig:
                 # input is complete
                 continue
-            for k, x_pubkey in enumerate(txin['x_pubkeys']):
+            for k, x_pubkey in enumerate(txin.in_dict['x_pubkeys']):
                 if x_signatures[k] is not None:
                     # this pubkey already signed
                     continue

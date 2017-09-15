@@ -20,6 +20,7 @@ from electrumq.db.sqlite import init
 from electrumq.network import NetWorkManager
 from electrumq.utils.configuration import style_path
 from electrumq.utils.parameter import TYPE_ADDRESS
+from electrumq.utils.tx import Output
 from electrumq.wallet import WalletConfig
 from electrumq.wallet.manager import Wallet
 from electrumq.wallet.single import SimpleWallet
@@ -309,7 +310,7 @@ class SendController(QWidget):
         self.send_view.dest_address_tb.setText('mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i')
 
     def send(self):
-        outputs = [(TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000)]
+        outputs = [Output((TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000))]
         tx = Wallet().current_wallet.make_unsigned_transaction(Wallet().current_wallet.get_utxo(),
                                                                outputs, {})
         Wallet().current_wallet.sign_transaction(tx, None)

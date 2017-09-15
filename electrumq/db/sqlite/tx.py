@@ -38,23 +38,24 @@ class TxStore():
             c = conn.cursor()
             if c.execute('SELECT count(0) FROM txs WHERE tx_hash=?', (tx_hash,)).fetchone()[0] == 0:
                 block_time = None  # c.execute('select block_time from blocks WHERE block_no=?', (block_height,)).fetchone()[0]
-                c.execute('INSERT INTO txs(tx_hash, tx_ver, tx_locktime, block_no, tx_time, source) VALUES (?, ?, ?, ?, ?, ?)',
-                          (tx_hash, tx.tx_ver, tx.locktime, 0, block_time, 1))
-            for idx, out in enumerate(tx.outputs()):
+                c.execute(
+                    'INSERT INTO txs(tx_hash, tx_ver, tx_locktime, block_no, tx_time, source) VALUES (?, ?, ?, ?, ?, ?)',
+                    (tx_hash, tx.tx_ver, tx.locktime, 0, block_time, 1))
+            for idx, out in enumerate(tx.output_list()):
                 spent = c.execute('SELECT count(0) FROM ins WHERE prev_tx_hash=? AND prev_out_sn=?',
                                   (tx_hash, idx)).fetchone()[0]
                 c.execute(
                     'INSERT INTO outs(tx_hash, out_sn, out_script, out_value, out_status, out_address) VALUES (?, ?, ?, ?, ?, ?)',
-                    (tx_hash, idx, out[3], out[2], spent, out[1]))
+                    (tx_hash, idx, out.out_script, out.out_value, spent, out.out_address))
                 if c.execute('SELECT count(0) FROM addresses_txs WHERE tx_hash=? AND address=?',
-                             (tx_hash, out[1])).fetchone()[0] == 0:
+                             (tx_hash, out.out_address)).fetchone()[0] == 0:
                     c.execute('INSERT INTO addresses_txs(tx_hash, address) VALUES (?, ?)',
-                              (tx_hash, out[1]))
-            for idx, tx_in in enumerate(tx.inputs()):
-                prevout_hash = tx_in['prevout_hash']
-                prevout_n = tx_in['prevout_n']
-                in_signature = tx_in['scriptSig']
-                in_sequence = tx_in['sequence']
+                              (tx_hash, out.out_address))
+            for idx, tx_in in enumerate(tx.input_list()):
+                prevout_hash = tx_in.prev_tx_hash
+                prevout_n = tx_in.prev_out_sn
+                in_signature = tx_in.in_signature
+                in_sequence = tx_in.in_sequence
                 c.execute(
                     'INSERT INTO ins(tx_hash, in_sn, prev_tx_hash, prev_out_sn, in_signature, in_sequence) VALUES (?, ?, ?, ?, ?, ?)',
                     (tx_hash, idx, prevout_hash, prevout_n, in_signature, in_sequence))
@@ -102,17 +103,17 @@ class TxStore():
             c = conn.cursor()
             c.execute('UPDATE txs SET tx_ver=?,tx_locktime=? WHERE tx_hash=?',
                       (tx_detail.tx_ver, tx_detail.locktime, tx_hash))
-            for idx, out in enumerate(tx_detail.outputs()):
+            for idx, tx_out in enumerate(tx_detail.output_list()):
                 spent = c.execute('SELECT count(0) FROM ins WHERE prev_tx_hash=? AND prev_out_sn=?',
                                   (tx_hash, idx)).fetchone()[0]
                 c.execute(
                     'INSERT INTO outs(tx_hash, out_sn, out_script, out_value, out_status, out_address) VALUES (?, ?, ?, ?, ?, ?)',
-                    (tx_hash, idx, out[3], out[2], spent, out[1]))
-            for idx, tx_in in enumerate(tx_detail.inputs()):
-                prevout_hash = tx_in['prevout_hash']
-                prevout_n = tx_in['prevout_n']
-                in_signature = tx_in['scriptSig']
-                in_sequence = tx_in['sequence']
+                    (tx_hash, idx, tx_out.out_script, tx_out.out_value, spent, tx_out.out_address))
+            for idx, tx_in in enumerate(tx_detail.input_list()):
+                prevout_hash = tx_in.prev_tx_hash
+                prevout_n = tx_in.prev_out_sn
+                in_signature = tx_in.in_signature
+                in_sequence = tx_in.in_sequence
                 c.execute(
                     'INSERT INTO ins(tx_hash, in_sn, prev_tx_hash, prev_out_sn, in_signature, in_sequence) VALUES (?, ?, ?, ?, ?, ?)',
                     (tx_hash, idx, prevout_hash, prevout_n, in_signature, in_sequence))

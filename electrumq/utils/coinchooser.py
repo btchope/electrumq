@@ -97,9 +97,9 @@ class CoinChooserBase():
             buckets[key].append(coin)
 
         def make_Bucket(desc, coins):
-            size = sum(Transaction.estimated_input_size(coin)
+            size = sum(coin.estimated_input_size()
                        for coin in coins)
-            value = sum(coin['value'] for coin in coins)
+            value = sum(coin.in_value for coin in coins)
             return Bucket(desc, size, value, coins)
 
         return map(make_Bucket, buckets.keys(), buckets.values())
@@ -112,7 +112,7 @@ class CoinChooserBase():
 
     def change_amounts(self, tx, count, fee_estimator, dust_threshold):
         # Break change up if bigger than max_change
-        output_amounts = [o[2] for o in tx.outputs()]
+        output_amounts = [o.out_value for o in tx.output_list()]
         # Don't split change of less than 0.02 BTC
         max_change = max(max(output_amounts) * 1.25, 0.02 * COIN)
 
@@ -180,7 +180,7 @@ class CoinChooserBase():
         added to the transaction fee.'''
 
         # Deterministic randomness from coins
-        utxos = [c['prevout_hash'] + str(c['prevout_n']) for c in coins]
+        utxos = [c.prev_tx_hash + str(c.prev_out_sn) for c in coins]
         self.p = PRNG(''.join(sorted(utxos)))
 
         # Copy the ouputs so when adding change we don't modify "outputs"
@@ -201,14 +201,14 @@ class CoinChooserBase():
         buckets = self.choose_buckets(buckets, sufficient_funds,
                                       self.penalty_func(tx))
 
-        tx.add_inputs([coin for b in buckets for coin in b.coins])
+        tx.add_input_list([coin for b in buckets for coin in b.coins])
         tx_size = base_size + sum(bucket.size for bucket in buckets)
 
         # This takes a count of change outputs and returns a tx fee;
         # each pay-to-bitcoin-address output serializes as 34 bytes
         fee = lambda count: fee_estimator(tx_size + count * 34)
         change = self.change_outputs(tx, change_addrs, fee, dust_threshold)
-        tx.add_outputs(change)
+        tx.add_output_list(change)
 
         # self.print_error("using %d inputs" % len(tx.inputs()))
         # self.print_error("using buckets:", [bucket.desc for bucket in buckets])
@@ -224,14 +224,14 @@ class CoinChooserOldestFirst(CoinChooserBase):
     '''
 
     def keys(self, coins):
-        return [coin['prevout_hash'] + ':' + str(coin['prevout_n'])
+        return [coin.prev_tx_hash + ':' + str(coin.prev_out_sn)
                 for coin in coins]
 
     def choose_buckets(self, buckets, sufficient_funds, penalty_func):
         '''Spend the oldest buckets first.'''
         # Unconfirmed coins are young, not old
         adj_height = lambda height: 99999999 if height <= 0 else height
-        buckets.sort(key=lambda b: max(adj_height(coin['height'])
+        buckets.sort(key=lambda b: max(adj_height(coin.height)
                                        for coin in b.coins))
         selected = []
         for bucket in buckets:
@@ -291,12 +291,12 @@ class CoinChooserPrivacy(CoinChooserRandom):
     Third, it penalizes change that is too big.'''
 
     def keys(self, coins):
-        return [coin['address'] for coin in coins]
+        return [coin.in_address for coin in coins]
 
     def penalty_func(self, tx):
-        min_change = min(o[2] for o in tx.outputs()) * 0.75
-        max_change = max(o[2] for o in tx.outputs()) * 1.33
-        spent_amount = sum(o[2] for o in tx.outputs())
+        min_change = min(o.out_value for o in tx.output_list()) * 0.75
+        max_change = max(o.out_value for o in tx.output_list()) * 1.33
+        spent_amount = sum(o.out_value for o in tx.output_list())
 
         def penalty(buckets):
             badness = len(buckets) - 1
