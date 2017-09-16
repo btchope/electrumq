@@ -4,13 +4,12 @@ import hashlib
 import struct
 import types
 
-from ecdsa import SECP256k1, ecdsa, util
+from ecdsa import SECP256k1, util
 
 from electrumq.utils import *
 from electrumq.utils.base58 import hash160_to_p2sh, hash160_to_p2pkh, hash_160, \
-    bc_address_to_type_and_hash_160, public_key_to_p2pkh, double_sha256
-from electrumq.utils.key import public_key_from_private_key, MySigningKey, MyVerifyingKey, \
-    point_to_ser
+    bc_address_to_type_and_hash_160, double_sha256
+from electrumq.utils.key import public_key_from_private_key, MySigningKey
 from electrumq.utils.key import regenerate_key
 from electrumq.utils.key_store import xpubkey_to_pubkey, xpubkey_to_address
 from electrumq.utils.parameter import TYPE_SCRIPT, TYPE_ADDRESS, TYPE_PUBKEY, Parameter
@@ -28,7 +27,6 @@ class Output(object):
     out_address = None
     address_type = None
     out_script = None
-    out_dict = None
 
     def __init__(self, tx_out_dict=None):
         super(Output, self).__init__()
@@ -40,37 +38,23 @@ class Output(object):
                 self.out_script = tx_out_dict[3]
 
     def parse_output_json(self, vds, out_sn):
-        d = {}
-        d['value'] = vds.read_int64()
-        scriptPubKey = vds.read_bytes(vds.read_compact_size())
-        d['type'], d['address'] = get_address_from_output_script(scriptPubKey)
-        d['scriptPubKey'] = scriptPubKey.encode('hex')
-        d['prevout_n'] = out_sn
-
         self.out_sn = out_sn
-        self.out_value = d['value']
-        self.address_type = d['type']
-        self.out_address = d['address']
-        self.out_script = d['scriptPubKey']
+        self.out_value = vds.read_int64()
+        self.out_script = vds.read_bytes(vds.read_compact_size()).encode('hex')
+        self.address_type, self.out_address = get_address_from_output_script(
+            self.out_script.decode('hex'))
 
-        self.out_dict = d
-        return d
-
-    def pay_script(self, output_type, addr):
-        if output_type == TYPE_SCRIPT:
-            return addr.encode('hex')
-        elif output_type == TYPE_ADDRESS:
-            return get_scriptPubKey(addr)
+    def pay_script(self):
+        if self.address_type == TYPE_SCRIPT:
+            return self.out_address.encode('hex')
+        elif self.address_type == TYPE_ADDRESS:
+            return get_scriptPubKey(self.out_address)
         else:
             raise TypeError('Unknown output type')
 
     def serialize_output(self):
-        # if len(output) == 3:
-        #     output_type, addr, amount = output
-        # elif len(output) == 4:
-        #     output_type, addr, amount, script = output
         s = write_uint64(self.out_value).encode('hex')
-        script = self.pay_script(self.address_type, self.out_address)
+        script = self.pay_script()
         s += int_to_hex(len(script) / 2)
         s += script
         return s
@@ -101,7 +85,7 @@ class Input(object):
 
     @property
     def is_coinbase(self):
-        return False
+        return self.prev_tx_hash == '00' * 32
 
     def parse_input_json(self, vds, in_sn):
         d = {}
@@ -223,6 +207,10 @@ class Input(object):
         script = self.input_script(True)
         return len(self.serialize_input(script)) / 2
 
+    def is_segwit_input(self):
+        return self.in_dict['type'] in ['p2wpkh-p2sh']
+
+
 class Transaction:
     def __str__(self):
         if self.raw is None:
@@ -238,41 +226,36 @@ class Transaction:
             self.raw = raw['hex']
         else:
             raise BaseException("cannot initialize transaction", raw)
-        self._inputs = None
-        self._input_list = None
-        self._outputs = None
-        self._output_list = None
+        self._input_list = []
+        self._output_list = []
+        self.need_deserialize = True
         self.locktime = 0
         self.tx_ver = 1
 
+    @classmethod
+    def from_io(cls, inputs, outputs, locktime=0, tx_ver=1):
+        self = cls(None)
+        self._input_list = inputs
+        self._output_list = outputs
+        self.locktime = locktime
+        self.tx_ver = tx_ver
+        return self
+
     def update(self, raw):
         self.raw = raw
-        self._inputs = None
-        self._input_list = None
+        self.need_deserialize = True
         self.deserialize()
 
-    def inputs(self):
-        if self._inputs is None:
-            self.deserialize()
-        return self._inputs
-
     def input_list(self):
-        if self._input_list is None:
-            self.deserialize()
+        self.deserialize()
         return self._input_list
 
-    def outputs(self):
-        if self._outputs is None:
-            self.deserialize()
-        return self._outputs
-
     def output_list(self):
-        if self._output_list is None:
-            self.deserialize()
+        self.deserialize()
         return self._output_list
 
     @classmethod
-    def get_sorted_pubkeys(self, txin):
+    def get_sorted_pubkeys(cls, txin):
         # sort pubkeys and x_pubkeys, using the order of pubkeys
         x_pubkeys = txin['x_pubkeys']
         pubkeys = txin.get('pubkeys')
@@ -283,243 +266,68 @@ class Transaction:
             txin['x_pubkeys'] = x_pubkeys = list(x_pubkeys)
         return pubkeys, x_pubkeys
 
-    # def update_signatures(self, raw):
-    #     """Add new signatures to a transaction"""
-    #     d = deserialize(raw)
-    #     for i, txin in enumerate(self.inputs()):
-    #         pubkeys, x_pubkeys = self.get_sorted_pubkeys(txin)
-    #         sigs1 = txin.get('signatures')
-    #         sigs2 = d['inputs'][i].get('signatures')
-    #         for sig in sigs2:
-    #             if sig in sigs1:
-    #                 continue
-    #             pre_hash = double_sha256(self.serialize_preimage(i).decode('hex'))
-    #             # der to string
-    #             order = ecdsa.generator_secp256k1.order()
-    #             r, s = util.sigdecode_der(sig.decode('hex'), order)
-    #             sig_string = util.sigencode_string(r, s, order)
-    #             compressed = True
-    #             for recid in range(4):
-    #                 public_key = MyVerifyingKey.from_signature(sig_string, recid, pre_hash,
-    #                                                            curve=SECP256k1)
-    #                 pubkey = point_to_ser(public_key.pubkey.point, compressed).encode('hex')
-    #                 if pubkey in pubkeys:
-    #                     public_key.verify_digest(sig_string, pre_hash,
-    #                                              sigdecode=util.sigdecode_string)
-    #                     j = pubkeys.index(pubkey)
-    #                     print_error("adding sig", i, j, pubkey, sig)
-    #                     self._inputs[i]['signatures'][j] = sig
-    #                     self._inputs[i]['x_pubkeys'][j] = pubkey
-    #                     break
-    #     # redo raw
-    #     # self.raw = self.serialize()
-
     def deserialize(self):
-        if self.raw is None:
-            return
-            # self.raw = self.serialize()
-        if self._inputs is not None and self._input_list is not None:
+        if self.raw is None or not self.need_deserialize:
             return
         d = deserialize(self.raw)
-        self._inputs = d['inputs']
         self._input_list = d['input_list']
-        self._outputs = [(x['type'], x['address'], x['value']) for x in
-                         d['outputs']]
         self._output_list = d['output_list']
         self.locktime = d['lockTime']
         self.tx_ver = d['version']
+        self.need_deserialize = False
         return d
 
-    @classmethod
-    def from_io(klass, inputs, outputs, locktime=0, tx_ver=1):
-        self = klass(None)
-        # self._inputs =
-        self._input_list = inputs
-        # for idx, each in enumerate(inputs):
-        #     tx_in = Input(each)
-        #     tx_in.in_sn = idx
-        #     # tx_in.prev_tx_hash = each['prevout_hash']
-        #     # tx_in.prev_out_sn = each['prevout_n']
-        #     # tx_in.in_signature = each['scriptSig']
-        #     # tx_in.in_value = each['value']
-        #     # tx_in.in_address = each['address']
-        #     # tx_in.height = each['height']
-        #     self._input_list.append(tx_in)
-        # self._outputs = outputs
-        self._output_list = outputs
-        # for idx, each in enumerate(outputs):
-        #     tx_out = Output(each)
-        #     tx_out.out_sn = idx
-        #     # tx_out.out_address = each[1]
-        #     # tx_out.address_type = each[0]
-        #     # tx_out.out_value = each[2]
-        #     # if len(each) == 4:
-        #     #     tx_out.out_script = each[3]
-        #     self._output_list.append(tx_out)
-        self.locktime = locktime
-        self.tx_ver = tx_ver
-        return self
-
-    @classmethod
-    def pay_script(self, output_type, addr):
-        if output_type == TYPE_SCRIPT:
-            return addr.encode('hex')
-        elif output_type == TYPE_ADDRESS:
-            return get_scriptPubKey(addr)
-        else:
-            raise TypeError('Unknown output type')
-
-    @classmethod
-    def get_siglist(self, txin, estimate_size=False):
-        # if we have enough signatures, we use the actual pubkeys
-        # otherwise, use extended pubkeys (with bip32 derivation)
-        num_sig = txin.get('num_sig', 1)
-        if estimate_size:
-            # we assume that signature will be 0x48 bytes long
-            pk_list = ["00" * 0x21] * num_sig
-            sig_list = ["00" * 0x48] * num_sig
-        else:
-            pubkeys, x_pubkeys = self.get_sorted_pubkeys(txin)
-            x_signatures = txin['signatures']
-            signatures = filter(None, x_signatures)
-            is_complete = len(signatures) == num_sig
-            if is_complete:
-                pk_list = pubkeys
-                sig_list = [(sig + '01') for sig in signatures]
-            else:
-                pk_list = x_pubkeys
-                sig_list = [(sig + '01') if sig else NO_SIGNATURE for sig in x_signatures]
-        return pk_list, sig_list
-
-    @classmethod
-    def serialize_witness(self, txin):
-        pubkeys, sig_list = self.get_siglist(txin)
-        n = len(pubkeys) + len(sig_list)
-        return int_to_hex(n) + ''.join(push_script(x) for x in sig_list) + ''.join(
-            push_script(x) for x in pubkeys)
-
-    @classmethod
-    def is_segwit_input(self, txin):
-        return txin['type'] in ['p2wpkh-p2sh']
-
-    @classmethod
-    def is_segwit_input_item(self, txin):
-        return txin.in_dict['type'] in ['p2wpkh-p2sh']
-
-    @classmethod
-    def input_script(self, txin, estimate_size=False):
-        _type = txin['type']
-        if _type == 'coinbase':
-            return txin['scriptSig']
-        pubkeys, sig_list = self.get_siglist(txin, estimate_size)
-        script = ''.join(push_script(x) for x in sig_list)
-        if _type == 'p2pk':
-            pass
-        elif _type == 'p2sh':
-            # put op_0 before script
-            script = '00' + script
-            redeem_script = multisig_script(pubkeys, txin['num_sig'])
-            script += push_script(redeem_script)
-        elif _type == 'p2pkh':
-            script += push_script(pubkeys[0])
-        elif _type == 'p2wpkh-p2sh':
-            redeem_script = txin.get('redeemScript') or segwit_script(pubkeys[0])
-            return push_script(redeem_script)
-        elif _type == 'address':
-            script += push_script(pubkeys[0])
-        else:
-            raise TypeError('Unknown txin type', _type)
-        return script
-
-    @classmethod
-    def get_preimage_script(self, txin):
-        # only for non-segwit
-        if txin['type'] == 'p2pkh':
-            return get_scriptPubKey(txin['address'])
-        elif txin['type'] == 'p2sh':
-            pubkeys, x_pubkeys = self.get_sorted_pubkeys(txin)
-            return multisig_script(pubkeys, txin['num_sig'])
-        else:
-            raise TypeError('Unknown txin type', txin['type'])
-
-    @classmethod
-    def serialize_outpoint(self, txin):
-        return txin['prevout_hash'].decode('hex')[::-1].encode('hex') \
-               + write_uint32(txin['prevout_n']).encode('hex')
-
-    @classmethod
-    def serialize_input(self, txin, script):
-        # Prev hash and index
-        s = self.serialize_outpoint(txin)
-        # Script length, script, sequence
-        s += int_to_hex(len(script) / 2)
-        s += script
-        s += write_uint32(txin.get('sequence', 0xffffffff)).encode('hex')
-        return s
-
     def set_rbf(self, rbf):
-        nSequence = 0xffffffff - (2 if rbf else 0)
+        sequence = 0xffffffff - (2 if rbf else 0)
         for txin in self.input_list():
-            txin.in_sequence = nSequence
+            txin.in_sequence = sequence
 
-    def BIP_LI01_sort(self):
+    def bip_li01_sort(self):
         # See https://github.com/kristovatlas/rfc/blob/master/bips/bip-li01.mediawiki
         self._input_list.sort(key=lambda i: (i.prev_tx_hash, i.prev_out_sn))
-        self._output_list.sort(key=lambda o: (o.out_value, self.pay_script(o.address_type, o.out_address)))
-
-    def serialize_output(self, output):
-        if len(output) == 3:
-            output_type, addr, amount = output
-        elif len(output) == 4:
-            output_type, addr, amount, script = output
-        s = write_uint64(amount).encode('hex')
-        script = self.pay_script(output_type, addr)
-        s += int_to_hex(len(script) / 2)
-        s += script
-        return s
+        self._output_list.sort(key=lambda o: (o.out_value, o.pay_script()))
 
     def serialize_preimage(self, i):
-        nVersion = write_uint32(self.tx_ver).encode('hex')
-        nHashType = write_uint32(1).encode('hex')
-        nLocktime = write_uint32(self.locktime).encode('hex')
-        # inputs = self.inputs()
+        version = write_uint32(self.tx_ver).encode('hex')
+        hash_type = write_uint32(1).encode('hex')
+        locktime = write_uint32(self.locktime).encode('hex')
         input_list = self.input_list()
-        # outputs = self.outputs()
         output_list = self.output_list()
         txin = input_list[i]
-        if self.is_segwit_input_item(txin):
-            hashPrevouts = double_sha256(
+        if txin.is_segwit_input():
+            hash_prevouts = double_sha256(
                 ''.join(txin.serialize_outpoint() for txin in input_list).decode('hex')).encode(
                 'hex')
-            hashSequence = double_sha256(
-                ''.join(int_to_hex(txin.in_sequence, 4) for txin in input_list).decode(
+            hash_sequence = double_sha256(
+                ''.join(write_uint32(txin.in_sequence) for txin in input_list).decode(
                     'hex')).encode('hex')
-            hashOutputs = double_sha256(
+            hash_outputs = double_sha256(
                 ''.join(o.serialize_output() for o in output_list).decode('hex')).encode('hex')
             outpoint = txin.serialize_outpoint()
             pubkey = txin.in_dict['pubkeys'][0]
             pkh = hash_160(pubkey.decode('hex')).encode('hex')
-            redeemScript = '00' + push_script(pkh)
-            scriptCode = push_script('76a9' + push_script(pkh) + '88ac')
-            script_hash = hash_160(redeemScript.decode('hex')).encode('hex')
-            scriptPubKey = 'a9' + push_script(script_hash) + '87'
-            amount = int_to_hex(txin.in_value, 8)
-            nSequence = int_to_hex(txin.in_sequence, 4)
-            preimage = nVersion + hashPrevouts + hashSequence + outpoint + scriptCode + amount + nSequence + hashOutputs + nLocktime + nHashType
+            # redeem_script = '00' + push_script(pkh)
+            script_code = push_script('76a9' + push_script(pkh) + '88ac')
+            # script_hash = hash_160(redeem_script.decode('hex')).encode('hex')
+            # script_pub_key = 'a9' + push_script(script_hash) + '87'
+            amount = write_uint64(txin.in_value)
+            sequence = write_uint32(txin.in_sequence)
+            preimage = version + hash_prevouts + hash_sequence + outpoint + script_code + amount + sequence + hash_outputs + locktime + hash_type
         else:
             txins = int_to_hex(len(input_list)) + ''.join(
                 txin.serialize_input(txin.get_preimage_script() if i == k else '') for
                 k, txin in enumerate(input_list))
-            txouts = int_to_hex(len(output_list)) + ''.join(o.serialize_output() for o in output_list)
-            preimage = nVersion + txins + txouts + nLocktime + nHashType
+            txouts = int_to_hex(len(output_list)) + ''.join(
+                o.serialize_output() for o in output_list)
+            preimage = version + txins + txouts + locktime + hash_type
         return preimage
 
     def is_segwit(self):
-        return any(self.is_segwit_input_item(x) for x in self.input_list())
+        return any(x.is_segwit_input() for x in self.input_list())
 
     def serialize(self, estimate_size=False, witness=True):
-        nVersion = write_uint32(self.tx_ver).encode('hex')
-        nLocktime = write_uint32(self.locktime).encode('hex')
+        version = write_uint32(self.tx_ver).encode('hex')
+        locktime = write_uint32(self.locktime).encode('hex')
         # inputs = self.inputs()
         input_list = self.input_list()
         # outputs = self.outputs()
@@ -531,16 +339,16 @@ class Transaction:
             marker = '00'
             flag = '01'
             witness = ''.join(x.serialize_witness() for x in input_list)
-            return nVersion + marker + flag + txins + txouts + witness + nLocktime
+            return version + marker + flag + txins + txouts + witness + locktime
         else:
-            return nVersion + txins + txouts + nLocktime
+            return version + txins + txouts + locktime
 
     def hash(self):
         print "warning: deprecated tx.hash()"
         return self.txid()
 
     def txid(self):
-        all_segwit = all(self.is_segwit_input_item(x) for x in self.input_list())
+        all_segwit = all(x.is_segwit_input() for x in self.input_list())
         if not all_segwit and not self.is_complete():
             return None
         ser = self.serialize(witness=False)
@@ -549,11 +357,6 @@ class Transaction:
     def wtxid(self):
         ser = self.serialize(witness=True)
         return double_sha256(ser.decode('hex'))[::-1].encode('hex')
-
-    def add_inputs(self, inputs):
-        self._inputs.extend(inputs)
-        self._input_list.extend([Input(e) for e in inputs])
-        self.raw = None
 
     def add_input_list(self, inputs):
         self._input_list.extend(inputs)
@@ -580,12 +383,6 @@ class Transaction:
         '''Return an estimated tx size in bytes.'''
         return len(self.serialize(True)) / 2 if not self.is_complete() or self.raw is None else len(
             self.raw) / 2  # ASCII hex string
-
-    @classmethod
-    def estimated_input_size(self, txin):
-        '''Return an estimated of serialized input size in bytes.'''
-        script = self.input_script(txin, True)
-        return len(self.serialize_input(txin, script)) / 2
 
     def signature_count(self):
         r = 0
@@ -632,22 +429,6 @@ class Transaction:
         print_error("is_complete", self.is_complete())
         self.raw = self.serialize()
 
-    # def get_outputs(self):
-    #     """convert pubkeys to addresses"""
-    #     o = []
-    #     for tx_out in self.output_list():
-    #         if tx_out.address_type == TYPE_ADDRESS:
-    #             addr = tx_out.out_address
-    #         elif tx_out.address_type == TYPE_PUBKEY:
-    #             addr = public_key_to_p2pkh(x.decode('hex'))
-    #         else:
-    #             addr = 'SCRIPT ' + x.encode('hex')
-    #         o.append((addr, v))  # consider using yield (addr, v)
-    #     return o
-
-    # def get_output_addresses(self):
-    #     return [addr for addr, val in self.get_outputs()]
-
     def has_address(self, addr):
         return (addr in (e.out_address for e in self.output_list())) or (
             addr in (tx.in_dict.get("address") for tx in self.input_list()))
@@ -667,7 +448,7 @@ class Transaction:
         # see https://en.bitcoin.it/wiki/Transaction_fees
         #
         # size must be smaller than 1 kbyte for free tx
-        size = len(self.serialize(-1)) / 2
+        size = len(self.serialize()) / 2
         if size >= 10000:
             return True
         # all outputs must be 0.01 BTC or larger for free tx
@@ -977,11 +758,11 @@ class BCDataStream(object):
         self.input = None
         self.read_cursor = 0
 
-    def write(self, bytes):  # Initialize with string of bytes
+    def write(self, data):  # Initialize with string of bytes
         if self.input is None:
-            self.input = bytes
+            self.input = data
         else:
-            self.input += bytes
+            self.input += data
 
     def read_string(self):
         # Strings are encoded depending on length:
@@ -1013,8 +794,6 @@ class BCDataStream(object):
             return result
         except IndexError:
             raise SerializationError("attempt to read past end of buffer")
-
-        return ''
 
     def read_boolean(self):
         return self.read_bytes(1)[0] != chr(0)
@@ -1111,14 +890,16 @@ def deserialize(raw):
         tx_in = Input()
         tx_in.parse_input_json(vds, i)
         d['input_list'].append(tx_in)
-    d['inputs'] = [e.in_dict for e in d['input_list']]#list(Input().parse_input_json(vds, i) for i in xrange(n_vin))
+    d['inputs'] = [e.in_dict for e in
+                   d['input_list']]  # list(Input().parse_input_json(vds, i) for i in xrange(n_vin))
     n_vout = vds.read_compact_size()
     d['output_list'] = []
     for i in xrange(n_vout):
         tx_out = Output()
         tx_out.parse_output_json(vds, i)
         d['output_list'].append(tx_out)
-    d['outputs'] = [e.out_dict for e in d['output_list']]#list(Output().parse_output_json(vds, i) for i in xrange(n_vout))
+    d['outputs'] = [e.out_dict for e in d[
+        'output_list']]  # list(Output().parse_output_json(vds, i) for i in xrange(n_vout))
     if is_segwit:
         d['witness'] = list(parse_witness(vds) for i in xrange(n_vin))
     d['lockTime'] = vds.read_uint32()

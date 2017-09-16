@@ -160,7 +160,7 @@ class BaseWallet(AbstractWallet):
             tx = Transaction.from_io(inputs, outputs[:])
 
         # Sort the inputs and outputs deterministically
-        tx.BIP_LI01_sort()
+        tx.bip_li01_sort()
         # Timelock tx to current height.
         tx.locktime = self.get_local_height()
         # run_hook('make_unsigned_transaction', self, tx)
