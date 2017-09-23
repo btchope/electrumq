@@ -898,8 +898,6 @@ def deserialize(raw):
         tx_out = Output()
         tx_out.parse_output_json(vds, i)
         d['output_list'].append(tx_out)
-    d['outputs'] = [e.out_dict for e in d[
-        'output_list']]  # list(Output().parse_output_json(vds, i) for i in xrange(n_vout))
     if is_segwit:
         d['witness'] = list(parse_witness(vds) for i in xrange(n_vin))
     d['lockTime'] = vds.read_uint32()

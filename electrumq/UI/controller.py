@@ -13,11 +13,12 @@ from PyQt4.QtGui import *
 from datetime import datetime
 
 from electrumq.UI.component import AccountIcon, AddressView, BalanceView, \
-    FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView
+    FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView, MessageBox
 from electrumq.UI.dialog import NewAccountDialog, TxDetailDialog
 from electrumq.UI.layout.borderlayout import BorderLayout
 from electrumq.db.sqlite import init
 from electrumq.network import NetWorkManager
+from electrumq.utils import verification
 from electrumq.utils.configuration import style_path
 from electrumq.utils.parameter import TYPE_ADDRESS
 from electrumq.utils.tx import Output
@@ -307,16 +308,24 @@ class SendController(QWidget):
         self.setLayout(layout)
 
         self.send_view.send_btn.clicked.connect(self.send)
-        self.send_view.dest_address_tb.setText('mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i')
+        self.send_view.dest_address_tb.setText('')
 
     def send(self):
-        outputs = [Output((TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000))]
-        tx = Wallet().current_wallet.make_unsigned_transaction(Wallet().current_wallet.get_utxo(),
-                                                               outputs, {})
-        Wallet().current_wallet.sign_transaction(tx, None)
-        tx_detail_dialog = TxDetailDialog(self)
-        tx_detail_dialog.tx_detail_view.show_tx(tx)
-        tx_detail_dialog.exec_()
+        try:
+            address = self.send_view.dest_address_tb.text()
+            amount = self.send_view.output_value_edit.text()
+            verification.check_address(address)
+            verification.check_amount(amount)
+            outputs = [Output((TYPE_ADDRESS, address,
+                               int(amount)))]
+            tx = Wallet().current_wallet.make_unsigned_transaction(Wallet().current_wallet.get_utxo(),
+                                                                   outputs, {})
+            Wallet().current_wallet.sign_transaction(tx, None)
+            tx_detail_dialog = TxDetailDialog(self)
+            tx_detail_dialog.tx_detail_view.show_tx(tx)
+            tx_detail_dialog.exec_()
+        except Exception as ex:
+            MessageBox(ex.message).exec_()
 
 
 class ReceiveController(QWidget):

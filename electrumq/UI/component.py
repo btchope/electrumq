@@ -243,7 +243,7 @@ class SendView(QWidget):
         layout = QVBoxLayout()
         dest_address_label = QLabel(u"目标地址")
         layout.addWidget(dest_address_label)
-        self.dest_address_tb = QTextEdit()
+        self.dest_address_tb = QLineEdit()
         self.dest_address_tb.setMaximumWidth(300)
         self.dest_address_tb.setMaximumHeight(40)
         layout.addWidget(self.dest_address_tb)
@@ -303,3 +303,32 @@ class QRDialog(QtGui.QDialog):
 
         self.qrcode.setPixmap(
             qrcode.make(address, image_factory=Image).pixmap())
+
+
+class MessageBox(QtGui.QMessageBox):
+    timeout = 3
+    auto_close = True
+    current_time = 0
+
+    def __init__(self, text, *args, **kwargs):
+        super(MessageBox, self).__init__(*args)
+        setattr(self, 'showEvent', self.wrapper(getattr(self, 'showEvent')))
+
+        self.setText(text)
+
+    def wrapper(self, func):
+        def show(message_box, *args, **kwargs):
+            r = func(message_box, *args, **kwargs)
+            self.add_show_event()
+            return r
+        return show
+
+    def add_show_event(self):
+        self.current_time = 0
+        if self.auto_close:
+            self.startTimer(1000)
+
+    def timerEvent(self, event):
+        self.current_time += 1
+        if self.current_time >= self.timeout:
+            self.done(0)

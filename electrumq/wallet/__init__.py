@@ -435,7 +435,7 @@ class BaseWallet(AbstractWallet):
                 for event in set(self.wallet_tx_changed_event):
                     EVENT_QUEUE.put(event)
             print self.address, 'balance', TxStore().get_balance(self.address)
-        except Exception:
+        except Exception as ex:
             self.print_msg("cannot deserialize transaction, skipping", tx_hash)
             return
 
