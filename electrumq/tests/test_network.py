@@ -9,7 +9,8 @@ from tornado.concurrent import is_future
 from tornado.testing import gen_test, AsyncTestCase
 
 from electrumq.ioloop import IOLoop
-from electrumq.network import NetWorkManager, RPCClient
+from electrumq.network import RPCClient
+from electrumq.net.manager import NetWorkManager
 from electrumq.utils.parameter import set_testnet
 
 __author__ = 'zhouqi'
@@ -105,3 +106,7 @@ class TestIOLoop(unittest.TestCase):
         self.assertEqual(cnt, 0)
         time.sleep(self.ioloop_wait)
         self.assertEqual(cnt, 1)
+
+
+class FakeTcpServer():
+    pass

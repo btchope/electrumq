@@ -10,7 +10,7 @@ from tornado.concurrent import Future
 
 from electrumq.db.sqlite import header_dict_to_block_item
 from electrumq.db.sqlite.block import BlockStore
-from electrumq.network import NetWorkManager
+from electrumq.net.manager import NetWorkManager
 from electrumq.utils import Singleton
 from electrumq.message.all import headers_subscribe
 

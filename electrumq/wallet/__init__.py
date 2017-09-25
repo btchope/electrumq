@@ -13,7 +13,7 @@ from electrumq.db.sqlite.block import BlockStore
 from electrumq.db.sqlite.tx import TxStore
 from electrumq.message.blockchain.address import *
 from electrumq.message.blockchain.transaction import *
-from electrumq.network import NetWorkManager
+from electrumq.net.manager import NetWorkManager
 from electrumq.utils import coinchooser
 from electrumq.utils.base58 import is_address, public_key_to_p2pkh, hash160_to_p2sh, hash_160
 from electrumq.utils.parameter import TYPE_ADDRESS, COINBASE_MATURITY, Parameter

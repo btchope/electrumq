@@ -11,7 +11,7 @@ from PyQt4.QtCore import QTimer
 from electrumq.UI import controller
 from electrumq.UI.controller import EQApplication, EQMainWindow
 from electrumq.db.sqlite import init
-from electrumq.network import NetWorkManager
+from electrumq.net.manager import NetWorkManager
 from electrumq.wallet import WalletConfig
 from electrumq.wallet.single import SimpleWallet
 from electrumq.wallet import EVENT_QUEUE

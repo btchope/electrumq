@@ -10,7 +10,7 @@ from sortedcontainers import SortedDict
 
 from electrumq.blockchain import BlockChain
 from electrumq.db.sqlite import init
-from electrumq.network import NetWorkManager
+from electrumq.net.manager import NetWorkManager
 from electrumq.utils import Singleton
 from electrumq.utils.configuration import log_conf_path, conf_path, dirs
 from electrumq.utils.parameter import set_testnet
@@ -33,7 +33,7 @@ class Wallet(object):
 
     def __init__(self):
         set_testnet()
-        logging.config.fileConfig(log_conf_path)
+        # logging.config.fileConfig(log_conf_path)
         init()
         network = NetWorkManager()
         network.start()

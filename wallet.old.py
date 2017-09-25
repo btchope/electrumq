@@ -12,7 +12,7 @@ from electrumq.utils.tx import Transaction, segwit_script, multisig_script
 from electrumq.db.sqlite.tx import TxStore
 from electrumq.message.blockchain.address import GetHistory
 from electrumq.message.blockchain.transaction import GetMerkle, Get
-from electrumq.network import NetWorkManager
+from electrumq.net.manager import NetWorkManager
 from electrumq.utils import coinchooser, public_key_to_p2pkh, hash160_to_p2sh, hash_160, InvalidPassword, \
     bc_address_to_type_and_hash_160
 from electrumq.utils import is_address

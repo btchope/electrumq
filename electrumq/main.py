@@ -8,7 +8,7 @@ from electrumq.blockchain import BlockChain
 from electrumq.db.sqlite import init
 from electrumq.db.sqlite.tx import TxStore
 from electrumq.message.all import *
-from electrumq.network import NetWorkManager
+from electrumq.net.manager import NetWorkManager
 from electrumq.utils.base58 import public_key_to_p2pkh
 from electrumq.utils.key import SecretToASecret, public_key_from_private_key
 from electrumq.utils.key_store import SimpleKeyStore, WatchOnlySimpleKeyStore, \
