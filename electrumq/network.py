@@ -61,6 +61,7 @@ class NetWorkManager:
     def quit(self):
         if self.ioloop is not None:
             self.ioloop.quit()
+            self.ioloop = None
 
     def start_client(self, ip=None, port=None):
         ip, port, _ = self.deserialize_server(self.pick_random_server())

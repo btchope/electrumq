@@ -12,11 +12,13 @@ __author__ = 'zhouqi'
 
 logger = logging.getLogger('ioloop')
 
-MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 1
+MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 0.1
 
 
 class IOLoop(threading.Thread):
     _futures = []
+    loop_interval = 100  # ms
+    loop_quit_wait = MAX_WAIT_SECONDS_BEFORE_SHUTDOWN  # second
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -33,11 +35,11 @@ class IOLoop(threading.Thread):
                 for each in need_add:
                     TornadoIOLoop.instance().add_future(each[0], each[1])
 
-        PeriodicCallback(add_features, 1000, TornadoIOLoop.instance()).start()
+        PeriodicCallback(add_features, self.loop_interval, TornadoIOLoop.instance()).start()
         TornadoIOLoop.instance().start()
 
     def add_future(self, future, callback=None):
-        def nothing(**kwargs):
+        def nothing(future, **kwargs):
             pass
 
         if callback is None:
@@ -57,9 +59,9 @@ class IOLoop(threading.Thread):
 
     def quit(self):
         logger.info('begin to quit')
-        TornadoIOLoop.instance().add_callback(self.shutdown)
+        TornadoIOLoop.instance().add_callback(self._quit)
 
-    def shutdown(self):
+    def _quit(self):
         """
 
         :return:
@@ -75,8 +77,9 @@ class IOLoop(threading.Thread):
             :return:
             """
             now = time.time()
+            step = 0.01
             if now < deadline and (io_loop._callbacks or len(io_loop._timeouts) > 1):
-                io_loop.add_timeout(now + 1, stop_loop)
+                io_loop.add_timeout(max(now + step, deadline), stop_loop)
             else:
                 io_loop.stop()
                 logger.info('Shutdown')
