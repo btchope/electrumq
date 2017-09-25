@@ -10,7 +10,8 @@ from tornado.httpclient import AsyncHTTPClient
 
 from electrumq.ioloop import IOLoop
 from electrumq.message.server import Version
-from electrumq.network import logger, RPCClient
+from electrumq.network import logger
+from electrumq.net.client import RPCClient
 from electrumq.utils import Singleton
 from electrumq.utils.parameter import Parameter
 
