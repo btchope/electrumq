@@ -15,14 +15,6 @@ from electrumq.utils.parameter import set_testnet
 __author__ = 'zhouqi'
 
 
-# def test_network():
-#     set_testnet()
-#     fileConfig('logging.conf')
-#     network_manager = NetWorkManager()
-#     network_manager.start_ioloop()
-#     network_manager.start_client()
-
-
 class MyTestCase(AsyncTestCase):
     @gen_test
     def test_http_fetch(self):
@@ -36,20 +28,20 @@ class MyTestCase(AsyncTestCase):
         # self.assertIn("FriendFeed", response.body)
 
 
-# if __name__ == '__main__':
-#     test_network()
-#
-#     time.sleep(10000000)
-
 class TestIOLoopStartAndStop(unittest.TestCase):
     def test_ioloop(self):
-        NetWorkManager().start_ioloop()
-        self.assertIsNotNone(NetWorkManager().ioloop)
-        NetWorkManager().quit()
-        # time.sleep(2)
-        NetWorkManager().start_ioloop()
-        self.assertIsNotNone(NetWorkManager().ioloop)
-        NetWorkManager().quit()
+        ioloop = IOLoop()
+        ioloop.start()
+        self.assertTrue(ioloop.isAlive())
+        ioloop.quit()
+        time.sleep(ioloop.loop_quit_wait)
+        self.assertFalse(ioloop.isAlive())
+        ioloop = IOLoop()
+        ioloop.start()
+        self.assertTrue(ioloop.isAlive())
+        ioloop.quit()
+        time.sleep(ioloop.loop_quit_wait)
+        self.assertFalse(ioloop.isAlive())
 
 
 class TestIOLoop(unittest.TestCase):
