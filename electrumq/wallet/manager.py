@@ -8,7 +8,7 @@ import sys
 from appdirs import AppDirs
 from sortedcontainers import SortedDict
 
-from electrumq.blockchain import BlockChain
+from electrumq.chain.chain import BlockChain
 from electrumq.db.sqlite import init
 from electrumq.net.manager import NetWorkManager
 from electrumq.utils import Singleton

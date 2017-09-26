@@ -5,7 +5,7 @@ from functools import partial
 
 from tornado import gen
 
-from electrumq.blockchain import BlockChain
+from electrumq.chain.chain import BlockChain
 from electrumq.db.sqlite.block import BlockStore
 from electrumq.utils.storage import AbstractStorage, WalletStorage, multisig_type
 from electrumq.utils.tx import Transaction, segwit_script, multisig_script

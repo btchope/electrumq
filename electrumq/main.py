@@ -4,7 +4,7 @@ import time
 
 from tornado import gen
 
-from electrumq.blockchain import BlockChain
+from electrumq.chain.chain import BlockChain
 from electrumq.db.sqlite import init
 from electrumq.db.sqlite.tx import TxStore
 from electrumq.message.all import *

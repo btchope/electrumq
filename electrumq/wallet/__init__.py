@@ -8,7 +8,7 @@ from datetime import datetime
 
 from tornado import gen
 
-from electrumq.blockchain import BlockChain
+from electrumq.chain.chain import BlockChain
 from electrumq.db.sqlite.block import BlockStore
 from electrumq.db.sqlite.tx import TxStore
 from electrumq.message.blockchain.address import *
