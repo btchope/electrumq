@@ -8,9 +8,9 @@ import tornado
 from tornado import gen
 from tornado.httpclient import AsyncHTTPClient
 
-from electrumq.ioloop import IOLoop
+from electrumq.net.ioloop import IOLoop
 from electrumq.message.server import Version
-from electrumq.network import logger
+from electrumq.net import logger
 from electrumq.net.client import RPCClient
 from electrumq.utils import Singleton
 from electrumq.utils.parameter import Parameter
@@ -106,8 +106,9 @@ class NetWorkManager:
         retry = 5
         while retry > 0:
             try:
-                request = tornado.httpclient.HTTPRequest(url=Parameter().HEADERS_URL, connect_timeout=20.0,
-                                                         request_timeout=60*10)
+                request = tornado.httpclient.HTTPRequest(url=Parameter().HEADERS_URL,
+                                                         connect_timeout=20.0,
+                                                         request_timeout=60 * 10)
                 response = yield tornado.gen.Task(AsyncHTTPClient().fetch, request)
                 #
                 # response = yield AsyncHTTPClient().fetch(Parameter().HEADERS_URL)

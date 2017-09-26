@@ -9,7 +9,7 @@ from tornado.concurrent import Future, is_future
 from tornado.iostream import StreamClosedError
 from tornado.tcpclient import TCPClient
 
-from electrumq.network import logger
+from electrumq.net import logger
 
 __author__ = 'zhouqi'
 
@@ -72,7 +72,7 @@ class RPCClient:
     def set_timout(self, timeout):
         print 'set timeout'
         self.timeout = self.ioloop.add_timeout(self.ioloop.time() + timeout,
-                                                self.on_timeout)
+                                               self.on_timeout)
 
     def on_timeout(self):
         print 'triger timeout'
