@@ -27,7 +27,6 @@ class RPCClient:
     _subscribe_dict = {}
     ioloop = None
     connect_future = None
-    f = None
     connect_timeout = 0.5
     connect_retry_time = 0
     logger = logging.getLogger('rpcclient')
@@ -49,7 +48,7 @@ class RPCClient:
         self.connect_future = Future()
         print 'ip & port', self.ip, self.port
         self.ioloop.add_future(TCPClient().connect(self.ip, self.port), self.connect_callback)
-        # self.set_timout(timeout=1)
+        self.set_timout(timeout=3)
 
     def connect_callback(self, future):
         if future.exception() is None:
@@ -79,7 +78,8 @@ class RPCClient:
         self.timeout = None
         if self.connect_future is not None and not self.connect_future.done():
             self.connect_future.set_result(False)
-            self.f.set_exception(Exception())
+            print 'triger timeout failed'
+            # self.connect_future.set_exception(Exception())
 
     def clear_timeout(self):
         if self.timeout is not None:
@@ -110,6 +110,7 @@ class RPCClient:
     def send_all(self):
         if self.is_connected:
             if len(self._message_list) > 0:
+                self.logger.debug('begin to send all')
                 content = ''
                 while len(self._message_list) > 0:
                     msg = self._message_list.popleft()
@@ -121,6 +122,7 @@ class RPCClient:
     @gen.coroutine
     def callback(self):
         if len(self._response_list) > 0:
+            self.logger.debug('begin to callback all')
             msg_id, msg, result = self._response_list.popleft()
             self.logger.debug(str((msg_id, msg, result)))
             if msg_id in self._callback_dict:
