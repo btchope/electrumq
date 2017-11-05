@@ -40,6 +40,10 @@ class RPCClient:
             self.port = port
         self.ioloop = ioloop
 
+    def __del__(self):
+        if self.stream is not None:
+            self.stream.close()
+
     def connect2(self):
         self.try_connect()
         return self.connect_future
@@ -47,18 +51,26 @@ class RPCClient:
     def try_connect(self):
         self.connect_future = Future()
         print 'ip & port', self.ip, self.port
+        print self.connect_future._callbacks
         self.ioloop.add_future(TCPClient().connect(self.ip, self.port), self.connect_callback)
         self.set_timout(timeout=3)
 
     def connect_callback(self, future):
+        if not future.done():
+            return
         if future.exception() is None:
             self.stream = future.result()
             self.is_connected = True
-            self.stream.read_until(b"\n", callback=self.parse_response)
             logger.debug('client connected')
+            logger.debug('client connected by callback')
+            try:
+                self.stream.read_until(b"\n", callback=self.parse_response)
+            except Exception as ex:
+                logger.debug(ex.message)
             self.ioloop.add_periodic(self.send_all)
             self.ioloop.add_periodic(self.callback)
             self.ioloop.add_periodic(self.subscribe)
+            self.logger.debug(str(self.connect_future._callbacks))
             self.connect_future.set_result(True)
         else:
             print future.exception()

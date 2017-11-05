@@ -17,6 +17,7 @@ class IOLoop(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
+        self.ioloop = TornadoIOLoop()
 
     def run(self):
         logger.debug('ioloop starting')
@@ -28,10 +29,10 @@ class IOLoop(threading.Thread):
                 need_add = self._futures[:]
                 self._futures = []
                 for each in need_add:
-                    TornadoIOLoop.instance().add_future(each[0], each[1])
+                    self.ioloop.add_future(each[0], each[1])
 
-        PeriodicCallback(add_features, self.loop_interval, TornadoIOLoop.instance()).start()
-        TornadoIOLoop.instance().start()
+        PeriodicCallback(add_features, self.loop_interval, self.ioloop).start()
+        self.ioloop.start()
 
     def add_future(self, future, callback=None):
         def nothing(future, **kwargs):
@@ -44,17 +45,17 @@ class IOLoop(threading.Thread):
         self._futures.append((future, callback))
 
     def add_periodic(self, feature, interval=1000):
-        PeriodicCallback(feature, interval, TornadoIOLoop.instance()).start()
+        PeriodicCallback(feature, interval, self.ioloop).start()
 
     def add_timeout(self, deadline, callback, *args, **kwargs):
-        TornadoIOLoop.instance().add_timeout(deadline, callback, *args, **kwargs)
+        self.ioloop.add_timeout(deadline, callback, *args, **kwargs)
 
     def time(self):
-        return TornadoIOLoop.instance().time()
+        return self.ioloop.time()
 
     def quit(self):
         logger.info('begin to quit')
-        TornadoIOLoop.instance().add_callback(self._quit)
+        self.ioloop.add_callback(self._quit)
 
     def _quit(self):
         """
@@ -62,7 +63,7 @@ class IOLoop(threading.Thread):
         :return:
         """
         logger.info('Will shutdown in %s seconds ...', MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
-        io_loop = TornadoIOLoop.instance()
+        io_loop = self.ioloop
 
         deadline = time.time() + MAX_WAIT_SECONDS_BEFORE_SHUTDOWN
 
@@ -77,6 +78,9 @@ class IOLoop(threading.Thread):
                 io_loop.add_timeout(max(now + step, deadline), stop_loop)
             else:
                 io_loop.stop()
+                io_loop.close()
+                io_loop.clear_current()
+                io_loop.clear_instance()
                 logger.info('Shutdown')
 
         stop_loop()

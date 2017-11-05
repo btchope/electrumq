@@ -51,6 +51,8 @@ class TestIOLoopStartAndStop(unittest.TestCase):
 class TestIOLoop(AsyncTestCase):
     def setUp(self):
         super(TestIOLoop, self).setUp()
+        open_logger('network')
+        open_logger('rpcclient')
         self.ioloop = IOLoop()
         self.ioloop.start()
         self.ioloop_wait = self.ioloop.loop_interval / 1000.0 + 0.01
@@ -59,11 +61,12 @@ class TestIOLoop(AsyncTestCase):
         self.quit_ioloop()
         super(TestIOLoop, self).tearDown()
 
-    @gen_test
+    @gen_test()
     def quit_ioloop(self):
         self.ioloop.quit()
         yield gen.sleep(self.ioloop.loop_quit_wait + 0.01)
 
+    @gen_test()
     def test_timeout(self):
         now = time.time()
         global is_done
@@ -76,7 +79,7 @@ class TestIOLoop(AsyncTestCase):
 
         self.ioloop.add_timeout(now + delta, timeout)
         self.assertFalse(is_done)
-        time.sleep(delta + self.ioloop_wait)
+        yield gen.sleep(delta + self.ioloop_wait)
         self.assertTrue(is_done)
 
     @gen_test()
@@ -155,6 +158,8 @@ class TestClientConnect(AsyncTestCase):
         result = yield self.client.connect2()
         self.assertEqual(result, True)
 
+    @gen_test(timeout=30)
+    def test_yield_connect_failed(self):
         ip = '176.24.197.77'
         port = 51011
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
@@ -194,6 +199,7 @@ class TestClientMessage(AsyncTestCase):
         self.assertTrue(self.client.is_connected)
 
         self.is_callback = False
+
         @gen.coroutine
         def version_callback(msg_id, msg, param):
             self.is_callback = True
