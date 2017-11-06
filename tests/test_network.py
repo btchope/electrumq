@@ -10,10 +10,12 @@ from tornado.testing import gen_test, AsyncTestCase
 from electrumq.message.all import *
 from electrumq.net.client import RPCClient
 from electrumq.net.ioloop import IOLoop
+from electrumq.net.manager import NetWorkManager
 from electrumq.utils.parameter import set_testnet
 
 __author__ = 'zhouqi'
 
+set_testnet()
 
 class MyTestCase(AsyncTestCase):
     @gen_test
@@ -30,11 +32,29 @@ class MyTestCase(AsyncTestCase):
 
 class HowToUseNetwork(AsyncTestCase):
     @gen_test
-    def test_normal(self):
+    def test_application(self):
+        manager = NetWorkManager()
+        manager.start()
+
+        @gen.coroutine
+        def version_callback(msg_id, msg, param):
+            self.is_callback = True
+            self.assertEqual(msg_id, 0)
+            self.assertEqual(msg, {'params': {}, 'method': 'server.version'})
+
+        manager.add_message(Version({}), version_callback)
+
+        manager.quit()
+
+    @gen_test(timeout=6)
+    def test_detail(self):
+        manager = NetWorkManager()
+
         self.ioloop = IOLoop()
         self.ioloop.start()
-        ip = '176.25.187.3'
-        port = 51001
+
+        ip, port = manager.get_server()
+
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
         result = yield self.client.connect_with_future()
         self.assertTrue(result)
@@ -144,10 +164,6 @@ class TestIOLoop(AsyncTestCase):
 
 
 class TestClientConnect(AsyncTestCase):
-    def __init__(self, methodName='runTest'):
-        # open_logger('network')
-        super(TestClientConnect, self).__init__(methodName)
-
     def setUp(self):
         super(TestClientConnect, self).setUp()
         self.ioloop = IOLoop()

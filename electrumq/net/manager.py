@@ -111,8 +111,10 @@ class NetWorkManager:
         return ip, port
 
     def filter_protocol(self, hostmap, protocol='s'):
-        '''Filters the hostmap for those implementing protocol.
-        The result is a list in serialized form.'''
+        """
+        Filters the hostmap for those implementing protocol.
+        The result is a list in serialized form.
+        """
         eligible = []
         for host, portmap in hostmap.items():
             port = portmap.get(protocol)
