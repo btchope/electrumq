@@ -6,6 +6,7 @@ from collections import deque
 
 from tornado import gen
 from tornado.concurrent import Future, is_future
+from tornado.ioloop import PeriodicCallback
 from tornado.iostream import StreamClosedError
 from tornado.tcpclient import TCPClient
 
@@ -44,16 +45,11 @@ class RPCClient:
         if self.stream is not None:
             self.stream.close()
 
-    def connect2(self):
-        self.try_connect()
-        return self.connect_future
-
-    def try_connect(self):
+    def connect_with_future(self):
         self.connect_future = Future()
-        print 'ip & port', self.ip, self.port
-        print self.connect_future._callbacks
         self.ioloop.add_future(TCPClient().connect(self.ip, self.port), self.connect_callback)
         self.set_timout(timeout=3)
+        return self.connect_future
 
     def connect_callback(self, future):
         if not future.done():
@@ -61,7 +57,6 @@ class RPCClient:
         if future.exception() is None:
             self.stream = future.result()
             self.is_connected = True
-            logger.debug('client connected')
             logger.debug('client connected by callback')
             try:
                 self.stream.read_until(b"\n", callback=self.parse_response)
@@ -70,27 +65,27 @@ class RPCClient:
             self.ioloop.add_periodic(self.send_all)
             self.ioloop.add_periodic(self.callback)
             self.ioloop.add_periodic(self.subscribe)
-            self.logger.debug(str(self.connect_future._callbacks))
+            if self.connect_future._callbacks is None:
+                self.connect_future._callbacks = []
             self.connect_future.set_result(True)
         else:
             print future.exception()
             if self.connect_retry_time > 0:
                 self.connect_retry_time -= 1
-                self.try_connect()
+                self.ioloop.add_future(TCPClient().connect(self.ip, self.port),
+                                       self.connect_callback)
+                self.set_timout(timeout=3)
             else:
                 self.connect_future.set_result(False)
 
     def set_timout(self, timeout):
-        print 'set timeout'
         self.timeout = self.ioloop.add_timeout(self.ioloop.time() + timeout,
                                                self.on_timeout)
 
     def on_timeout(self):
-        print 'triger timeout'
         self.timeout = None
         if self.connect_future is not None and not self.connect_future.done():
             self.connect_future.set_result(False)
-            print 'triger timeout failed'
             # self.connect_future.set_exception(Exception())
 
     def clear_timeout(self):
@@ -100,11 +95,7 @@ class RPCClient:
     @gen.coroutine
     def connect(self):
         try:
-            self.port += 1
-            from datetime import datetime
-            d = datetime.now()
             self.stream = yield TCPClient().connect(self.ip, self.port)
-            print 'stream' + str(datetime.now() - d)
             self.is_connected = True
             self.stream.read_until(b"\n", callback=self.parse_response)
             logger.debug('client connected')
@@ -116,7 +107,6 @@ class RPCClient:
         except Exception as ex:
             print ex
             self.is_connected = False
-            # raise ex
 
     @gen.coroutine
     def send_all(self):

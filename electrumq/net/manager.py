@@ -62,7 +62,7 @@ class NetWorkManager:
             logger.debug('cannot resolve hostname')
         # ip, port = '176.9.108.141', 50001
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
-        self.ioloop.add_future(self.client.connect2(), self.connect_callback)
+        self.ioloop.add_future(self.client.connect_with_future(), self.connect_callback)
 
     def connect_callback(self, feature):
         if not self.client.is_connected:

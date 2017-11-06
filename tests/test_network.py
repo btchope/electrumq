@@ -22,7 +22,7 @@ class MyTestCase(AsyncTestCase):
     def test_http_fetch(self):
         set_testnet()
         rpclient = RPCClient(self.io_loop)
-        response = yield rpclient.connect2()
+        response = yield rpclient.connect_with_future()
         self.assertEqual(response, False)
         # client = AsyncHTTPClient(self.io_loop)
         # response = yield client.fetch("http://www.tornadoweb.org")
@@ -122,14 +122,22 @@ class TestIOLoop(AsyncTestCase):
 
 
 class TestClientConnect(AsyncTestCase):
+    def __init__(self, methodName='runTest'):
+        # open_logger('network')
+        super(TestClientConnect, self).__init__(methodName)
+
+
     def setUp(self):
         super(TestClientConnect, self).setUp()
         self.ioloop = IOLoop()
         self.ioloop.start()
         self.ioloop_wait = self.ioloop.loop_interval / 1000.0 + 0.01
 
+
     def tearDown(self):
+        print 'begin quit_ioloop'
         self.quit_ioloop()
+        print 'end quit_ioloop'
         super(TestClientConnect, self).tearDown()
 
     @gen_test
@@ -139,31 +147,31 @@ class TestClientConnect(AsyncTestCase):
 
     @gen_test()
     def test_connect(self):
-        ip = '176.24.197.77'
+        ip = '176.25.187.3'
         port = 51001
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
 
         def callback(*args, **kwargs):
-            pass
+            print args, kwargs
 
-        self.ioloop.add_future(self.client.connect2(), callback)
+        self.ioloop.add_future(self.client.connect_with_future(), callback)
 
         yield gen.sleep(1)
 
     @gen_test(timeout=30)
     def test_yield_connect(self):
-        ip = '176.24.197.77'
+        ip = '176.25.187.3'
         port = 51001
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
-        result = yield self.client.connect2()
+        result = yield self.client.connect_with_future()
         self.assertEqual(result, True)
 
     @gen_test(timeout=30)
     def test_yield_connect_failed(self):
-        ip = '176.24.197.77'
+        ip = '176.25.187.3'
         port = 51011
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
-        result = yield self.client.connect2()
+        result = yield self.client.connect_with_future()
         self.assertEqual(result, False)
 
 
@@ -190,12 +198,13 @@ class TestClientMessage(AsyncTestCase):
 
     @gen_test()
     def test_message(self):
-        ip = '176.24.197.77'
+        ip = '176.25.187.3'
         port = 51001
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
 
-        yield self.client.connect2()
+        result = yield self.client.connect_with_future()
 
+        self.assertTrue(result)
         self.assertTrue(self.client.is_connected)
 
         self.is_callback = False

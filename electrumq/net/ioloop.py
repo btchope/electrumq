@@ -45,6 +45,8 @@ class IOLoop(threading.Thread):
         self._futures.append((future, callback))
 
     def add_periodic(self, feature, interval=1000):
+        if self.ioloop._timeouts is None:
+            self.ioloop._timeouts = []
         PeriodicCallback(feature, interval, self.ioloop).start()
 
     def add_timeout(self, deadline, callback, *args, **kwargs):
