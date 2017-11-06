@@ -53,7 +53,7 @@ class Wallet(object):
         self._current = self.conf.get('wallet', 'current')
         if self._current is not None:
             self.current_wallet = self.wallet_dict[self._current]
-            self.current_wallet.init()
+            self.current_wallet.sync()
         else:
             self.current_wallet = None
 

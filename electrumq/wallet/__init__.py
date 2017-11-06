@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 import random
-import traceback
 from Queue import Queue
 from functools import partial
-
-from datetime import datetime
 
 from tornado import gen
 
@@ -38,33 +35,14 @@ class WalletConfig(object):
 EVENT_QUEUE = Queue()
 
 
-class AbstractWallet(object):
-    def __init__(self, wallet_config):
-        self.wallet_confg = wallet_config
-        pass
-
-    # tx logic
-    def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None):
-        pass
-
-    def sign_transaction(self, tx, password):
-        pass
-
-    def print_error(self, *args, **kwargs):
-        pass
-
-    def print_msg(self, *args, **kwargs):
-        pass
-
-
-class BaseWallet(AbstractWallet):
+class BaseWallet(object):
     max_change_outputs = 3
     keystore = None
     txin_type = 'p2pkh'
 
     def __init__(self, wallet_config):
-        super(BaseWallet, self).__init__(wallet_config)
-        self.storage = WalletStorage(self.wallet_confg.store_path)
+        self.wallet_config = wallet_config
+        self.storage = WalletStorage(self.wallet_config.store_path)
         self.gap_limit_for_change = 6
         self.use_change = wallet_config.use_change
         self.multiple_change = wallet_config.multiple_change
@@ -118,10 +96,10 @@ class BaseWallet(AbstractWallet):
     def get_utxo(self):
         utxo = reduce(lambda x, y: x + y, [[
             Input({'prevout_hash': e[0], 'prevout_n': e[1],
-             'scriptSig': e[2], 'value': e[3],
-             'address': e[4],
-             'coinbase': False,
-             'height': e[5]}) for e in
+                   'scriptSig': e[2], 'value': e[3],
+                   'address': e[4],
+                   'coinbase': False,
+                   'height': e[5]}) for e in
             TxStore().get_unspend_outs(address=address)] for
             address in self.get_addresses()], [])
         return utxo
@@ -144,8 +122,12 @@ class BaseWallet(AbstractWallet):
                  'tx_spent': spent})
         return result
 
+    """
+    make transaction
+    """
+
     def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None):
-        # check outputs
+        # 1. check outputs
         i_max = None
         for i, o in enumerate(outputs):
             _type, data, value = o.address_type, o.out_address, o.out_value
@@ -157,17 +139,14 @@ class BaseWallet(AbstractWallet):
                     raise BaseException("More than one output set to spend max")
                 i_max = i
 
-        # Avoid index-out-of-range with inputs[0] below
+        # 2. check input
         if not inputs:
+            # Avoid index-out-of-range with inputs[0] below
             raise Exception()  # NotEnoughFunds()
-
-        if fixed_fee is None and False:  # config.fee_per_kb() is None:
-            raise BaseException('Dynamic fee estimates not available')
-
         for item in inputs:
             self.add_input_info(item)
 
-        # change address
+        # 3. change address
         if change_addr:
             change_addrs = [change_addr]
         else:
@@ -183,12 +162,15 @@ class BaseWallet(AbstractWallet):
             else:
                 change_addrs = [inputs[0].in_address]
 
-        # Fee estimator
+        # 4. Fee estimator
+        if fixed_fee is None and False:  # config.fee_per_kb() is None:
+            raise BaseException('Dynamic fee estimates not available')
         if fixed_fee is None:
             fee_estimator = partial(self.estimate_fee, config)
         else:
             fee_estimator = lambda size: fixed_fee
 
+        # 5. choose input and change
         if i_max is None:
             # Let the coin chooser select the coins to spend
             max_change = self.max_change_outputs if self.multiple_change else 1
@@ -207,9 +189,9 @@ class BaseWallet(AbstractWallet):
             outputs[i_max].out_value = amount
             tx = Transaction.from_io(inputs, outputs[:])
 
-        # Sort the inputs and outputs deterministically
+        # 6. Sort the inputs and outputs deterministically
         tx.bip_li01_sort()
-        # Timelock tx to current height.
+        # 7. Timelock tx to current height.
         tx.locktime = self.get_local_height()
         # run_hook('make_unsigned_transaction', self, tx)
         return tx
@@ -253,6 +235,7 @@ class BaseWallet(AbstractWallet):
         address = txin.in_address
         if self.is_mine(address):
             self.add_input_sig_info(txin, address)
+
     # def add_input_info(self, txin):
     #     txin['type'] = self.txin_type  # 'p2pkh'
     #     # Add address for utxo that are in wallet
@@ -400,8 +383,11 @@ class BaseWallet(AbstractWallet):
         else:
             return False
 
-    # sync
-    def init(self):
+    """
+    wallet sync
+    """
+
+    def sync(self):
         NetWorkManager().add_message(GetHistory([self.address]), self.history_callback)
 
     @gen.coroutine
@@ -439,8 +425,23 @@ class BaseWallet(AbstractWallet):
             self.print_msg("cannot deserialize transaction, skipping", tx_hash)
             return
 
+    wallet_tx_changed_event = []
+
+    """
+    wallet broadcast
+    """
+
     def broadcast(self, tx):
+        # todo: handle broadcast failed
         print Broadcast([str(tx)])
         NetWorkManager().add_message(Broadcast([str(tx)]))
 
-    wallet_tx_changed_event = []
+    """
+    util method
+    """
+
+    def print_error(self, *args, **kwargs):
+        pass
+
+    def print_msg(self, *args, **kwargs):
+        pass

@@ -92,7 +92,7 @@ def test_simple_wallet():
     hot_wallet = SimpleWallet(WalletConfig(store_path='wallet.json'))
     # wallet.add_address('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj')
     # wallet.add_key_store(SimpleKeyStore.create(SecretToASecret('\x20\x12\x10\x09' + '\x09'*28, True), None))
-    hot_wallet.init()
+    hot_wallet.sync()
     outputs = [(TYPE_ADDRESS, 'mkp8FGgySzhh5mmmHDcxRxmeS3X5fXm68i', 100000)]
     tx = hot_wallet.make_unsigned_transaction(hot_wallet.get_utxo(), outputs, {})
     hot_wallet.sign_transaction(tx, None)
@@ -124,7 +124,7 @@ def test_cold_hot_wallet():
     if hot_wallet.keystore is None:
         hot_wallet.init_key_store(
             WatchOnlySimpleKeyStore.create(public_key_from_private_key(secret)))
-    hot_wallet.init()
+    hot_wallet.sync()
     inputs = [
         {'prevout_hash': e[0], 'prevout_n': e[1], 'scriptSig': e[2], 'value': e[3], 'address': e[4],
          'coinbase': False,
@@ -154,7 +154,7 @@ def test_hd_wallet():
     hot_wallet = HDWallet(WalletConfig(store_path='hd_wallet.json'))
     if hot_wallet.keystore is None:
         hot_wallet.init_key_store(from_seed(u'reopen panel title aerobic wheat fury blame cement swarm wheel ball where', None))
-    hot_wallet.init()
+    hot_wallet.sync()
     hot_wallet.synchronize()
     print hot_wallet.get_change_addresses()
     print hot_wallet.get_receiving_addresses()
@@ -188,7 +188,7 @@ def test_hd_cold_hot_wallet():
     hot_wallet.xpub = seed.xpub
     hot_wallet.keystore = BIP32KeyHotStore({})
     hot_wallet.keystore.xpub = seed.xpub
-    hot_wallet.init()
+    hot_wallet.sync()
     hot_wallet.synchronize()
     print hot_wallet.get_change_addresses()
     print hot_wallet.get_receiving_addresses()

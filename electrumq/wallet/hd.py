@@ -29,7 +29,7 @@ class HDWallet(BaseWallet):
         self.storage.put('keystore', self.keystore.dump())
         self.storage.write()
 
-    def init(self):
+    def sync(self):
         for address in (self.receiving_addresses + self.change_addresses):
             NetWorkManager().add_message(GetHistory([address]), self.history_callback)
 
@@ -193,7 +193,7 @@ class HDWatchOnlyWallet(BaseWallet):
         self.storage.put('keystore', self.keystore.dump())
         self.storage.write()
 
-    def init(self):
+    def sync(self):
         for address in (self.receiving_addresses + self.change_addresses):
             NetWorkManager().add_message(GetHistory([address]), self.history_callback)
 

@@ -40,7 +40,7 @@ class NewAccountDialog(QDialog):
         secret = s.decode('hex')
         wallet.init_key_store(
             SimpleKeyStore.create(SecretToASecret(secret, True), None))
-        wallet.init()
+        wallet.sync()
         Wallet().new_wallet(wallet_id, 'simple', wallet_id + '.json', wallet)
         self.close()
 
