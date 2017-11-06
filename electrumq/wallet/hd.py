@@ -31,16 +31,16 @@ class HDWallet(BaseWallet):
 
     def init(self):
         for address in (self.receiving_addresses + self.change_addresses):
-            NetWorkManager().client.add_message(GetHistory([address]), self.history_callback)
+            NetWorkManager().add_message(GetHistory([address]), self.history_callback)
 
     @gen.coroutine
     def history_callback(self, msg_id, msg, param):
         for each in param:
             TxStore().add(msg['params'][0], each['tx_hash'], each['height'])
         # for tx, height in TxStore().unverify_tx_list:
-            NetWorkManager().client.add_message(GetMerkle([each['tx_hash'], each['height']]), self.get_merkle_callback)
+            NetWorkManager().add_message(GetMerkle([each['tx_hash'], each['height']]), self.get_merkle_callback)
         # for tx in TxStore().unfetch_tx:
-            NetWorkManager().client.add_message(Get([each['tx_hash']]), self.get_tx_callback)
+            NetWorkManager().add_message(Get([each['tx_hash']]), self.get_tx_callback)
 
     @gen.coroutine
     def get_merkle_callback(self, msg_id, msg, param):
@@ -195,16 +195,16 @@ class HDWatchOnlyWallet(BaseWallet):
 
     def init(self):
         for address in (self.receiving_addresses + self.change_addresses):
-            NetWorkManager().client.add_message(GetHistory([address]), self.history_callback)
+            NetWorkManager().add_message(GetHistory([address]), self.history_callback)
 
     @gen.coroutine
     def history_callback(self, msg_id, msg, param):
         for each in param:
             TxStore().add(msg['params'][0], each['tx_hash'], each['height'])
         # for tx, height in TxStore().unverify_tx_list:
-            NetWorkManager().client.add_message(GetMerkle([each['tx_hash'], each['height']]), self.get_merkle_callback)
+            NetWorkManager().add_message(GetMerkle([each['tx_hash'], each['height']]), self.get_merkle_callback)
         # for tx in TxStore().unfetch_tx:
-            NetWorkManager().client.add_message(Get([each['tx_hash']]), self.get_tx_callback)
+            NetWorkManager().add_message(Get([each['tx_hash']]), self.get_tx_callback)
 
     @gen.coroutine
     def get_merkle_callback(self, msg_id, msg, param):

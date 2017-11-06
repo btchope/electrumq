@@ -55,7 +55,7 @@ def test_simple_wallet():
         print 'hehehehe'
         print 'hehehehe'
 
-    network.client.add_message(Version(["2.8.2", "0.10"]))
+    network.add_message(Version(["2.8.2", "0.10"]))
     # network.client.add_message(Banner([]))
     # network.client.add_message(DonationAddress([]))
     # network.client.add_message(peer_subscribe([]))
@@ -82,12 +82,12 @@ def test_simple_wallet():
     # network.init_header(BlockChain().init_header_callback)
     # network.client.add_message(GetChunk([0,]), Block().connect_chunk2)
     # print Block().headers[200 * 2016]
-    network.client.add_message(GetHistory(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
-    network.client.add_message(GetMempool(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
-    network.client.add_message(GetBalance(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.add_message(GetHistory(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.add_message(GetMempool(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.add_message(GetBalance(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
     # network.client.add_message(GetProof(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'])) # not implemented
-    network.client.add_message(Listunspent(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
-    network.client.add_message(address_subscribe(
+    network.add_message(Listunspent(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.add_message(address_subscribe(
         ['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))  # 'mmXqJTLjjyD6Xp2tJ7syCeZTcwvRjcojLz'
     hot_wallet = SimpleWallet(WalletConfig(store_path='wallet.json'))
     # wallet.add_address('mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj')
@@ -111,13 +111,13 @@ def test_cold_hot_wallet():
     network.start_client()
     BlockChain().init_header()
 
-    network.client.add_message(Version(["2.8.2", "0.10"]))
+    network.add_message(Version(["2.8.2", "0.10"]))
 
-    network.client.add_message(GetHistory(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
-    network.client.add_message(GetMempool(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
-    network.client.add_message(GetBalance(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
-    network.client.add_message(Listunspent(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
-    network.client.add_message(address_subscribe(
+    network.add_message(GetHistory(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.add_message(GetMempool(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.add_message(GetBalance(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.add_message(Listunspent(['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))
+    network.add_message(address_subscribe(
         ['mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj']))  # 'mmXqJTLjjyD6Xp2tJ7syCeZTcwvRjcojLz'
     hot_wallet = WatchOnlySimpleWallet(WalletConfig(store_path='watch_only_simple_wallet.json'))
     secret = '\x20\x12\x10\x09' + '\x09' * 28
@@ -150,7 +150,7 @@ def test_hd_wallet():
     network = NetWorkManager()
     network.start_ioloop()
     network.start_client()
-    network.client.add_message(Version(["2.8.2", "0.10"]))
+    network.add_message(Version(["2.8.2", "0.10"]))
     hot_wallet = HDWallet(WalletConfig(store_path='hd_wallet.json'))
     if hot_wallet.keystore is None:
         hot_wallet.init_key_store(from_seed(u'reopen panel title aerobic wheat fury blame cement swarm wheel ball where', None))
@@ -182,7 +182,7 @@ def test_hd_cold_hot_wallet():
     network.start_ioloop()
     network.start_client()
     # BlockChain().init_header()
-    network.client.add_message(Version(["2.8.2", "0.10"]))
+    network.add_message(Version(["2.8.2", "0.10"]))
     hot_wallet = HDWatchOnlyWallet(WalletConfig(store_path='hd_hot_wallet.json'))
     seed = from_seed(u'reopen panel title aerobic wheat fury blame cement swarm wheel ball where', None)
     hot_wallet.xpub = seed.xpub

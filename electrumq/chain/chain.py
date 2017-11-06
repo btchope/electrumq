@@ -7,6 +7,7 @@ from tornado import gen
 from electrumq.chain import logger
 from electrumq.db.sqlite import header_dict_to_block_item
 from electrumq.db.sqlite.block import BlockStore
+from electrumq.message.blockchain.block import GetHeaderFile
 from electrumq.message.blockchain.headers import Subscribe
 from electrumq.net.manager import NetWorkManager
 from electrumq.utils import Singleton
@@ -25,9 +26,10 @@ class BlockChain():
 
     def init_header(self):
         if BlockStore().height <= 0:
-            NetWorkManager().init_header(self.init_header_callback)
+            # NetWorkManager().init_header(self.init_header_callback)
+            NetWorkManager().add_message(GetHeaderFile([]), self.init_header_callback)
         else:
-            NetWorkManager().client.add_subscribe(headers_subscribe([]), callback=self.catch_up,
+            NetWorkManager().add_message(headers_subscribe([]), callback=self.catch_up,
                                                   subscribe=self.receive_header)  # do not have id
 
     def init_header_callback(self, future):
@@ -44,7 +46,7 @@ class BlockChain():
                                                                block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL + idx) * 80:(
                                                                                                                            block_cnt / BLOCK_INTERVAL * BLOCK_INTERVAL + idx) * 80 + 80],
                                                     height)
-            NetWorkManager().client.add_subscribe(headers_subscribe([]), callback=self.catch_up,
+            NetWorkManager().add_message(headers_subscribe([]), callback=self.catch_up,
                                                   subscribe=self.receive_header)  # do not have id
         except Exception as ex:
             logger.exception(ex.message)
@@ -68,7 +70,7 @@ class BlockChain():
             logger.debug('catch up trunc from %d to %d' % (
                 next_height / BLOCK_INTERVAL, height / BLOCK_INTERVAL))
             for h in xrange(next_height / BLOCK_INTERVAL, height / BLOCK_INTERVAL + 1):
-                NetWorkManager().client.add_message(GetChunk([h]), self.get_trunc_callback)
+                NetWorkManager().add_message(GetChunk([h]), self.get_trunc_callback)
 
     @gen.coroutine
     def get_header_callback(self, msg_id, msg, header):
@@ -109,7 +111,7 @@ class MemBlockChain(BlockChain):
                     print height
             print datetime.now() - dt
             from electrumq.message.all import headers_subscribe
-            NetWorkManager().client.add_subscribe(headers_subscribe([]), callback=self.catch_up,
+            NetWorkManager().add_message(headers_subscribe([]), callback=self.catch_up,
                                                   subscribe=self.receive_header)  # do not have id
         except Exception as ex:
             print ex
@@ -136,7 +138,7 @@ class MemBlockChain(BlockChain):
             logger.debug('catch up trunc from %d to %d' % (
                 next_height / BLOCK_INTERVAL, height / BLOCK_INTERVAL))
             for h in xrange(next_height / BLOCK_INTERVAL, height / BLOCK_INTERVAL + 1):
-                NetWorkManager().client.add_message(GetChunk([h]), self.get_trunc_callback)
+                NetWorkManager().add_message(GetChunk([h]), self.get_trunc_callback)
                 # logger.debug('catch up header from %d to %d' % (height / BLOCK_INTERVAL * BLOCK_INTERVAL, height))
                 # for h in xrange(height / BLOCK_INTERVAL * BLOCK_INTERVAL, height + 1):
                 #     # pass

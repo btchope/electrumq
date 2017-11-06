@@ -19,13 +19,13 @@ class RPCClient:
     ip, port = '176.9.108.141', 50001
     stream = None
     is_connected = False
-    sequence = xrange(sys.maxint).__iter__()
-    _message_list = deque()
-    _sent_dict = {}
-    _response_list = deque()
-    _subscribe_list = deque()
-    _callback_dict = {}
-    _subscribe_dict = {}
+    sequence = None
+    _message_list = None
+    _sent_dict = None
+    _response_list = None
+    _subscribe_list = None
+    _callback_dict = None
+    _subscribe_dict = None
     ioloop = None
     connect_future = None
     connect_timeout = 0.5
@@ -40,6 +40,13 @@ class RPCClient:
         if port is not None:
             self.port = port
         self.ioloop = ioloop
+        self.sequence = xrange(sys.maxint).__iter__()
+        self._message_list = deque()
+        self._sent_dict = {}
+        self._response_list = deque()
+        self._subscribe_list = deque()
+        self._callback_dict = {}
+        self._subscribe_dict = {}
 
     def __del__(self):
         if self.stream is not None:
@@ -173,10 +180,16 @@ class RPCClient:
             self.logger.exception('error message:' + content)
         self.stream.read_until(b"\n", callback=self.parse_response)
 
-    def add_message(self, message, callback=None):
+    def add_message(self, message, callback=None, subscribe=None):
         message["id"] = self.sequence.next()
         if callback is not None:
             self._callback_dict[message['id']] = callback
+        if subscribe is not None:
+            method = message['method']
+            if method in self._subscribe_dict:
+                self._subscribe_dict[method].append(subscribe)
+            else:
+                self._subscribe_dict[method] = [subscribe, ]
         self._message_list.append(message)
 
     def add_subscribe(self, message, callback=None, subscribe=None):

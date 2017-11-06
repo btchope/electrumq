@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
+import logging
+import sys
 import time
 import unittest
 
-import logging
-from logging.config import dictConfig
-
-import sys
 from tornado import gen
 from tornado.testing import gen_test, AsyncTestCase
 
@@ -30,6 +28,30 @@ class MyTestCase(AsyncTestCase):
         # self.assertIn("FriendFeed", response.body)
 
 
+class HowToUseNetwork(AsyncTestCase):
+    @gen_test
+    def test_normal(self):
+        self.ioloop = IOLoop()
+        self.ioloop.start()
+        ip = '176.25.187.3'
+        port = 51001
+        self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
+        result = yield self.client.connect_with_future()
+        self.assertTrue(result)
+
+        @gen.coroutine
+        def version_callback(msg_id, msg, param):
+            self.is_callback = True
+            self.assertEqual(msg_id, 0)
+            self.assertEqual(msg, {'params': {}, 'method': 'server.version'})
+
+        self.client.add_message(Version({}), version_callback)
+        yield gen.sleep(2)
+
+        self.ioloop.quit()
+        yield gen.sleep(self.ioloop.loop_quit_wait + 0.01)
+
+
 class TestIOLoopStartAndStop(unittest.TestCase):
     def test_ioloop(self):
         ioloop = IOLoop()
@@ -38,13 +60,13 @@ class TestIOLoopStartAndStop(unittest.TestCase):
         time.sleep(ioloop.loop_quit_wait)
         self.assertTrue(ioloop.isAlive())
         ioloop.quit()
-        time.sleep(ioloop.loop_quit_wait*2)
+        time.sleep(ioloop.loop_quit_wait * 2)
         self.assertFalse(ioloop.isAlive())
         ioloop = IOLoop()
         ioloop.start()
         self.assertTrue(ioloop.isAlive())
         ioloop.quit()
-        time.sleep(ioloop.loop_quit_wait*2)
+        time.sleep(ioloop.loop_quit_wait * 2)
         self.assertFalse(ioloop.isAlive())
 
 
@@ -126,13 +148,11 @@ class TestClientConnect(AsyncTestCase):
         # open_logger('network')
         super(TestClientConnect, self).__init__(methodName)
 
-
     def setUp(self):
         super(TestClientConnect, self).setUp()
         self.ioloop = IOLoop()
         self.ioloop.start()
         self.ioloop_wait = self.ioloop.loop_interval / 1000.0 + 0.01
-
 
     def tearDown(self):
         print 'begin quit_ioloop'
@@ -184,7 +204,6 @@ class TestClientMessage(AsyncTestCase):
         self.ioloop.start()
         self.ioloop_wait = self.ioloop.loop_interval / 1000.0 + 0.01
 
-
     def tearDown(self):
         self.quit_ioloop()
         close_logger('network')
@@ -198,6 +217,29 @@ class TestClientMessage(AsyncTestCase):
 
     @gen_test()
     def test_message(self):
+        ip = '176.25.187.3'
+        port = 51001
+        self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
+
+        result = yield self.client.connect_with_future()
+
+        self.assertTrue(result)
+        self.assertTrue(self.client.is_connected)
+
+        self.is_callback = False
+
+        @gen.coroutine
+        def version_callback(msg_id, msg, param):
+            self.is_callback = True
+            self.assertEqual(msg_id, 0)
+            self.assertEqual(msg, {'params': {}, 'method': 'server.version'})
+
+        self.client.add_message(Version({}), version_callback)
+        yield gen.sleep(2)
+        self.assertTrue(self.is_callback)
+
+    @gen_test()
+    def test_message2(self):
         ip = '176.25.187.3'
         port = 51001
         self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)

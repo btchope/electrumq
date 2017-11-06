@@ -402,16 +402,16 @@ class BaseWallet(AbstractWallet):
 
     # sync
     def init(self):
-        NetWorkManager().client.add_message(GetHistory([self.address]), self.history_callback)
+        NetWorkManager().add_message(GetHistory([self.address]), self.history_callback)
 
     @gen.coroutine
     def history_callback(self, msg_id, msg, param):
         for each in param:
             TxStore().add(msg['params'][0], each['tx_hash'], each['height'])
         for tx, height in TxStore().unverify_tx_list:
-            NetWorkManager().client.add_message(GetMerkle([tx, height]), self.get_merkle_callback)
+            NetWorkManager().add_message(GetMerkle([tx, height]), self.get_merkle_callback)
         for tx in TxStore().unfetch_tx:
-            NetWorkManager().client.add_message(Get([tx]), self.get_tx_callback)
+            NetWorkManager().add_message(Get([tx]), self.get_tx_callback)
 
     @gen.coroutine
     def get_merkle_callback(self, msg_id, msg, param):
@@ -441,6 +441,6 @@ class BaseWallet(AbstractWallet):
 
     def broadcast(self, tx):
         print Broadcast([str(tx)])
-        NetWorkManager().client.add_message(Broadcast([str(tx)]))
+        NetWorkManager().add_message(Broadcast([str(tx)]))
 
     wallet_tx_changed_event = []

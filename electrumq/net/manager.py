@@ -8,6 +8,7 @@ import tornado
 from tornado import gen
 from tornado.httpclient import AsyncHTTPClient
 
+from electrumq.message.blockchain.block import GetHeaderFile
 from electrumq.net.ioloop import IOLoop
 from electrumq.message.server import Version
 from electrumq.net import logger
@@ -33,9 +34,36 @@ class NetWorkManager:
         signal.signal(signal.SIGTERM, self.sig_handler)
         signal.signal(signal.SIGINT, self.sig_handler)
 
+    """
+    interface for application:
+    network.start()
+    network.status
+    """
+
     def start(self):
+        """
+
+        :return:
+        """
         self.start_ioloop()
         self.start_client()
+
+    status = {}
+
+    """
+    interface for engine
+    network.add_message(message, callback)
+    """
+
+    def add_message(self, message, callback=None, subscribe=None):
+        if message.__class__ is GetHeaderFile:
+            self.ioloop.add_future(self.init(), callback)
+        else:
+            self.client.add_message(message, callback=callback, subscribe=subscribe)
+
+    """
+    inner method
+    """
 
     def start_ioloop(self):
         if self.ioloop is None:
@@ -51,7 +79,27 @@ class NetWorkManager:
             self.ioloop.quit()
             self.ioloop = None
 
-    def start_client(self, ip=None, port=None):
+    def start_client(self):
+        ip, port = self.get_server()
+        self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
+
+        def connect_callback(future):
+            if not self.client.is_connected:
+                logger.debug('connect failed and retry')
+                self.client = None
+                self.start_client()
+            else:
+                self.client.add_message(
+                    Version([Parameter().ELECTRUM_VERSION, Parameter().PROTOCOL_VERSION]))
+
+        self.ioloop.add_future(self.client.connect_with_future(), connect_callback)
+
+    """
+    dns
+    
+    """
+
+    def get_server(self):
         ip, port, _ = self.deserialize_server(self.pick_random_server())
         port = int(port)
         logger.debug('begin to connect to %s %d' % (ip, port))
@@ -60,18 +108,7 @@ class NetWorkManager:
             ip, port = l[0][-1]
         except socket.gaierror:
             logger.debug('cannot resolve hostname')
-        # ip, port = '176.9.108.141', 50001
-        self.client = RPCClient(ioloop=self.ioloop, ip=ip, port=port)
-        self.ioloop.add_future(self.client.connect_with_future(), self.connect_callback)
-
-    def connect_callback(self, feature):
-        if not self.client.is_connected:
-            logger.debug('connect failed and retry')
-            self.client = None
-            self.start_client()
-        else:
-            self.client.add_message(
-                Version([Parameter().ELECTRUM_VERSION, Parameter().PROTOCOL_VERSION]))
+        return ip, port
 
     def filter_protocol(self, hostmap, protocol='s'):
         '''Filters the hostmap for those implementing protocol.
