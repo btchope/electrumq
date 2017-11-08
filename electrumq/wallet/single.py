@@ -6,6 +6,7 @@ from electrumq.db.sqlite.tx import TxStore
 from electrumq.message.blockchain.address import GetHistory
 from electrumq.message.blockchain.transaction import GetMerkle, Get
 from electrumq.net.manager import NetWorkManager
+from electrumq.utils.base58 import public_key_to_p2pkh
 from electrumq.utils.key_store import load_keystore
 from electrumq.utils.tx import Transaction
 from electrumq.wallet import BaseWallet
@@ -40,12 +41,14 @@ class SimpleWallet(BaseWallet):
     def balance(self):
         return TxStore().get_balance(self.address)
 
-
-
     def get_receiving_addresses(self):
         return [self.address, ]
 
+    def pubkeys_to_address(self, pubkey):
+        return public_key_to_p2pkh(pubkey.decode('hex'))
 
+    def get_public_key(self, address):
+        return self.keystore.pub_key
 
 
 class WatchOnlySimpleWallet(SimpleWallet):

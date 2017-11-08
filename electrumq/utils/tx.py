@@ -156,6 +156,9 @@ class Input(object):
         if _type == 'coinbase':
             return self.in_dict['scriptSig']
         pubkeys, sig_list = self.get_siglist(estimate_size)
+        if len(sig_list) == 0:
+            # no sig means not sig yet
+            return ''
         script = ''.join(push_script(x) for x in sig_list)
         if _type == 'p2pk':
             pass
@@ -204,6 +207,8 @@ class Input(object):
 
     def estimated_input_size(self):
         '''Return an estimated of serialized input size in bytes.'''
+        # todo:
+        # return 34
         script = self.input_script(True)
         return len(self.serialize_input(script)) / 2
 
@@ -380,7 +385,9 @@ class Transaction:
 
     # @profiler
     def estimated_size(self):
-        '''Return an estimated tx size in bytes.'''
+        """
+        Return an estimated tx size in bytes.
+        """
         return len(self.serialize(True)) / 2 if not self.is_complete() or self.raw is None else len(
             self.raw) / 2  # ASCII hex string
 

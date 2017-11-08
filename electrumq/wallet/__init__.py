@@ -61,14 +61,11 @@ class BaseWallet(object):
 
     @property
     def display_address(self):
-        pass
+        raise NotImplementedError()
 
     @property
     def balance(self):
-        pass
-
-    def get_txs(self):
-        pass
+        raise NotImplementedError()
 
     @property
     def is_segwit(self):
@@ -128,16 +125,16 @@ class BaseWallet(object):
 
     def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None):
         # 1. check outputs
-        i_max = None
+        spend_all = None
         for i, o in enumerate(outputs):
             _type, data, value = o.address_type, o.out_address, o.out_value
             if _type == TYPE_ADDRESS:
                 if not is_address(data):
                     raise BaseException("Invalid bitcoin address:" + data)
             if value == '!':
-                if i_max is not None:
+                if spend_all is not None:
                     raise BaseException("More than one output set to spend max")
-                i_max = i
+                spend_all = i
 
         # 2. check input
         if not inputs:
@@ -147,6 +144,55 @@ class BaseWallet(object):
             self.add_input_info(item)
 
         # 3. change address
+        change_addrs = self._get_change_address(change_addr, inputs)
+        # 4. Fee estimator
+        fee_estimator = self._get_fee_estimator(config, fixed_fee)# 5. choose input and change
+        tx = self._make_unsign_tx(change_addrs, config, fee_estimator, inputs, outputs, spend_all)
+        # 6. Sort the inputs and outputs deterministically
+        tx.bip_li01_sort()
+        # 7. Time lock tx to current height.
+        tx.locktime = self.get_local_height()
+        # run_hook('make_unsigned_transaction', self, tx)
+        return tx
+
+    def _get_fee_estimator(self, config, fixed_fee):
+        if fixed_fee is None and False:  # config.fee_per_kb() is None:
+            raise BaseException('Dynamic fee estimates not available')
+        if fixed_fee is None:
+            fee_estimator = partial(self.estimate_fee, config)
+        else:
+            fee_estimator = lambda size: fixed_fee
+
+        return fee_estimator
+
+    def _make_unsign_tx(self, change_addrs, config, fee_estimator, inputs, outputs, spend_all):
+        if spend_all is None:
+            # Let the coin chooser select the coins to spend
+            max_change = self.max_change_outputs if self.multiple_change else 1
+            coin_chooser = coinchooser.get_coin_chooser(config)
+            tx = coin_chooser.make_tx(inputs, outputs, change_addrs[:max_change],
+                                      fee_estimator, self.dust_threshold())
+        else:
+            sendable = sum(map(lambda x: x['value'], inputs))
+            # _type, data, value = outputs[i_max]
+            # outputs[i_max] = (_type, data, 0)
+            outputs[spend_all].out_value = 0
+            tx = Transaction.from_io(inputs, outputs[:])
+            fee = fee_estimator(tx.estimated_size())
+            amount = max(0, sendable - tx.output_value() - fee)
+            # outputs[i_max] = (_type, data, amount)
+            outputs[spend_all].out_value = amount
+            tx = Transaction.from_io(inputs, outputs[:])
+
+        return tx
+
+    def _get_change_address(self, change_addr, inputs):
+        """
+        wallet can implement self logic
+        :param change_addr:
+        :param inputs:
+        :return: change_addresses
+        """
         if change_addr:
             change_addrs = [change_addr]
         else:
@@ -162,39 +208,7 @@ class BaseWallet(object):
             else:
                 change_addrs = [inputs[0].in_address]
 
-        # 4. Fee estimator
-        if fixed_fee is None and False:  # config.fee_per_kb() is None:
-            raise BaseException('Dynamic fee estimates not available')
-        if fixed_fee is None:
-            fee_estimator = partial(self.estimate_fee, config)
-        else:
-            fee_estimator = lambda size: fixed_fee
-
-        # 5. choose input and change
-        if i_max is None:
-            # Let the coin chooser select the coins to spend
-            max_change = self.max_change_outputs if self.multiple_change else 1
-            coin_chooser = coinchooser.get_coin_chooser(config)
-            tx = coin_chooser.make_tx(inputs, outputs, change_addrs[:max_change],
-                                      fee_estimator, self.dust_threshold())
-        else:
-            sendable = sum(map(lambda x: x['value'], inputs))
-            # _type, data, value = outputs[i_max]
-            # outputs[i_max] = (_type, data, 0)
-            outputs[i_max].out_value = 0
-            tx = Transaction.from_io(inputs, outputs[:])
-            fee = fee_estimator(tx.estimated_size())
-            amount = max(0, sendable - tx.output_value() - fee)
-            # outputs[i_max] = (_type, data, amount)
-            outputs[i_max].out_value = amount
-            tx = Transaction.from_io(inputs, outputs[:])
-
-        # 6. Sort the inputs and outputs deterministically
-        tx.bip_li01_sort()
-        # 7. Timelock tx to current height.
-        tx.locktime = self.get_local_height()
-        # run_hook('make_unsigned_transaction', self, tx)
-        return tx
+        return change_addrs
 
     def sign_transaction(self, tx, password):
         # if self.is_watching_only():
@@ -250,45 +264,15 @@ class BaseWallet(object):
     #         self.add_input_sig_info(txin, address)
 
     def add_input_sig_info(self, txin, address):
-        if not self.can_import():
-            derivation = self.get_address_index(address)
-            x_pubkey = self.keystore.get_xpubkey(*derivation)
-        else:
-            x_pubkey = self.get_public_key(address)
-        txin.in_dict['x_pubkeys'] = [x_pubkey]
+        txin.in_dict['x_pubkeys'] = [self.get_public_key(address)]
         txin.in_dict['signatures'] = [None]
         txin.in_dict['num_sig'] = 1
 
-    def get_address_index(self, address):
-        # todo: need review
-        if self.can_import():
-            for pubkey in self.keystore.keypairs.keys():
-                if self.pubkeys_to_address(pubkey) == address:
-                    return pubkey
-        elif address in self.receiving_addresses:
-            return False, self.receiving_addresses.index(address)
-        if address in self.change_addresses:
-            return True, self.change_addresses.index(address)
-        raise Exception("Address not found", address)
-
     def get_public_key(self, address):
-        # todo: need review
-        if self.can_import():
-            pubkey = self.get_address_index(address)
-        else:
-            sequence = self.get_address_index(address)
-            pubkey = self.get_pubkey(*sequence)
-        return pubkey
+        raise NotImplementedError()
 
     def pubkeys_to_address(self, pubkey):
-        # todo: need review
-        if not self.is_segwit:
-            return public_key_to_p2pkh(pubkey.decode('hex'))
-        elif Parameter().TESTNET:
-            redeem_script = self.pubkeys_to_redeem_script(pubkey)
-            return hash160_to_p2sh(hash_160(redeem_script.decode('hex')))
-        else:
-            raise NotImplementedError()
+        raise NotImplementedError()
 
     def is_mine(self, address):
         return address in self.get_addresses()
@@ -297,7 +281,7 @@ class BaseWallet(object):
         return self.get_receiving_addresses() + self.get_change_addresses()
 
     def add_address(self, address):
-        pass
+        raise NotImplementedError()
 
     def dummy_address(self):
         return self.get_receiving_addresses()[0]

@@ -10,3 +10,4 @@ qrcode==5.3
 singledispatch==3.4.0.3
 six==1.10.0
 tornado==4.5.2
+enum34==1.1.6

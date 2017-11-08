@@ -18,10 +18,10 @@ class HowToUseWallet(AsyncTestCase):
     def tearDown(self):
         super(HowToUseWallet, self).tearDown()
 
+
 class TestWalletSync(TestCase):
     def test_base_wallet(self):
         network = NetWorkManager()
         network.start()
         wallet = SimpleWallet(WalletConfig(store_path=dirs.user_data_dir + '/' + '00.json'))
         wallet.sync()
-

@@ -124,7 +124,7 @@ def test_cold_hot_wallet():
     if hot_wallet.keystore is None:
         hot_wallet.init_key_store(
             WatchOnlySimpleKeyStore.create(public_key_from_private_key(secret)))
-    hot_wallet.sync()
+    # hot_wallet.sync()
     inputs = [
         {'prevout_hash': e[0], 'prevout_n': e[1], 'scriptSig': e[2], 'value': e[3], 'address': e[4],
          'coinbase': False,

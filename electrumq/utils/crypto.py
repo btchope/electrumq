@@ -76,14 +76,14 @@ def i2o_ECPublicKey(pkey, compressed=False):
 def sign(secret, msg):
     priv_key = SigningKey.from_secret_exponent(secret, curve=secp256k1, hashfunc=sha256)
     msg_hash = double_sha256(msg.decode('hex'))
-    k = rfc6979.generate_k(generator_secp256k1, secret, sha256, msg_hash) % generator_secp256k1.order()
-    return priv_key.sign_digest(msg_hash, sigencode=util.sigencode_der_canonize, k=k).encode('hex')
+    k = rfc6979.generate_k(generator_secp256k1.order(), secret, sha256, msg_hash) % generator_secp256k1.order()
+    return priv_key.sign_digest(msg_hash, sigencode=util.sigencode_der, k=k).encode('hex')
 
 
 def sign_hash(secret, msg_hash):
     priv_key = SigningKey.from_secret_exponent(secret, curve=secp256k1, hashfunc=sha256)
-    k = rfc6979.generate_k(generator_secp256k1, secret, sha256, msg_hash) % generator_secp256k1.order()
-    return priv_key.sign_digest(msg_hash, sigencode=util.sigencode_der_canonize, k=k).encode('hex')
+    k = rfc6979.generate_k(generator_secp256k1.order(), secret, sha256, msg_hash) % generator_secp256k1.order()
+    return priv_key.sign_digest(msg_hash, sigencode=util.sigencode_der, k=k).encode('hex')
 
 
 def verify_sign(pub_key, sign, msg):
