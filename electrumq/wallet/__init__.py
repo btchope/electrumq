@@ -101,6 +101,9 @@ class BaseWallet(object):
             address in self.get_addresses()], [])
         return utxo
 
+    """
+    show for txs
+    """
     def get_txs(self):
         txs = TxStore().get_all_txs(self.get_addresses())
         receives = {row[0]: row[1] for row in TxStore().get_all_tx_receive(self.get_addresses())}
@@ -250,19 +253,6 @@ class BaseWallet(object):
         if self.is_mine(address):
             self.add_input_sig_info(txin, address)
 
-    # def add_input_info(self, txin):
-    #     txin['type'] = self.txin_type  # 'p2pkh'
-    #     # Add address for utxo that are in wallet
-    #     if txin.get('scriptSig') == '':
-    #         coins = self.get_spendable_coins()
-    #         for item in coins:
-    #             if txin.get('prevout_hash') == item.get('prevout_hash') \
-    #                     and txin.get('prevout_n') == item.get('prevout_n'):
-    #                 txin['address'] = item.get('address')
-    #     address = txin['address']
-    #     if self.is_mine(address):
-    #         self.add_input_sig_info(txin, address)
-
     def add_input_sig_info(self, txin, address):
         txin.in_dict['x_pubkeys'] = [self.get_public_key(address)]
         txin.in_dict['signatures'] = [None]
@@ -293,7 +283,9 @@ class BaseWallet(object):
         return self.change_addresses
 
     def get_local_height(self):
-        """ return last known height if we are offline """
+        """
+        return last known height if we are offline
+        """
         return BlockStore().height  # self.network.get_local_height() if self.network else self.stored_height
 
     def get_spendable_coins(self, domain=None):

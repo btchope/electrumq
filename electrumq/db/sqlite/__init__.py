@@ -22,8 +22,8 @@ def header_dict_to_block_item(header):
     block.block_prev = header['prev_block_hash']
     block.block_root = header['merkle_root']
     block.block_ver = header['timestamp']
-    block.block_ver = header['bits']
-    block.block_ver = header['nonce']
+    block.block_bits = header['bits']
+    block.block_nonce = header['nonce']
     block.block_no = header['block_height']
     block.block_hash = double_sha256(block.serialize())[::-1].encode('hex')
     return block

@@ -12,6 +12,7 @@ from PyQt4.QtCore import QDateTime, QDate, QTime, QTimer
 from PyQt4.QtGui import *
 from datetime import datetime
 
+from electrumq.UI import logger
 from electrumq.UI.component import AccountIcon, AddressView, BalanceView, \
     FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView, MessageBox
 from electrumq.UI.dialog import NewAccountDialog, TxDetailDialog
@@ -106,15 +107,12 @@ class MainController(QWidget):
 
     def show_tab(self):
         self.detail_ctr.show_tab()
-        print 'show tab'
 
     def show_receive(self):
         self.detail_ctr.show_receive()
-        print 'show receive'
 
     def show_send(self):
         self.detail_ctr.show_send()
-        print 'show send'
 
 
 class AccountController(QWidget):
@@ -215,7 +213,6 @@ class NavController(QWidget):
         if Wallet().current_wallet is not None:
             Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
 
-
     def init_event(self):
         self.tx_log_btn.clicked.connect(self.parent_controller.show_tab)
         self.receive_btn.clicked.connect(self.parent_controller.show_receive)
@@ -260,15 +257,15 @@ class DetailController(QWidget):
 
     def show_tab(self):
         self.show_ctl(self.tab_ctr)
-        print 'show tab'
+        logger.debug('show tab')
 
     def show_receive(self):
         self.show_ctl(self.receive_ctl)
-        print 'show receive'
+        logger.debug('show receive')
 
     def show_send(self):
         self.show_ctl(self.send_ctr)
-        print 'show send'
+        logger.debug('show send')
 
 
 class TabController(QWidget):
@@ -318,8 +315,9 @@ class SendController(QWidget):
             verification.check_amount(amount)
             outputs = [Output((TYPE_ADDRESS, address,
                                int(amount)))]
-            tx = Wallet().current_wallet.make_unsigned_transaction(Wallet().current_wallet.get_utxo(),
-                                                                   outputs, {})
+            tx = Wallet().current_wallet.make_unsigned_transaction(
+                Wallet().current_wallet.get_utxo(),
+                outputs, {})
             Wallet().current_wallet.sign_transaction(tx, None)
             tx_detail_dialog = TxDetailDialog(self)
             tx_detail_dialog.tx_detail_view.show_tx(tx)

@@ -1,16 +1,8 @@
 # -*- coding: utf-8 -*-
-import hashlib
 from unittest import TestCase
 
-from ecdsa import SECP256k1, SigningKey, rfc6979
-from ecdsa.ecdsa import generator_secp256k1
-from ecdsa.util import string_to_number
-
-# from electrumq.utils.crypto import sign, verify_sign, EC_KEY, i2d_ECPrivateKey, i2o_ECPublicKey
 from electrumq.utils.base58 import double_sha256
-from electrumq.utils.crypto import secp256k1
-from electrumq.utils.key import ASecretToSecret, is_compressed, EC_KEY, MySigningKey
-from ecdsa import util
+from electrumq.utils.key import EC_KEY
 
 __author__ = 'zhouqi'
 
