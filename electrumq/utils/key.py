@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
-import hashlib
+from hashlib import sha256, sha512
 import hmac
 import os
 
@@ -10,7 +10,7 @@ from ecdsa import SECP256k1
 from ecdsa.ecdsa import curve_secp256k1
 from ecdsa.ecdsa import generator_secp256k1
 from ecdsa.ellipticcurve import Point
-from ecdsa.util import string_to_number, number_to_string
+from ecdsa.util import string_to_number, number_to_string, sigencode_der, sigdecode_der
 
 from electrumq.utils.base58 import b58decode_check, b58encode_check, public_key_to_p2pkh, hash256, \
     __b58chars, double_sha256
@@ -18,6 +18,15 @@ from electrumq.utils.parameter import Parameter
 from electrumq.utils.parser import write_compact_size
 
 __author__ = 'zhouqi'
+
+"""
+secret is bitcoin secret 5HvofFG7K1e2aeWESm5pbCzRHtCSiZNbfLYXBvxyA57DhKHV4U3
+k is 0ecd20654c2e2be708495853e8da35c664247040c00bd10b9b13e5e86e6a808d
+public_key is like 042daa93315eebbe2cb9b5c3505df4c6fb6caca8b756786098567550d4820c09db988fe9997d049d687292f815ccd6e7fb5c1b1a91137999818d17c73d0f80aef9 
+private_key is like 
+
+
+"""
 
 
 def pubkey_from_signature(sig, message):
@@ -108,36 +117,55 @@ class MySigningKey(ecdsa.SigningKey):
 
 
 class EC_KEY(object):
+    """
+    in ec_key, k is the big number format not hex format
+    """
+
     def __init__(self, k):
-        secret = string_to_number(k)
-        self.pubkey = ecdsa.ecdsa.Public_key(generator_secp256k1, generator_secp256k1 * secret)
-        self.privkey = ecdsa.ecdsa.Private_key(self.pubkey, secret)
-        self.secret = secret
+        k = string_to_number(k)
+        self.pubkey = ecdsa.ecdsa.Public_key(generator_secp256k1, generator_secp256k1 * k)
+        self.privkey = ecdsa.ecdsa.Private_key(self.pubkey, k)
+        self.k = k
+
+    @classmethod
+    def init_from_secret(cls, secret):
+        b = ASecretToSecret(secret)
+        if not b:
+            raise Exception()
+        b = b[0:32]
+        return EC_KEY(b)
+
+    @classmethod
+    def secret_to_k(cls, secret):
+        pass
 
     def get_public_key(self, compressed=True):
         return point_to_ser(self.pubkey.point, compressed).encode('hex')
 
-    def sign(self, msg_hash):
-        private_key = MySigningKey.from_secret_exponent(self.secret, curve=SECP256k1)
-        public_key = private_key.get_verifying_key()
-        signature = private_key.sign_digest_deterministic(msg_hash, hashfunc=hashlib.sha256,
-                                                          sigencode=ecdsa.util.sigencode_string)
-        assert public_key.verify_digest(signature, msg_hash, sigdecode=ecdsa.util.sigdecode_string)
-        return signature
+    def sign(self, msg):
+        private_key = MySigningKey.from_secret_exponent(self.k, curve=SECP256k1)
+        sig = private_key.sign_digest_deterministic(msg, hashfunc=sha256,
+                                                    sigencode=sigencode_der)
+        return sig
+
+    def verify_sign(self, sig, msg):
+        verify_key = MyVerifyingKey.from_public_point(self.pubkey.point, curve=SECP256k1,
+                                                      hashfunc=sha256)
+        return verify_key.verify_digest(sig, msg, sigdecode=sigdecode_der)
 
     def sign_message(self, message, is_compressed):
-        signature = self.sign(double_sha256(msg_magic(message)))
+        signature = self.sign_hash(double_sha256(msg_magic(message)))
         for i in range(4):
             sig = chr(27 + i + (4 if is_compressed else 0)) + signature
             try:
-                self.verify_message(sig, message)
+                self.verify_message2(sig, message)
                 return sig
             except Exception:
                 continue
         else:
             raise Exception("error: cannot sign message")
 
-    def verify_message(self, sig, message):
+    def verify_message2(self, sig, message):
         public_key, compressed = pubkey_from_signature(sig, message)
         # check public key
         if point_to_ser(public_key.pubkey.point, compressed) != point_to_ser(self.pubkey.point,
@@ -160,12 +188,12 @@ class EC_KEY(object):
                                               generator_secp256k1.order())
         ephemeral = EC_KEY(ephemeral_exponent)
         ecdh_key = point_to_ser(pk * ephemeral.privkey.secret_multiplier)
-        key = hashlib.sha512(ecdh_key).digest()
+        key = sha512(ecdh_key).digest()
         iv, key_e, key_m = key[0:16], key[16:32], key[32:]
         ciphertext = aes_encrypt_with_iv(key_e, iv, message)
         ephemeral_pubkey = ephemeral.get_public_key(compressed=True).decode('hex')
         encrypted = 'BIE1' + ephemeral_pubkey + ciphertext
-        mac = hmac.new(key_m, encrypted, hashlib.sha256).digest()
+        mac = hmac.new(key_m, encrypted, sha256).digest()
 
         return base64.b64encode(encrypted + mac)
 
@@ -187,9 +215,9 @@ class EC_KEY(object):
                                           ephemeral_pubkey.y()):
             raise Exception('invalid ciphertext: invalid ephemeral pubkey')
         ecdh_key = point_to_ser(ephemeral_pubkey * self.privkey.secret_multiplier)
-        key = hashlib.sha512(ecdh_key).digest()
+        key = sha512(ecdh_key).digest()
         iv, key_e, key_m = key[0:16], key[16:32], key[32:]
-        if mac != hmac.new(key_m, encrypted[:-32], hashlib.sha256).digest():
+        if mac != hmac.new(key_m, encrypted[:-32], sha256).digest():
             raise InvalidPassword()
         return aes_decrypt_with_iv(key_e, iv, ciphertext)
 

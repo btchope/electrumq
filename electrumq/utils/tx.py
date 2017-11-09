@@ -9,7 +9,7 @@ from ecdsa import SECP256k1, util
 from electrumq.utils import *
 from electrumq.utils.base58 import hash160_to_p2sh, hash160_to_p2pkh, hash_160, \
     bc_address_to_type_and_hash_160, double_sha256
-from electrumq.utils.key import public_key_from_private_key, MySigningKey
+from electrumq.utils.key import public_key_from_private_key, MySigningKey, EC_KEY
 from electrumq.utils.key import regenerate_key
 from electrumq.utils.key_store import xpubkey_to_pubkey, xpubkey_to_address
 from electrumq.utils.parameter import TYPE_SCRIPT, TYPE_ADDRESS, TYPE_PUBKEY, Parameter
@@ -417,22 +417,14 @@ class Transaction:
                     break
                 if x_pubkey in keypairs.keys():
                     print_error("adding signature for", x_pubkey)
-                    sec = keypairs.get(x_pubkey)
-                    pubkey = public_key_from_private_key(sec)
-                    # add signature
-                    pre_hash = double_sha256(self.serialize_preimage(i).decode('hex'))
-                    pkey = regenerate_key(sec)
-                    secexp = pkey.secret
-                    private_key = MySigningKey.from_secret_exponent(secexp, curve=SECP256k1)
-                    public_key = private_key.get_verifying_key()
-                    sig = private_key.sign_digest_deterministic(pre_hash, hashfunc=hashlib.sha256,
-                                                                sigencode=util.sigencode_der)
-                    assert public_key.verify_digest(sig, pre_hash,
-                                                    sigdecode=util.sigdecode_der)
+                    secret = keypairs.get(x_pubkey)
+                    key = EC_KEY.init_from_secret(secret)
+                    msg = double_sha256(self.serialize_preimage(i).decode('hex'))
+                    sig = key.sign(msg)
+                    assert key.verify_sign(sig, msg)
                     txin.in_dict['signatures'][j] = sig.encode('hex')
-                    txin.in_dict['x_pubkeys'][j] = pubkey
+                    txin.in_dict['x_pubkeys'][j] = x_pubkeys
                     self._input_list[i] = txin
-                    # self._inputs[i] = txin
         print_error("is_complete", self.is_complete())
         self.raw = self.serialize()
 
