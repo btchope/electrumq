@@ -34,7 +34,8 @@ class NewAccountDialog(QDialog):
         self.setWindowTitle("New Account")
 
     def accept(self):
-        wallet_id = str(len(Wallet().wallet_dict.keys())) + str(random.randint(0,9))
+        # wallet_id = str(len(Wallet().wallet_dict.keys())) + str(random.randint(0,9))
+        wallet_id = str(Wallet().get_next_wallet_id())
         wallet = Wallet().init_wallet('simple', wallet_id + '.json')
         s = self.tab_widget.currentWidget().get_secret()
         secret = s.decode('hex')

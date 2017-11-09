@@ -51,13 +51,5 @@ class SimpleWallet(BaseWallet):
         return self.keystore.pub_key
 
 
-class WatchOnlySimpleWallet(SimpleWallet):
-    pass
-
-
-class ColdSimpleWallet(SimpleWallet):
-    pass
-
-
 class WatchOnlyHDWallet(BaseWallet):
     pass

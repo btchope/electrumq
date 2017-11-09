@@ -68,6 +68,7 @@ class Wallet(object):
         self.conf.set("wallet", "wallet_type_" + wallet_name, wallet_type)
         if self.current_wallet is None:
             self.conf.set('wallet', 'current', wallet_name)
+        self.conf.set('wallet', 'next_wallet_id', self.get_next_wallet_id() + 1)
         self.conf.write(open(conf_path, "w"))
         if len(self.new_wallet_event) > 0:
             global EVENT_QUEUE
@@ -80,10 +81,34 @@ class Wallet(object):
     def change_current_wallet(self, idx):
         if idx < len(self.wallet_dict.keys()):
             self.current_wallet = self.wallet_dict[self.wallet_dict.keys()[idx]]
+            # todo: update current to conf
+            # self.conf.set('wallet', 'current', self.wallet_dict.keys()[idx])
+            # self.conf.write(open(conf_path, "w"))
             global EVENT_QUEUE
             if len(self.current_wallet_changed_event) > 0:
                 for event in set(self.current_wallet_changed_event):
                     EVENT_QUEUE.put(partial(event, idx=idx))
+
+    def get_next_wallet_id(self):
+        try:
+            next_wallet_id = self.conf.get('wallet', 'next_wallet_id')
+            if next_wallet_id is None:
+                self.conf.set('wallet', 'next_wallet_id', 1)
+                self.conf.write(open(conf_path, "w"))
+                return 1
+            return next_wallet_id
+        except ConfigParser.NoOptionError as ex:
+            return 1
+
+    def get_current_wallet_idx(self):
+        if self.current_wallet is None:
+            return 0
+        else:
+            for idx, w in enumerate(self.wallet_dict.values()):
+                if w == self.current_wallet:
+                    return idx
+            return 0
+
 
     new_wallet_event = []
     current_wallet_changed_event = []
