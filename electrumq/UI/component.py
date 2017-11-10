@@ -5,7 +5,7 @@ import pyperclip
 from PyQt4.QtCore import QDateTime, QDate, QTime, Qt
 from PyQt4.QtGui import QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QWidget, QHBoxLayout, \
     QTextEdit, QLabel, QFrame, QTreeView, QStandardItemModel, QLineEdit, QGridLayout, QTableView, \
-    QItemSelectionModel
+    QItemSelectionModel, QAbstractItemView
 
 from electrumq.UI import address_show_format
 
@@ -192,6 +192,8 @@ class TableView(QWidget):
         self.sourceView = QTreeView()
         self.sourceView.setRootIsDecorated(False)
         self.sourceView.setAlternatingRowColors(True)
+        self.sourceView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.sourceView.doubleClicked.connect(self.double_click_row)
         layout.addWidget(self.sourceView)
         self.reload()
         self.setLayout(layout)
@@ -213,6 +215,10 @@ class TableView(QWidget):
         pass
 
     def draw_row(self, row):
+        pass
+
+    def double_click_row(self, row):
+        print 'abc'
         pass
 
 
