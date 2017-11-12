@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
-import ConfigParser
 import os
+from ConfigParser import RawConfigParser, NoOptionError
 from functools import partial
 
 import sys
@@ -20,13 +20,14 @@ from electrumq.wallet.single import SimpleWallet
 __author__ = 'zhouqi'
 
 
-class MyConfigParser(ConfigParser.RawConfigParser):
+class MyConfigParser(RawConfigParser, object):
     file_path = None
+    config_changed_event = []
 
     def get(self, section, option):
         try:
-            return ConfigParser.RawConfigParser.get(self, section, option)
-        except ConfigParser.NoOptionError:
+            return RawConfigParser.get(self, section, option)
+        except NoOptionError:
             return None
 
     def read(self, filenames):
@@ -35,6 +36,18 @@ class MyConfigParser(ConfigParser.RawConfigParser):
 
     def save(self):
         self.write(open(conf_path, "w"))
+
+    def set(self, section, option, value=None):
+        old_value = self.get(section, option)
+        super(MyConfigParser, self).set(section, option, value)
+        self.save()
+        global EVENT_QUEUE
+        if len(self.config_changed_event) > 0:
+            for event in set(self.config_changed_event):
+                EVENT_QUEUE.put(partial(event, section=section, option=option, new_value=value, old_value=old_value))
+
+    def event_handle(self, section, option, new_value, old_value):
+        pass
 
 
 class Wallet(object):
@@ -78,7 +91,6 @@ class Wallet(object):
         if self.current_wallet is None:
             self.conf.set('wallet', 'current', wallet_name)
         self.conf.set('wallet', 'next_wallet_id', self.get_next_wallet_id() + 1)
-        self.conf.write(open(conf_path, "w"))
         if len(self.new_wallet_event) > 0:
             global EVENT_QUEUE
             for event in set(self.new_wallet_event):
@@ -92,7 +104,6 @@ class Wallet(object):
             self.current_wallet = self.wallet_dict[self.wallet_dict.keys()[idx]]
             # todo: update current to conf
             self.conf.set('wallet', 'current', self.wallet_dict.keys()[idx])
-            self.conf.write(open(conf_path, "w"))
             global EVENT_QUEUE
             if len(self.current_wallet_changed_event) > 0:
                 for event in set(self.current_wallet_changed_event):
@@ -103,10 +114,9 @@ class Wallet(object):
             next_wallet_id = self.conf.get('wallet', 'next_wallet_id')
             if next_wallet_id is None:
                 self.conf.set('wallet', 'next_wallet_id', 1)
-                self.conf.write(open(conf_path, "w"))
                 return 1
             return next_wallet_id
-        except ConfigParser.NoOptionError as ex:
+        except NoOptionError as ex:
             return 1
 
     def get_current_wallet_idx(self):
