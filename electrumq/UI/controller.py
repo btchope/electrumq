@@ -127,14 +127,15 @@ class AccountController(QWidget):
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 50, 0, 50)
         accounts = Wallet().wallet_dict.keys()
+
+        self.current_account_idx = Wallet().get_current_wallet_idx()
+
         for idx, account in enumerate(accounts):
             btn = AccountIcon(account)
             btn.idx = idx
-            btn.setChecked(idx == 0)
+            btn.setChecked(idx == self.current_account_idx)
             layout.addWidget(btn)
             btn.clicked.connect(partial(self.switch_account, btn))
-
-        self.current_account_idx = 0
 
         self.add_account_btn = QPushButton()
         self.add_account_btn.setText(u'新建')

@@ -21,11 +21,20 @@ __author__ = 'zhouqi'
 
 
 class MyConfigParser(ConfigParser.RawConfigParser):
+    file_path = None
+
     def get(self, section, option):
         try:
             return ConfigParser.RawConfigParser.get(self, section, option)
         except ConfigParser.NoOptionError:
             return None
+
+    def read(self, filenames):
+        super(MyConfigParser, self).read(filenames)
+        self.file_path = filenames
+
+    def save(self):
+        self.write(open(conf_path, "w"))
 
 
 class Wallet(object):
@@ -82,8 +91,8 @@ class Wallet(object):
         if idx < len(self.wallet_dict.keys()):
             self.current_wallet = self.wallet_dict[self.wallet_dict.keys()[idx]]
             # todo: update current to conf
-            # self.conf.set('wallet', 'current', self.wallet_dict.keys()[idx])
-            # self.conf.write(open(conf_path, "w"))
+            self.conf.set('wallet', 'current', self.wallet_dict.keys()[idx])
+            self.conf.write(open(conf_path, "w"))
             global EVENT_QUEUE
             if len(self.current_wallet_changed_event) > 0:
                 for event in set(self.current_wallet_changed_event):
