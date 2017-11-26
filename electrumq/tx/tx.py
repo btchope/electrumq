@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
-from electrumq.utils.parser import write_uint32, int_to_hex
-from electrumq.utils.tx import BCDataStream, parse_scriptSig, get_address_from_output_script
+from electrumq.tx.script import Script, get_scriptPubKey, multisig_script
+from electrumq.utils import print_error
+from electrumq.utils.base58 import bc_address_to_type_and_hash_160, double_sha256, hash_160
+from electrumq.utils.key import EC_KEY
+from electrumq.utils.key_store import xpubkey_to_pubkey
+from electrumq.utils.parameter import TYPE_SCRIPT, TYPE_ADDRESS, Parameter
+from electrumq.utils.parser import write_uint32, int_to_hex, write_uint64
+from electrumq.utils.tx import BCDataStream, parse_scriptSig, get_address_from_output_script, \
+    push_script
 
 __author__ = 'zhouqi'
 
@@ -26,6 +33,35 @@ class Output(object):
         tx_out.address_type, tx_out.out_address = get_address_from_output_script(
             tx_out.out_script.decode('hex'))
         return tx_out
+
+    def pay_script(self):
+        if self.address_type == TYPE_SCRIPT:
+            return self.out_address.encode('hex')
+        elif self.address_type == TYPE_ADDRESS:
+            return self.get_scriptPubKey(self.out_address)
+        else:
+            raise TypeError('Unknown output type')
+
+    def serialize_output(self):
+        s = write_uint64(self.out_value).encode('hex')
+        script = self.pay_script()
+        s += int_to_hex(len(script) / 2)
+        s += script
+        return s
+
+    def get_scriptPubKey(self, addr):
+        addrtype, hash_160 = bc_address_to_type_and_hash_160(addr)
+        if addrtype == Parameter().ADDRTYPE_P2PKH:
+            script = '76a9'  # op_dup, op_hash_160
+            script += push_script(hash_160.encode('hex'))
+            script += '88ac'  # op_equalverify, op_checksig
+        elif addrtype == Parameter().ADDRTYPE_P2SH:
+            script = 'a9'  # op_hash_160
+            script += push_script(hash_160.encode('hex'))
+            script += '87'  # op_equal
+        else:
+            raise BaseException('unknown address type')
+        return script
 
 
 class Input(object):
@@ -73,6 +109,50 @@ class Input(object):
             self.in_address = d['address']
         self.in_dict = d
 
+    def serialize_input(self, script_type=1):
+        if script_type == 1:
+            pubkeys, x_pubkeys = self.get_sorted_pubkeys()
+            script = Script().input_script(self.in_dict, pubkeys, x_pubkeys)
+        elif script_type == 2:
+            script = self.get_preimage_script()
+        else:
+            script = ''
+        # Prev hash and index
+        s = self.serialize_outpoint()
+        # Script length, script, sequence
+        s += int_to_hex(len(script) / 2)
+        s += script
+        s += write_uint32(self.in_sequence).encode('hex')
+        return s
+
+    def serialize_outpoint(self):
+        return self.prev_tx_hash.decode('hex')[::-1].encode('hex') \
+               + write_uint32(self.prev_out_sn).encode('hex')
+
+    def get_sorted_pubkeys(self):
+        # sort pubkeys and x_pubkeys, using the order of pubkeys
+        x_pubkeys = self.in_dict['x_pubkeys']
+        pubkeys = self.in_dict.get('pubkeys')
+        if pubkeys is None:
+            pubkeys = [xpubkey_to_pubkey(x) for x in x_pubkeys]
+            pubkeys, x_pubkeys = zip(*sorted(zip(pubkeys, x_pubkeys)))
+            self.in_dict['pubkeys'] = pubkeys = list(pubkeys)
+            self.in_dict['x_pubkeys'] = x_pubkeys = list(x_pubkeys)
+        return pubkeys, x_pubkeys
+
+    def is_segwit_input(self):
+        return self.in_dict['type'] in ['p2wpkh-p2sh']
+
+    def get_preimage_script(self):
+        # only for non-segwit
+        if self.in_dict['type'] == 'p2pkh':
+            return get_scriptPubKey(self.in_address)
+        elif self.in_dict['type'] == 'p2sh':
+            pubkeys, x_pubkeys = self.get_sorted_pubkeys()
+            return multisig_script(pubkeys, self.in_dict['num_sig'])
+        else:
+            raise TypeError('Unknown txin type', self.in_dict['type'])
+
 
 class Transaction(object):
     tx_hash = None
@@ -111,7 +191,7 @@ class Transaction(object):
         input_list = self._input_list
         output_list = self._output_list
         txins = int_to_hex(len(input_list)) + ''.join(
-            txin.serialize_input(txin.input_script(estimate_size)) for txin in input_list)
+            txin.serialize_input() for txin in input_list)
         txouts = int_to_hex(len(output_list)) + ''.join(o.serialize_output() for o in output_list)
         if witness and self.is_segwit():
             marker = '00'
@@ -160,7 +240,39 @@ class Transaction(object):
         :param i:
         :return:
         """
-        pass
+        version = write_uint32(self.tx_ver).encode('hex')
+        hash_type = write_uint32(1).encode('hex')
+        locktime = write_uint32(self.tx_locktime).encode('hex')
+        input_list = self._input_list
+        output_list = self._output_list
+        txin = input_list[i]
+        if txin.is_segwit_input():
+            hash_prevouts = double_sha256(
+                ''.join(txin.serialize_outpoint() for txin in input_list).decode('hex')).encode(
+                'hex')
+            hash_sequence = double_sha256(
+                ''.join(write_uint32(txin.in_sequence) for txin in input_list).decode(
+                    'hex')).encode('hex')
+            hash_outputs = double_sha256(
+                ''.join(o.serialize_output() for o in output_list).decode('hex')).encode('hex')
+            outpoint = txin.serialize_outpoint()
+            pubkey = txin.in_dict['pubkeys'][0]
+            pkh = hash_160(pubkey.decode('hex')).encode('hex')
+            # redeem_script = '00' + push_script(pkh)
+            script_code = push_script('76a9' + push_script(pkh) + '88ac')
+            # script_hash = hash_160(redeem_script.decode('hex')).encode('hex')
+            # script_pub_key = 'a9' + push_script(script_hash) + '87'
+            amount = write_uint64(txin.in_value)
+            sequence = write_uint32(txin.in_sequence)
+            preimage = version + hash_prevouts + hash_sequence + outpoint + script_code + amount + sequence + hash_outputs + locktime + hash_type
+        else:
+            txins = int_to_hex(len(input_list)) + ''.join(
+                txin.serialize_input(2 if i == k else 3) for
+                k, txin in enumerate(input_list))
+            txouts = int_to_hex(len(output_list)) + ''.join(
+                o.serialize_output() for o in output_list)
+            preimage = version + txins + txouts + locktime + hash_type
+        return preimage
 
     def sign(self, keypairs):
         """
@@ -168,7 +280,28 @@ class Transaction(object):
         :param keypairs: pubkey:secret dict
         :return:
         """
-        pass
+        for i, txin in enumerate(self._input_list):
+            num = txin.in_dict['num_sig']
+            pubkeys, x_pubkeys = txin.get_sorted_pubkeys()
+            for j, x_pubkey in enumerate(x_pubkeys):
+                signatures = filter(None, txin.in_dict['signatures'])
+                if len(signatures) == num:
+                    # txin is complete
+                    break
+                if x_pubkey in keypairs.keys():
+                    print_error("adding signature for", x_pubkey)
+                    secret = keypairs.get(x_pubkey)
+                    key = EC_KEY.init_from_secret(secret)
+                    msg = double_sha256(self.serialize_preimage(i).decode('hex'))
+                    sig = key.sign(msg)
+                    assert key.verify_sign(sig, msg)
+                    txin.in_dict['signatures'][j] = sig.encode('hex')
+                    txin.in_dict['x_pubkeys'][j] = x_pubkeys
+                    self._input_list[i] = txin
+        # print_error("is_complete", self.is_complete())
+        self.raw = self.serialize()
 
     def __str__(self):
         return self.serialize()
+
+
