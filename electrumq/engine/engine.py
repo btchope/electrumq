@@ -14,7 +14,7 @@ from electrumq.network.manager import NetWorkManager
 from electrumq.utils import Singleton
 from electrumq.utils.configuration import log_conf_path, conf_path, dirs
 from electrumq.utils.parameter import set_testnet
-from electrumq.wallet.base_wallet import EVENT_QUEUE, WalletConfig
+from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
 from electrumq.wallet.single import SimpleWallet
 
 __author__ = 'zhouqi'

@@ -9,7 +9,7 @@ from electrumq.network.manager import NetWorkManager
 from electrumq.utils.base58 import public_key_to_p2pkh
 from electrumq.utils.key_store import load_keystore
 from electrumq.utils.tx import Transaction
-from electrumq.wallet.base_wallet import BaseWallet
+from electrumq.wallet.base import BaseWallet
 
 __author__ = 'zhouqi'
 

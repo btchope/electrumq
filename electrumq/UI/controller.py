@@ -23,9 +23,9 @@ from electrumq.utils import verification
 from electrumq.utils.configuration import style_path
 from electrumq.utils.parameter import TYPE_ADDRESS
 from electrumq.utils.tx import Output
-from electrumq.wallet.manager import Wallet
+from electrumq.engine.engine import Engine
 from electrumq.wallet.single import SimpleWallet
-from electrumq.wallet.base_wallet import EVENT_QUEUE, WalletConfig
+from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
 
 __author__ = 'zhouqi'
 
@@ -125,9 +125,9 @@ class AccountController(QWidget):
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 50, 0, 50)
-        accounts = Wallet().wallet_dict.keys()
+        accounts = Engine().wallet_dict.keys()
 
-        self.current_account_idx = Wallet().get_current_wallet_idx()
+        self.current_account_idx = Engine().get_current_wallet_idx()
 
         for idx, account in enumerate(accounts):
             btn = AccountIcon(account)
@@ -146,13 +146,13 @@ class AccountController(QWidget):
         self.widget.setLayout(layout)
         self.account_layout = layout
 
-        Wallet().new_wallet_event.append(self.add_wallet)
+        Engine().new_wallet_event.append(self.add_wallet)
         # Wallet().current_wallet_changed_event.append(self.selected_account)
 
     def switch_account(self, btn):
         btn.setChecked(True)
         if self.current_account_idx != btn.idx:
-            Wallet().change_current_wallet(btn.idx)
+            Engine().change_current_wallet(btn.idx)
             self.selected_account(btn.idx)
 
     def selected_account(self, idx):
@@ -168,7 +168,7 @@ class AccountController(QWidget):
 
     def add_wallet(self, wallet_name):
         btn = AccountIcon(wallet_name)
-        btn.idx = len(Wallet().wallet_dict.keys()) - 1
+        btn.idx = len(Engine().wallet_dict.keys()) - 1
         self.account_layout.insertWidget(btn.idx, btn)
         btn.clicked.connect(partial(self.switch_account, btn))
         self.switch_account(btn)
@@ -209,9 +209,9 @@ class NavController(QWidget):
         self.send_btn = self.func_list.send_btn
 
         self.show()
-        Wallet().current_wallet_changed_event.append(self.show)
-        if Wallet().current_wallet is not None:
-            Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
+        Engine().current_wallet_changed_event.append(self.show)
+        if Engine().current_wallet is not None:
+            Engine().current_wallet.wallet_tx_changed_event.append(self.show)
 
     def init_event(self):
         self.tx_log_btn.clicked.connect(self.parent_controller.show_tab)
@@ -220,10 +220,10 @@ class NavController(QWidget):
 
     def show(self, **kwargs):
         super(NavController, self).show()
-        if Wallet().current_wallet is not None:
-            Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
-            self.address_view.set_address(Wallet().current_wallet.address)
-            self.balance_view.set_blance(Wallet().current_wallet.balance)
+        if Engine().current_wallet is not None:
+            Engine().current_wallet.wallet_tx_changed_event.append(self.show)
+            self.address_view.set_address(Engine().current_wallet.address)
+            self.balance_view.set_blance(Engine().current_wallet.balance)
 
 
 class DetailController(QWidget):
@@ -279,18 +279,18 @@ class TabController(QWidget):
         layout.addWidget(self.tx_table_view)
         self.update_data_source()
         self.setLayout(layout)
-        Wallet().current_wallet_changed_event.append(self.update_data_source)
-        if Wallet().current_wallet is not None:
-            Wallet().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
+        Engine().current_wallet_changed_event.append(self.update_data_source)
+        if Engine().current_wallet is not None:
+            Engine().current_wallet.wallet_tx_changed_event.append(self.update_data_source)
 
     def dt_to_qdt(self, dt):
         array = datetime.fromtimestamp(float(dt)).timetuple()
         return QDateTime(QDate(*array[:3]), QTime(*array[3:6]))
 
     def update_data_source(self, **kwargs):
-        if Wallet().current_wallet is not None:
-            Wallet().current_wallet.wallet_tx_changed_event.append(self.show)
-            txs = Wallet().current_wallet.get_txs()
+        if Engine().current_wallet is not None:
+            Engine().current_wallet.wallet_tx_changed_event.append(self.show)
+            txs = Engine().current_wallet.get_txs()
             data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
             self.tx_table_view.data_source = data_source
             self.tx_table_view.reload()
@@ -315,10 +315,10 @@ class SendController(QWidget):
             verification.check_amount(amount)
             outputs = [Output((TYPE_ADDRESS, address,
                                int(amount)))]
-            tx = Wallet().current_wallet.make_unsigned_transaction(
-                Wallet().current_wallet.get_utxo(),
+            tx = Engine().current_wallet.make_unsigned_transaction(
+                Engine().current_wallet.get_utxo(),
                 outputs, {})
-            Wallet().current_wallet.sign_transaction(tx, None)
+            Engine().current_wallet.sign_transaction(tx, None)
             tx_detail_dialog = TxDetailDialog(self)
             tx_detail_dialog.tx_detail_view.show_tx(tx)
             tx_detail_dialog.exec_()
@@ -330,8 +330,8 @@ class ReceiveController(QWidget):
     def __init__(self):
         super(ReceiveController, self).__init__()
 
-        if Wallet().current_wallet is not None:
-            self.address = Wallet().current_wallet.address  # 'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'
+        if Engine().current_wallet is not None:
+            self.address = Engine().current_wallet.address  # 'mzSwHcXhWF8bgLtxF7NXE8FF1w8BZhQwSj'
         else:
             self.address = ''
         layout = QVBoxLayout()
@@ -352,10 +352,10 @@ class ReceiveController(QWidget):
         layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.setLayout(layout)
 
-        Wallet().current_wallet_changed_event.append(self.update_address)
+        Engine().current_wallet_changed_event.append(self.update_address)
 
     def update_address(self, **kwargs):
-        self.address = Wallet().current_wallet.address
+        self.address = Engine().current_wallet.address
         self.addressTB.setText(self.address)
         self.qrcode.setPixmap(
             qrcode.make(self.address, image_factory=Image, box_size=8).pixmap())
