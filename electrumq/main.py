@@ -4,18 +4,18 @@ import time
 
 from tornado import gen
 
-from electrumq.chain.chain import BlockChain
+from electrumq.blockchain.chain import BlockChain
 from electrumq.db.sqlite import init
 from electrumq.db.sqlite.tx import TxStore
 from electrumq.message.all import *
-from electrumq.net.manager import NetWorkManager
+from electrumq.network.manager import NetWorkManager
 from electrumq.utils.base58 import public_key_to_p2pkh
 from electrumq.utils.key import SecretToASecret, public_key_from_private_key
 from electrumq.utils.key_store import SimpleKeyStore, WatchOnlySimpleKeyStore, \
     ImportedKeyStore, from_seed, BIP32KeyHotStore
 from electrumq.utils.parameter import set_testnet, TYPE_ADDRESS
 from electrumq.utils.tx import Output
-from electrumq.wallet import WalletConfig
+from electrumq.wallet.base_wallet import WalletConfig
 from electrumq.wallet.hd import HDWallet, HDWatchOnlyWallet
 from electrumq.wallet.single import ColdSimpleWallet, WatchOnlySimpleWallet, SimpleWallet
 

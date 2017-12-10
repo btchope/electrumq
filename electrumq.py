@@ -11,10 +11,9 @@ from PyQt4.QtCore import QTimer
 from electrumq.UI import controller
 from electrumq.UI.controller import EQApplication, EQMainWindow
 from electrumq.db.sqlite import init
-from electrumq.net.manager import NetWorkManager
-from electrumq.wallet import WalletConfig
+from electrumq.network.manager import NetWorkManager
 from electrumq.wallet.single import SimpleWallet
-from electrumq.wallet import EVENT_QUEUE
+from electrumq.wallet.base_wallet import EVENT_QUEUE, WalletConfig
 
 __author__ = 'zhouqi'
 

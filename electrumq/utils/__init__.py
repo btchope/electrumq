@@ -5,6 +5,15 @@ import sys
 __author__ = 'zhouqi'
 
 
+"""
+
+基础模块包：
+
+1.
+2.
+
+"""
+
 class Singleton(type):
     _instances = {}
 

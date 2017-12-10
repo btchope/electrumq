@@ -8,13 +8,13 @@ import sys
 from appdirs import AppDirs
 from sortedcontainers import SortedDict
 
-from electrumq.chain.chain import BlockChain
+from electrumq.blockchain.chain import BlockChain
 from electrumq.db.sqlite import init
-from electrumq.net.manager import NetWorkManager
+from electrumq.network.manager import NetWorkManager
 from electrumq.utils import Singleton
 from electrumq.utils.configuration import log_conf_path, conf_path, dirs
 from electrumq.utils.parameter import set_testnet
-from electrumq.wallet import WalletConfig, EVENT_QUEUE
+from electrumq.wallet.base_wallet import EVENT_QUEUE, WalletConfig
 from electrumq.wallet.single import SimpleWallet
 
 __author__ = 'zhouqi'
@@ -50,7 +50,7 @@ class MyConfigParser(RawConfigParser, object):
         pass
 
 
-class Wallet(object):
+class Engine(object):
     __metaclass__ = Singleton
 
     def __init__(self):

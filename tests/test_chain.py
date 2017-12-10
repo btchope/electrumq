@@ -5,10 +5,10 @@ from tornado import gen
 from tornado.concurrent import Future
 from tornado.testing import AsyncTestCase, gen_test
 
-from electrumq.chain.chain import BlockChain, BLOCK_INTERVAL
+from electrumq.blockchain.chain import BlockChain, BLOCK_INTERVAL
 from electrumq.db.sqlite.block import BlockStore
-from electrumq.net.ioloop import MAX_WAIT_SECONDS_BEFORE_SHUTDOWN
-from electrumq.net.manager import NetWorkManager
+from electrumq.network.ioloop import MAX_WAIT_SECONDS_BEFORE_SHUTDOWN
+from electrumq.network.manager import NetWorkManager
 from electrumq.utils.parameter import set_testnet
 from tests.test_network import open_logger
 

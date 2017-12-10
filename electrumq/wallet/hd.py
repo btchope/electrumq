@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 from tornado import gen
 
-from electrumq.chain.chain import BlockChain
+from electrumq.blockchain.chain import BlockChain
 from electrumq.db.sqlite.tx import TxStore
 from electrumq.message.blockchain.address import GetHistory
 from electrumq.message.blockchain.transaction import GetMerkle, Get
-from electrumq.net.manager import NetWorkManager
+from electrumq.network.manager import NetWorkManager
 from electrumq.utils.key_store import load_keystore
 from electrumq.utils.tx import Transaction
-from electrumq.wallet import BaseWallet
+from electrumq.wallet.base_wallet import BaseWallet
 
 __author__ = 'zhouqi'
 

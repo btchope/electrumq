@@ -18,15 +18,14 @@ from electrumq.UI.component import AccountIcon, AddressView, BalanceView, \
 from electrumq.UI.dialog import NewAccountDialog, TxDetailDialog
 from electrumq.UI.layout.borderlayout import BorderLayout
 from electrumq.db.sqlite import init
-from electrumq.net.manager import NetWorkManager
+from electrumq.network.manager import NetWorkManager
 from electrumq.utils import verification
 from electrumq.utils.configuration import style_path
 from electrumq.utils.parameter import TYPE_ADDRESS
 from electrumq.utils.tx import Output
-from electrumq.wallet import WalletConfig
 from electrumq.wallet.manager import Wallet
 from electrumq.wallet.single import SimpleWallet
-from electrumq.wallet import EVENT_QUEUE
+from electrumq.wallet.base_wallet import EVENT_QUEUE, WalletConfig
 
 __author__ = 'zhouqi'
 
