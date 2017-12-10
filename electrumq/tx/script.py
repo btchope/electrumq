@@ -6,17 +6,55 @@ import types
 
 from electrumq.utils import print_error
 from electrumq.utils.base58 import hash160_to_p2pkh, hash160_to_p2sh, hash_160, \
-    bc_address_to_type_and_hash_160
+    bc_address_to_type_and_hash_160, public_key_to_p2pkh
 from electrumq.utils.key_store import xpubkey_to_address, xpubkey_to_pubkey
 from electrumq.utils.parameter import TYPE_ADDRESS, TYPE_SCRIPT, TYPE_PUBKEY, Parameter
 from electrumq.utils.parser import op_push
 
 __author__ = 'zhouqi'
 
-
 NO_SIGNATURE = 'ff'
 
+
+class P2PKHScript(object):
+    def get_signature_script(self):
+        pass
+
+    def get_pubkey_script(self, address):
+        addrtype, hash_160 = bc_address_to_type_and_hash_160(address)
+        if addrtype == Parameter().ADDRTYPE_P2PKH:
+            script = '76a9'  # op_dup, op_hash_160
+            script += push_script(hash_160.encode('hex'))
+            script += '88ac'  # op_equalverify, op_checksig
+        return script
+
+
+class P2SHScript(object):
+    def get_signature_script(self):
+        pass
+
+    def get_pubkey_script(self):
+        pass
+
+    def get_redeem_script(self, pubkey_list, n):
+        return multisig_script(pubkey_list, n)
+
+
 class Script(object):
+    def get_script_pubkey(self, address):
+        addrtype, hash_160 = bc_address_to_type_and_hash_160(address)
+        if addrtype == Parameter().ADDRTYPE_P2PKH:
+            script = '76a9'  # op_dup, op_hash_160
+            script += push_script(hash_160.encode('hex'))
+            script += '88ac'  # op_equalverify, op_checksig
+        elif addrtype == Parameter().ADDRTYPE_P2SH:
+            script = 'a9'  # op_hash_160
+            script += push_script(hash_160.encode('hex'))
+            script += '87'  # op_equal
+        else:
+            raise BaseException('unknown address type')
+        return script
+
     def parse_scriptSig(self, bytes):
         d = {}
         try:
@@ -373,6 +411,116 @@ def parse_scriptSig(d, bytes):
     d['pubkeys'] = pubkeys
     d['redeemScript'] = redeemScript
     d['address'] = hash160_to_p2sh(hash_160(redeemScript.decode('hex')))
+
+
+def parse_type_script_sig(bytes):
+    decoded = [x for x in script_GetOp(bytes)]
+
+    match = [opcodes.OP_PUSHDATA4]
+    if match_decoded(decoded, match):
+        item = decoded[0][1]
+        if item[0] == chr(0):
+            return 'p2wpkh-p2sh'
+        else:
+            return 'p2pk'
+    match = [opcodes.OP_PUSHDATA4, opcodes.OP_PUSHDATA4]
+    if match_decoded(decoded, match):
+        return 'p2pkh'
+
+    # p2sh transaction, m of n
+    match = [opcodes.OP_0] + [opcodes.OP_PUSHDATA4] * (len(decoded) - 1)
+    if not match_decoded(decoded, match):
+        print_error("cannot find address in input script", bytes.encode('hex'))
+        return
+    x_sig = [x[1].encode('hex') for x in decoded[1:-1]]
+    dec2 = [x for x in script_GetOp(decoded[-1][1])]
+    m = dec2[0][0] - opcodes.OP_1 + 1
+    n = dec2[-2][0] - opcodes.OP_1 + 1
+    op_m = opcodes.OP_1 + m - 1
+    op_n = opcodes.OP_1 + n - 1
+    match_multisig = [op_m] + [opcodes.OP_PUSHDATA4] * n + [op_n, opcodes.OP_CHECKMULTISIG]
+    if not match_decoded(dec2, match_multisig):
+        print_error("cannot find address in input script", bytes.encode('hex'))
+        return
+    x_pubkeys = map(lambda x: x[1].encode('hex'), dec2[1:-2])
+    pubkeys = [xpubkey_to_pubkey(x) for x in x_pubkeys]
+    redeemScript = multisig_script(pubkeys, m)
+    # write result in d
+    return 'p2sh', hash160_to_p2sh(hash_160(redeemScript.decode('hex'))), redeemScript
+
+
+def parse_script_sig(bytes):
+    try:
+        decoded = [x for x in script_GetOp(bytes)]
+    except Exception:
+        # coinbase transactions raise an exception
+        print_error("cannot find address in input script", bytes.encode('hex'))
+        return
+
+    match = [opcodes.OP_PUSHDATA4]
+    if match_decoded(decoded, match):
+        item = decoded[0][1]
+        if item[0] == chr(0):
+            redeemScript = item.encode('hex')
+            return 'p2wpkh-p2sh', hash160_to_p2sh(hash_160(redeemScript.decode('hex'))), None
+
+        else:
+            return 'p2pk', None, None
+
+    # non-generated TxIn transactions push a signature
+    # (seventy-something bytes) and then their public key
+    # (65 bytes) onto the stack:
+    match = [opcodes.OP_PUSHDATA4, opcodes.OP_PUSHDATA4]
+    if match_decoded(decoded, match):
+        sig = decoded[0][1].encode('hex')
+        pubkey = decoded[1][1].encode('hex')
+        address = public_key_to_p2pkh(pubkey.decode('hex'))
+        return 'p2pkh', address, pubkey
+
+    # p2sh transaction, m of n
+    match = [opcodes.OP_0] + [opcodes.OP_PUSHDATA4] * (len(decoded) - 1)
+    if not match_decoded(decoded, match):
+        print_error("cannot find address in input script", bytes.encode('hex'))
+        return
+    x_sig = [x[1].encode('hex') for x in decoded[1:-1]]
+    dec2 = [x for x in script_GetOp(decoded[-1][1])]
+    m = dec2[0][0] - opcodes.OP_1 + 1
+    n = dec2[-2][0] - opcodes.OP_1 + 1
+    op_m = opcodes.OP_1 + m - 1
+    op_n = opcodes.OP_1 + n - 1
+    match_multisig = [op_m] + [opcodes.OP_PUSHDATA4] * n + [op_n, opcodes.OP_CHECKMULTISIG]
+    if not match_decoded(dec2, match_multisig):
+        print_error("cannot find address in input script", bytes.encode('hex'))
+        return
+    x_pubkeys = map(lambda x: x[1].encode('hex'), dec2[1:-2])
+    pubkeys = [xpubkey_to_pubkey(x) for x in x_pubkeys]
+    redeemScript = multisig_script(pubkeys, m)
+    # write result in d
+    return 'p2sh', hash160_to_p2sh(hash_160(redeemScript.decode('hex'))), redeemScript
+
+
+def parse_script_pub_key(bytes):
+    decoded = [x for x in script_GetOp(bytes)]
+
+    # The Genesis Block, self-payments, and pay-by-IP-address payments look like:
+    # 65 BYTES:... CHECKSIG
+    match = [opcodes.OP_PUSHDATA4, opcodes.OP_CHECKSIG]
+    if match_decoded(decoded, match):
+        return 'p2pk', decoded[0][1].encode('hex')
+
+    # Pay-by-Bitcoin-address TxOuts look like:
+    # DUP HASH160 20 BYTES:... EQUALVERIFY CHECKSIG
+    match = [opcodes.OP_DUP, opcodes.OP_HASH160, opcodes.OP_PUSHDATA4, opcodes.OP_EQUALVERIFY,
+             opcodes.OP_CHECKSIG]
+    if match_decoded(decoded, match):
+        return 'p2pkh', hash160_to_p2pkh(decoded[2][1])
+
+    # p2sh
+    match = [opcodes.OP_HASH160, opcodes.OP_PUSHDATA4, opcodes.OP_EQUAL]
+    if match_decoded(decoded, match):
+        return 'p2sh', hash160_to_p2sh(decoded[1][1])
+
+    return 'unknown', None
 
 
 def get_address_from_output_script(bytes):

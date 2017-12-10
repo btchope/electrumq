@@ -21,7 +21,7 @@ class Output(object):
     out_sn = None
     out_value = None
     out_address = None
-    address_type = None
+    # address_type = None
     out_script = None
 
     @classmethod
@@ -30,38 +30,19 @@ class Output(object):
         tx_out.out_sn = out_sn
         tx_out.out_value = vds.read_int64()
         tx_out.out_script = vds.read_bytes(vds.read_compact_size()).encode('hex')
-        tx_out.address_type, tx_out.out_address = get_address_from_output_script(
+        _, tx_out.out_address = get_address_from_output_script(
             tx_out.out_script.decode('hex'))
         return tx_out
 
-    def pay_script(self):
-        if self.address_type == TYPE_SCRIPT:
-            return self.out_address.encode('hex')
-        elif self.address_type == TYPE_ADDRESS:
-            return self.get_scriptPubKey(self.out_address)
-        else:
-            raise TypeError('Unknown output type')
+    def pay_script_from_address(self):
+        return Script().get_script_pubkey(self.out_address)
 
     def serialize_output(self):
         s = write_uint64(self.out_value).encode('hex')
-        script = self.pay_script()
+        script = self.pay_script_from_address()
         s += int_to_hex(len(script) / 2)
         s += script
         return s
-
-    def get_scriptPubKey(self, addr):
-        addrtype, hash_160 = bc_address_to_type_and_hash_160(addr)
-        if addrtype == Parameter().ADDRTYPE_P2PKH:
-            script = '76a9'  # op_dup, op_hash_160
-            script += push_script(hash_160.encode('hex'))
-            script += '88ac'  # op_equalverify, op_checksig
-        elif addrtype == Parameter().ADDRTYPE_P2SH:
-            script = 'a9'  # op_hash_160
-            script += push_script(hash_160.encode('hex'))
-            script += '87'  # op_equal
-        else:
-            raise BaseException('unknown address type')
-        return script
 
 
 class Input(object):
@@ -75,6 +56,8 @@ class Input(object):
     in_address = None
     height = None
     in_dict = None
+
+    tx_out = None
 
     @classmethod
     def init_from_raw(cls, vds, in_sn):
@@ -109,12 +92,23 @@ class Input(object):
             self.in_address = d['address']
         self.in_dict = d
 
-    def serialize_input(self, script_type=1):
-        if script_type == 1:
-            pubkeys, x_pubkeys = self.get_sorted_pubkeys()
-            script = Script().input_script(self.in_dict, pubkeys, x_pubkeys)
-        elif script_type == 2:
-            script = self.get_preimage_script()
+    def serialize_input(self):
+        script = self.in_signature
+        # if script_type == 1:
+        pubkeys, x_pubkeys = self.get_sorted_pubkeys()
+        script = Script().input_script(self.in_dict, pubkeys, x_pubkeys)
+
+        # Prev hash and index
+        s = self.serialize_outpoint()
+        # Script length, script, sequence
+        s += int_to_hex(len(script) / 2)
+        s += script
+        s += write_uint32(self.in_sequence).encode('hex')
+        return s
+
+    def serialize_input_preimage(self, i):
+        if i == self.in_sn:
+            script = Script().get_script_pubkey(self.in_address)
         else:
             script = ''
         # Prev hash and index
@@ -267,7 +261,7 @@ class Transaction(object):
             preimage = version + hash_prevouts + hash_sequence + outpoint + script_code + amount + sequence + hash_outputs + locktime + hash_type
         else:
             txins = int_to_hex(len(input_list)) + ''.join(
-                txin.serialize_input(2 if i == k else 3) for
+                txin.serialize_input_preimage(k) for
                 k, txin in enumerate(input_list))
             txouts = int_to_hex(len(output_list)) + ''.join(
                 o.serialize_output() for o in output_list)
