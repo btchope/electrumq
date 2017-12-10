@@ -55,11 +55,11 @@ class TestData(TestCase):
         out1 = Output()
         out1.out_address = '13tuJJDR2RgArmgfv6JScSdreahzgc4T6o'
         out1.out_value = 18000000
-        out1.address_type = TYPE_ADDRESS
+        # out1.address_type = TYPE_ADDRESS
         out2 = Output()
         out2.out_address = '1P8yWvZW8jVihP1bzHeqfE4aoXNX8AVa46'
         out2.out_value = 400000000
-        out2.address_type = TYPE_ADDRESS
+        # out2.address_type = TYPE_ADDRESS
         tx._input_list.append(in1)
         tx._input_list.append(in2)
         tx._input_list.append(in3)
@@ -82,7 +82,7 @@ class TestData(TestCase):
         out1 = Output()
         out1.out_address = '193P6LtvS4nCnkDvM9uXn1gsSRqh4aDAz7'
         out1.out_value = 100000
-        out1.address_type = TYPE_ADDRESS
+        # out1.address_type = TYPE_ADDRESS
         tx._input_list.append(in1)
         # tx.add_input_list([in1, ])
         tx._output_list = [out1, ]
