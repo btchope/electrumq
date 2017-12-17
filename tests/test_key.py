@@ -2,7 +2,7 @@
 from unittest import TestCase
 
 from electrumq.utils.base58 import double_sha256
-from electrumq.utils.key import EC_KEY
+from electrumq.secret.key import EC_KEY
 
 __author__ = 'zhouqi'
 
