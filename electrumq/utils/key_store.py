@@ -70,7 +70,7 @@ class KeyStore(object):
             keypairs[k] = self._get_private_key(v, password)
         # Sign
         if keypairs:
-            tx.sign_hash(keypairs)
+            tx.sign(keypairs)
 
     def can_sign(self, tx):
         if self.is_watching_only():

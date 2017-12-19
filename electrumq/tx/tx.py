@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 from electrumq.tx.script import Script, get_scriptPubKey, multisig_script
 from electrumq.utils import print_error
-from electrumq.utils.base58 import bc_address_to_type_and_hash_160, double_sha256, hash_160
+from electrumq.utils.base58 import double_sha256, hash_160
 from electrumq.utils.key import EC_KEY
 from electrumq.utils.key_store import xpubkey_to_pubkey
-from electrumq.utils.parameter import TYPE_SCRIPT, TYPE_ADDRESS, Parameter
 from electrumq.utils.parser import write_uint32, int_to_hex, write_uint64
 from electrumq.utils.tx import BCDataStream, parse_scriptSig, get_address_from_output_script, \
     push_script
@@ -108,8 +107,10 @@ class Input(object):
 
     def serialize_input_preimage(self, i):
         if i == self.in_sn:
+            # serialize self
             script = Script().get_script_pubkey(self.in_address)
         else:
+            # serialize other input
             script = ''
         # Prev hash and index
         s = self.serialize_outpoint()

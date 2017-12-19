@@ -10,6 +10,7 @@ __author__ = 'zhouqi'
 
 MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 0.1
 
+
 class IOLoop(threading.Thread):
     _futures = []
     loop_interval = 100  # ms
