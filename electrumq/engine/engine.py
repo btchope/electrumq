@@ -111,11 +111,11 @@ class Engine(object):
 
     def get_next_wallet_id(self):
         try:
-            next_wallet_id = int(self.conf.get('wallet', 'next_wallet_id'))
+            next_wallet_id = self.conf.get('wallet', 'next_wallet_id')
             if next_wallet_id is None:
                 self.conf.set('wallet', 'next_wallet_id', 1)
                 return 1
-            return next_wallet_id
+            return int(next_wallet_id)
         except NoOptionError as ex:
             return 1
 
