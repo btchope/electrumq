@@ -133,8 +133,6 @@ class TxDetailDialog(QDialog):
         self.setWindowTitle("Transaction Detail")
 
     def accept(self):
-        self.tx_detail_view.tx._inputs = None
-        self.tx_detail_view.tx.deserialize()
         TxStore().add_unconfirm_tx(self.tx_detail_view.tx)
         Engine().current_wallet.broadcast(self.tx_detail_view.tx)
         self.close()

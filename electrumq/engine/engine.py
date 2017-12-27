@@ -5,6 +5,8 @@ from ConfigParser import RawConfigParser, NoOptionError
 from functools import partial
 
 import sys
+from logging.config import fileConfig
+
 from appdirs import AppDirs
 from sortedcontainers import SortedDict
 
@@ -55,7 +57,7 @@ class Engine(object):
 
     def __init__(self):
         set_testnet()
-        # logging.config.fileConfig(log_conf_path)
+        fileConfig(log_conf_path)
         init()
         network = NetWorkManager()
         network.start()

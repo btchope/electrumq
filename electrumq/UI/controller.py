@@ -309,7 +309,7 @@ class SendController(QWidget):
 
     def send(self):
         try:
-            address = self.send_view.dest_address_tb.text()
+            address = str(self.send_view.dest_address_tb.text())
             amount = self.send_view.output_value_edit.text()
             verification.check_address(address)
             verification.check_amount(amount)
