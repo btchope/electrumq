@@ -35,6 +35,7 @@ class BlockStore():
                 print ex.message
                 traceback.print_exc()
 
+    # 批量存储块
     def save_block_item_batch(self, block_item_list):
         sql = 'INSERT INTO blocks(block_no, block_hash, block_root, block_ver, block_bits, block_nonce, block_time, block_prev, is_main) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);'
         with Connection.gen_db() as conn:
@@ -69,6 +70,7 @@ class BlockStore():
         return execute_one(
             'SELECT block_root FROM blocks WHERE block_no=? AND blocks.is_main=1', (block_no,))[0]
 
+    # ?? 难度？
     def get_target(self, index, chain=None):
         if index == 0:
             return 0x1d00ffff, MAX_TARGET
@@ -103,8 +105,9 @@ class BlockStore():
         new_bits = bitsN << 24 | bitsBase
         return new_bits, bitsBase << (8 * (bitsN - 3))
 
+    # 验证块头
     def verify_header(self, header, prev_header, bits, target):
-        if prev_header is None:
+        if prev_header is None:   # 0块
             prev_hash = '0' * 64
         else:
             prev_hash = prev_header.block_hash

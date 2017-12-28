@@ -12,9 +12,10 @@ class TxStore():
     def __init__(self):
         pass
 
+    # 获取未认证的交易（tx）, block_no = 0 表示未认证的交易;
     @property
     def unverify_tx_list(self):
-        return set(execute_all('SELECT tx_hash,block_no FROM txs WHERE source=0'))
+        return set(execute_all('SELECT tx_hash,block_no FROM txs WHERE block_no=0'))
 
     @property
     def unfetch_tx(self):
@@ -32,6 +33,7 @@ class TxStore():
                 c.execute('INSERT INTO addresses_txs(tx_hash, address) VALUES (?, ?)',
                           (tx, address))
 
+    # 添加未确认的交易
     def add_unconfirm_tx(self, tx):
         tx_hash = tx.txid()
         with Connection.gen_db() as conn:

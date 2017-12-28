@@ -40,6 +40,13 @@ class BlockItem(BaseItem):
     block_prev = ''
     is_main = 0
 
+    # 从二进制数据中，解析出元组
+    # struct.unpack_from() 不会重新申请空间
+    # < 小端存储
+    # I 整形
+    # 32s 32个字符串的长度的字符串
+    # f 浮点型
+
     def __init__(self, raw=None, offset=0):
         if raw is not None:
             self.block_ver, self.block_prev_raw, self.block_root_raw, self.block_time, self.block_bits, \
