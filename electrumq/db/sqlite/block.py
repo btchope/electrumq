@@ -70,7 +70,7 @@ class BlockStore():
         return execute_one(
             'SELECT block_root FROM blocks WHERE block_no=? AND blocks.is_main=1', (block_no,))[0]
 
-    # ?? 难度？
+    # 难度
     def get_target(self, index, chain=None):
         if index == 0:
             return 0x1d00ffff, MAX_TARGET
