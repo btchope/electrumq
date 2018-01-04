@@ -37,7 +37,7 @@ from math import floor, log10
 # to spend.  This prevents attacks on users by malicious or stale
 # servers.
 from electrumq.utils.base58 import hash256
-from electrumq.utils.tx import Transaction
+from electrumq.tx.tx import Transaction
 from electrumq.utils.parameter import COIN, TYPE_ADDRESS
 
 
