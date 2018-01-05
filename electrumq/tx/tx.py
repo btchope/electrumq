@@ -20,15 +20,15 @@ class Output(object):
     out_sn = None
     out_value = None
     out_address = None
-    # address_type = None
+    address_type = None
     out_script = None
 
-    def __init__(self, tx_out_dict=None):
+    def __init__(self, address_type=None, out_address=None, out_value=None):
         super(Output, self).__init__()
-        if tx_out_dict is not None:
-            self.out_address = tx_out_dict[1]
-            self.address_type = tx_out_dict[0]
-            self.out_value = tx_out_dict[2]
+        self.out_address = out_address
+        self.address_type = address_type
+        self.out_value = out_value
+        if self.out_address is not None:
             self.out_script = self.pay_script_from_address()
 
     @classmethod
@@ -369,7 +369,7 @@ class Transaction(object):
         self.raw = None
 
     def add_output_list(self, outputs):
-        self._output_list.extend([Output(e) for e in outputs])
+        self._output_list.extend(outputs)
         self.raw = None
 
     def is_complete(self):
