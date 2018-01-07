@@ -39,6 +39,7 @@ class NewAccountDialog(QDialog):
         wallet = Engine().init_wallet('simple', wallet_id + '.json')
         s = self.tab_widget.currentWidget().get_secret()
         secret = s.decode('hex')
+        # 添加密码
         wallet.init_key_store(
             SimpleKeyStore.create(SecretToASecret(secret, True), None))
         wallet.sync()
