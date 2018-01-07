@@ -23,6 +23,14 @@ class Output(object):
     # address_type = None
     out_script = None
 
+    def __init__(self, tx_out_dict=None):
+        super(Output, self).__init__()
+        if tx_out_dict is not None:
+            self.out_address = tx_out_dict[1]
+            self.address_type = tx_out_dict[0]
+            self.out_value = tx_out_dict[2]
+            self.out_script = self.pay_script_from_address()
+
     @classmethod
     def init_from_raw(cls, vds, out_sn):
         tx_out = Output()
@@ -57,6 +65,17 @@ class Input(object):
     in_dict = None
 
     tx_out = None
+
+    def __init__(self, tx_in_dict=None):
+        super(Input, self).__init__()
+
+        if tx_in_dict is not None:
+            self.prev_tx_hash = tx_in_dict['prevout_hash']
+            self.prev_out_sn = tx_in_dict['prevout_n']
+            self.in_signature = tx_in_dict['scriptSig']
+            self.in_value = tx_in_dict['value']
+            self.in_address = tx_in_dict['address']
+            self.height = tx_in_dict['height']
 
     @classmethod
     def init_from_raw(cls, vds, in_sn):
@@ -148,6 +167,17 @@ class Input(object):
         else:
             raise TypeError('Unknown txin type', self.in_dict['type'])
 
+    def estimated_input_size(self):
+        '''Return an estimated of serialized input size in bytes.'''
+        # todo:
+        return 34
+        # script = self.input_script(True)
+        # return len(self.serialize_input(script)) / 2
+
+    @property
+    def is_coinbase(self):
+        return self.prev_tx_hash == '00' * 32
+
 
 class Transaction(object):
     tx_hash = None
@@ -174,6 +204,15 @@ class Transaction(object):
     @classmethod
     def init_from_raw(cls, raw, lazy_load=True):
         pass
+
+    @classmethod
+    def from_io(cls, inputs, outputs, locktime=0, tx_ver=1):
+        self = cls()
+        self._input_list = inputs
+        self._output_list = outputs
+        self.locktime = locktime
+        self.tx_ver = tx_ver
+        return self
 
     def serialize(self, estimate_size=False, witness=True):
         """
@@ -298,5 +337,72 @@ class Transaction(object):
 
     def __str__(self):
         return self.serialize()
+
+
+    def estimated_size(self):
+        """
+        Return an estimated tx size in bytes.
+        """
+        return len(self.serialize(True)) / 2 if not self.is_complete() or self.raw is None else len(
+            self.raw) / 2  # ASCII hex string
+
+
+    def input_list(self):
+        self.deserialize()
+        return self._input_list
+
+    def output_list(self):
+        self.deserialize()
+        return self._output_list
+
+    def input_value(self):
+        return sum(x.in_value for x in self.input_list())
+
+    def output_value(self):
+        return sum(e.out_value for e in self.output_list())
+
+    def get_fee(self):
+        return self.input_value() - self.output_value()
+
+    def add_input_list(self, inputs):
+        self._input_list.extend(inputs)
+        self.raw = None
+
+    def add_output_list(self, outputs):
+        self._output_list.extend([Output(e) for e in outputs])
+        self.raw = None
+
+    def is_complete(self):
+        s, r = self.signature_count()
+        return r == s
+
+    def signature_count(self):
+        r = 0
+        s = 0
+        for txin in self.input_list():
+            if txin.is_coinbase:
+                continue
+            signatures = filter(None, txin.in_dict.get('signatures', []))
+            s += len(signatures)
+            r += txin.in_dict.get('num_sig', -1)
+        return s, r
+
+    def bip_li01_sort(self):
+        # See https://github.com/kristovatlas/rfc/blob/master/bips/bip-li01.mediawiki
+        self._input_list.sort(key=lambda i: (i.prev_tx_hash, i.prev_out_sn))
+        for idx, each in enumerate(self._input_list):
+            if each.in_sn is None:
+                each.in_sn = idx
+        self._output_list.sort(key=lambda o: (o.out_value, o.out_script))
+        for idx, each in enumerate(self._output_list):
+            if each.out_sn is None:
+                each.out_sn = idx
+
+    def txid(self):
+        all_segwit = all(x.is_segwit_input() for x in self.input_list())
+        if not all_segwit and not self.is_complete():
+            return None
+        ser = self.serialize(witness=False)
+        return double_sha256(ser.decode('hex'))[::-1].encode('hex')
 
 

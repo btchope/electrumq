@@ -15,7 +15,7 @@ from electrumq.utils import coinchooser
 from electrumq.utils.base58 import is_address
 from electrumq.utils.parameter import TYPE_ADDRESS, COINBASE_MATURITY
 from electrumq.utils.storage import WalletStorage
-from electrumq.utils.tx import Input, Transaction
+from electrumq.tx.tx import Input, Transaction
 
 __author__ = 'zhouqi'
 
