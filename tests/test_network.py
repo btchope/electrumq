@@ -8,9 +8,9 @@ from tornado import gen
 from tornado.testing import gen_test, AsyncTestCase
 
 from electrumq.message.all import *
-from electrumq.net.client import RPCClient
-from electrumq.net.ioloop import IOLoop
-from electrumq.net.manager import NetWorkManager
+from electrumq.network.client import RPCClient
+from electrumq.network.ioloop import IOLoop
+from electrumq.network.manager import NetWorkManager
 from electrumq.utils.parameter import set_testnet
 
 __author__ = 'zhouqi'

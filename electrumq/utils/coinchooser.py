@@ -37,7 +37,7 @@ from math import floor, log10
 # to spend.  This prevents attacks on users by malicious or stale
 # servers.
 from electrumq.utils.base58 import hash256
-from electrumq.utils.tx import Transaction
+from electrumq.tx.tx import Transaction, Output
 from electrumq.utils.parameter import COIN, TYPE_ADDRESS
 
 
@@ -208,7 +208,7 @@ class CoinChooserBase():
         # each pay-to-bitcoin-address output serializes as 34 bytes
         fee = lambda count: fee_estimator(tx_size + count * 34)
         change = self.change_outputs(tx, change_addrs, fee, dust_threshold)
-        tx.add_output_list(change)
+        tx.add_output_list([Output(e[0], e[1], e[2]) for e in change])
 
         # self.print_error("using %d inputs" % len(tx.inputs()))
         # self.print_error("using buckets:", [bucket.desc for bucket in buckets])

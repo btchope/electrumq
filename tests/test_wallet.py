@@ -3,9 +3,9 @@ from unittest import TestCase
 
 from tornado.testing import AsyncTestCase
 
-from electrumq.net.manager import NetWorkManager
+from electrumq.network.manager import NetWorkManager
 from electrumq.utils.configuration import dirs
-from electrumq.wallet import BaseWallet, WalletConfig
+from electrumq.wallet.base_wallet import BaseWallet, WalletConfig
 from electrumq.wallet.single import SimpleWallet
 
 __author__ = 'zhouqi'

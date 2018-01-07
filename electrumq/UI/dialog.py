@@ -8,7 +8,7 @@ from PyQt4.QtGui import *
 from electrumq.db.sqlite.tx import TxStore
 from electrumq.utils.key import public_key_from_private_key, SecretToASecret
 from electrumq.utils.key_store import SimpleKeyStore
-from electrumq.wallet.manager import Wallet
+from electrumq.engine.engine import Engine
 
 __author__ = 'zhouqi'
 
@@ -35,14 +35,14 @@ class NewAccountDialog(QDialog):
 
     def accept(self):
         # wallet_id = str(len(Wallet().wallet_dict.keys())) + str(random.randint(0,9))
-        wallet_id = str(Wallet().get_next_wallet_id())
-        wallet = Wallet().init_wallet('simple', wallet_id + '.json')
+        wallet_id = str(Engine().get_next_wallet_id())
+        wallet = Engine().init_wallet('simple', wallet_id + '.json')
         s = self.tab_widget.currentWidget().get_secret()
         secret = s.decode('hex')
         wallet.init_key_store(
             SimpleKeyStore.create(SecretToASecret(secret, True), None))
         wallet.sync()
-        Wallet().new_wallet(wallet_id, 'simple', wallet_id + '.json', wallet)
+        Engine().new_wallet(wallet_id, 'simple', wallet_id + '.json', wallet)
         self.close()
 
 
@@ -133,10 +133,8 @@ class TxDetailDialog(QDialog):
         self.setWindowTitle("Transaction Detail")
 
     def accept(self):
-        self.tx_detail_view.tx._inputs = None
-        self.tx_detail_view.tx.deserialize()
         TxStore().add_unconfirm_tx(self.tx_detail_view.tx)
-        # Wallet().current_wallet.broadcast(self.tx_detail_view.tx)
+        Engine().current_wallet.broadcast(self.tx_detail_view.tx)
         self.close()
 
 

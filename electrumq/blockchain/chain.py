@@ -4,12 +4,12 @@ from datetime import datetime
 
 from tornado import gen
 
-from electrumq.chain import logger
+from electrumq.blockchain import logger
 from electrumq.db.sqlite import header_dict_to_block_item
 from electrumq.db.sqlite.block import BlockStore
 from electrumq.message.blockchain.block import GetHeaderFile
 from electrumq.message.blockchain.headers import Subscribe
-from electrumq.net.manager import NetWorkManager
+from electrumq.network.manager import NetWorkManager
 from electrumq.utils import Singleton
 from electrumq.message.all import headers_subscribe
 

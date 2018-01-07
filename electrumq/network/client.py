@@ -10,7 +10,7 @@ from tornado.ioloop import PeriodicCallback
 from tornado.iostream import StreamClosedError
 from tornado.tcpclient import TCPClient
 
-from electrumq.net import logger
+from electrumq.network import logger
 
 __author__ = 'zhouqi'
 

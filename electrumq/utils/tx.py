@@ -36,6 +36,8 @@ class Output(object):
             self.out_value = tx_out_dict[2]
             if len(tx_out_dict) == 4:
                 self.out_script = tx_out_dict[3]
+            else:
+                self.out_script = self.pay_script()
 
     def parse_output_json(self, vds, out_sn):
         self.out_sn = out_sn
@@ -290,7 +292,13 @@ class Transaction:
     def bip_li01_sort(self):
         # See https://github.com/kristovatlas/rfc/blob/master/bips/bip-li01.mediawiki
         self._input_list.sort(key=lambda i: (i.prev_tx_hash, i.prev_out_sn))
+        for idx, each in enumerate(self._input_list):
+            if each.in_sn is None:
+                each.in_sn = idx
         self._output_list.sort(key=lambda o: (o.out_value, o.pay_script()))
+        for idx, each in enumerate(self._output_list):
+            if each.out_sn is None:
+                each.out_sn = idx
 
     def serialize_preimage(self, i):
         version = write_uint32(self.tx_ver).encode('hex')
@@ -427,6 +435,7 @@ class Transaction:
                     self._input_list[i] = txin
         print_error("is_complete", self.is_complete())
         self.raw = self.serialize()
+        self.need_deserialize = False
 
     def has_address(self, addr):
         return (addr in (e.out_address for e in self.output_list())) or (

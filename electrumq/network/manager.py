@@ -9,10 +9,10 @@ from tornado import gen
 from tornado.httpclient import AsyncHTTPClient
 
 from electrumq.message.blockchain.block import GetHeaderFile
-from electrumq.net.ioloop import IOLoop
+from electrumq.network.ioloop import IOLoop
 from electrumq.message.server import Version
-from electrumq.net import logger
-from electrumq.net.client import RPCClient
+from electrumq.network import logger
+from electrumq.network.client import RPCClient
 from electrumq.utils import Singleton
 from electrumq.utils.parameter import Parameter
 

@@ -1,20 +1,10 @@
 # -*- coding: utf-8 -*-
-import sys
-
-import logging
-
 import signal
+import sys
 import traceback
 
-from PyQt4.QtCore import QTimer
-
-from electrumq.UI import controller
 from electrumq.UI.controller import EQApplication, EQMainWindow
-from electrumq.db.sqlite import init
-from electrumq.net.manager import NetWorkManager
-from electrumq.wallet import WalletConfig
-from electrumq.wallet.single import SimpleWallet
-from electrumq.wallet import EVENT_QUEUE
+from electrumq.network.manager import NetWorkManager
 
 __author__ = 'zhouqi'
 

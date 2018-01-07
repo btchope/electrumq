@@ -5,16 +5,18 @@ from ConfigParser import RawConfigParser, NoOptionError
 from functools import partial
 
 import sys
+from logging.config import fileConfig
+
 from appdirs import AppDirs
 from sortedcontainers import SortedDict
 
-from electrumq.chain.chain import BlockChain
+from electrumq.blockchain.chain import BlockChain
 from electrumq.db.sqlite import init
-from electrumq.net.manager import NetWorkManager
+from electrumq.network.manager import NetWorkManager
 from electrumq.utils import Singleton
 from electrumq.utils.configuration import log_conf_path, conf_path, dirs
 from electrumq.utils.parameter import set_testnet
-from electrumq.wallet import WalletConfig, EVENT_QUEUE
+from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
 from electrumq.wallet.single import SimpleWallet
 
 __author__ = 'zhouqi'
@@ -50,12 +52,12 @@ class MyConfigParser(RawConfigParser, object):
         pass
 
 
-class Wallet(object):
+class Engine(object):
     __metaclass__ = Singleton
 
     def __init__(self):
         set_testnet()
-        # logging.config.fileConfig(log_conf_path)
+        fileConfig(log_conf_path)
         init()
         network = NetWorkManager()
         network.start()
@@ -115,7 +117,7 @@ class Wallet(object):
             if next_wallet_id is None:
                 self.conf.set('wallet', 'next_wallet_id', 1)
                 return 1
-            return next_wallet_id
+            return int(next_wallet_id)
         except NoOptionError as ex:
             return 1
 

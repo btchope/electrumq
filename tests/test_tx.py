@@ -2,7 +2,7 @@
 import json
 from unittest import TestCase
 
-from electrumq.tx.tx import Transaction, Input, Output
+from electrumq.utils.tx import Transaction, Input, Output
 from electrumq.utils.base58 import b58decode_check, public_key_to_p2pkh
 from electrumq.utils.key import EC_KEY, regenerate_key
 from electrumq.utils.key_store import SimpleKeyStore
@@ -17,7 +17,7 @@ class TestData(TestCase):
 
     def test_create_empty_transaction(self):
         case = self.bitcoin_test_case[0]
-        self.assertEqual(str(Transaction()), self.read_hex(case['output_cmp']))
+        self.assertEqual(str(Transaction(None)), self.read_hex(case['output_cmp']))
 
     def test_del_in(self):
         case = self.bitcoin_test_case[5]
@@ -37,7 +37,7 @@ class TestData(TestCase):
 
     def test_create_unsign_tx(self):
         case = self.bitcoin_test_case[17]
-        tx = Transaction()
+        tx = Transaction(None)
         # bitcoin test data default tx version is 2
         tx.tx_ver = 2
         in1 = Input()
@@ -55,11 +55,11 @@ class TestData(TestCase):
         out1 = Output()
         out1.out_address = '13tuJJDR2RgArmgfv6JScSdreahzgc4T6o'
         out1.out_value = 18000000
-        # out1.address_type = TYPE_ADDRESS
+        out1.address_type = TYPE_ADDRESS
         out2 = Output()
         out2.out_address = '1P8yWvZW8jVihP1bzHeqfE4aoXNX8AVa46'
         out2.out_value = 400000000
-        # out2.address_type = TYPE_ADDRESS
+        out2.address_type = TYPE_ADDRESS
         tx._input_list.append(in1)
         tx._input_list.append(in2)
         tx._input_list.append(in3)
@@ -69,7 +69,7 @@ class TestData(TestCase):
 
     def test_create_sign_tx(self):
         case = self.bitcoin_test_case[31]
-        tx = Transaction()
+        tx = Transaction(None)
         # bitcoin test data default tx version is 2
         tx.tx_ver = 1
         in1 = Input()
@@ -82,7 +82,7 @@ class TestData(TestCase):
         out1 = Output()
         out1.out_address = '193P6LtvS4nCnkDvM9uXn1gsSRqh4aDAz7'
         out1.out_value = 100000
-        # out1.address_type = TYPE_ADDRESS
+        out1.address_type = TYPE_ADDRESS
         tx._input_list.append(in1)
         # tx.add_input_list([in1, ])
         tx._output_list = [out1, ]

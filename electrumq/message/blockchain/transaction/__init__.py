@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from electrumq.message import BaseMessage
+from electrumq.message.base import BaseMessage
 
 __author__ = 'zhouqi'
 

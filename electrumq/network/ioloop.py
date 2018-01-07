@@ -4,11 +4,12 @@ import time
 
 from tornado.ioloop import IOLoop as TornadoIOLoop, PeriodicCallback
 
-from electrumq.net import logger
+from electrumq.network import logger
 
 __author__ = 'zhouqi'
 
 MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 0.1
+
 
 class IOLoop(threading.Thread):
     _futures = []
