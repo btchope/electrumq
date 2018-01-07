@@ -17,6 +17,8 @@ from electrumq.utils.base58 import b58decode_check, b58encode_check, public_key_
 from electrumq.utils.parameter import Parameter
 from electrumq.utils.parser import write_compact_size
 
+from crypto import AES
+
 __author__ = 'zhouqi'
 
 """
@@ -62,6 +64,7 @@ def verify_message(address, sig, message):
         public_key, compressed = pubkey_from_signature(sig, message)
         # check public key using the address
         pubkey = point_to_ser(public_key.pubkey.point, compressed)
+        # get address from public_key
         addr = public_key_to_p2pkh(pubkey)
         if address != addr:
             raise Exception("Bad signature")
@@ -406,7 +409,9 @@ def DecodeAES(secret, e):
 def pw_encode(s, password):
     if password:
         secret = double_sha256(password)
-        return EncodeAES(secret, s.encode("utf8"))
+        s = AES.encode(secret, s.encode("utf-8"))
+        # return EncodeAES(secret, s.encode("utf8"))
+        return s
     else:
         return s
 
@@ -415,7 +420,8 @@ def pw_decode(s, password):
     if password is not None:
         secret = double_sha256(password)
         try:
-            d = DecodeAES(secret, s).decode("utf8")
+            # d = DecodeAES(secret, s).decode("utf8")
+            d = AES.decode(secret, s).decode("utf8")
         except Exception:
             raise InvalidPassword()
         return d
@@ -427,3 +433,17 @@ class InvalidPassword(Exception):
     def __str__(self):
         return 'Incorrect password'
         # return _("Incorrect password")
+
+
+if __name__ == '__main__':
+    # 测试秘钥加解密：
+    key = "hello, world"
+    password = 'aaa123'
+
+    print "初始明文: ", key
+
+    cmsg = pw_encode(key, password=password)
+    print "密文：", cmsg
+
+    msg = pw_decode(cmsg, password=password)
+    print "明文：", msg
