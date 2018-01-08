@@ -1,8 +1,19 @@
 # -*- coding: utf-8 -*-
+import ast
+import base64
+import copy
+import hashlib
+import hmac
+import json
+import os
 import random
+import threading
 from Queue import Queue
 from functools import partial
+from stat import S_IREAD, S_IWRITE
 
+import pbkdf2
+import zlib
 from tornado import gen
 
 from electrumq.blockchain.chain import BlockChain
@@ -11,13 +22,15 @@ from electrumq.db.sqlite.tx import TxStore
 from electrumq.message.blockchain.address import GetHistory
 from electrumq.message.blockchain.transaction import GetMerkle, Get, Broadcast
 from electrumq.network.manager import NetWorkManager
-from electrumq.utils import coinchooser
+from electrumq.secret.key import EC_KEY, encrypt_message
+from electrumq.tx import coinchooser
 from electrumq.utils.base58 import is_address
 from electrumq.utils.parameter import TYPE_ADDRESS, COINBASE_MATURITY
-from electrumq.utils.storage import WalletStorage
 from electrumq.tx.tx import Input, Transaction
 
 __author__ = 'zhouqi'
+
+FINAL_SEED_VERSION = 13
 
 
 class BaseWallet(object):
@@ -421,3 +434,183 @@ class WalletConfig(object):
         for k in fields:
             if k in kwargs:
                 self.__setattr__(k, kwargs[k])
+
+
+class WalletStorage():
+    def __init__(self, path):
+
+        # self.print_error("wallet path", path)
+        self.lock = threading.RLock()
+        self.data = {}
+        self.path = path
+        self.modified = False
+        self.pubkey = None
+        if self.file_exists():
+            with open(self.path, "r") as f:
+                self.raw = f.read()
+            if not self.is_encrypted():
+                self.load_data(self.raw)
+
+    def load_data(self, s):
+        try:
+            self.data = json.loads(s)
+        except:
+            try:
+                d = ast.literal_eval(s)
+                labels = d.get('labels', {})
+            except Exception as e:
+                raise IOError("Cannot read wallet file '%s'" % self.path)
+            self.data = {}
+            # In old versions of Electrum labels were latin1 encoded, this fixes breakage.
+            for i, label in labels.items():
+                try:
+                    unicode(label)
+                except UnicodeDecodeError:
+                    d['labels'][i] = unicode(label.decode('latin1'))
+            for key, value in d.items():
+                try:
+                    json.dumps(key)
+                    json.dumps(value)
+                except:
+                    self.print_error('Failed to convert label to json format', key)
+                    continue
+                self.data[key] = value
+
+        # check here if I need to load a plugin
+        t = self.get('wallet_type')
+        # todo: plugin
+        # l = plugin_loaders.get(t)
+        # if l: l()
+
+    def is_encrypted(self):
+        try:
+            return base64.b64decode(self.raw).startswith('BIE1')
+        except:
+            return False
+
+    def file_exists(self):
+        return self.path and os.path.exists(self.path)
+
+    def get_key(self, password):
+        secret = pbkdf2.PBKDF2(password, '', iterations=1024, macmodule=hmac,
+                               digestmodule=hashlib.sha512).read(64)
+        ec_key = EC_KEY(secret)
+        return ec_key
+
+    def decrypt(self, password):
+        ec_key = self.get_key(password)
+        s = zlib.decompress(ec_key.decrypt_message(self.raw)) if self.raw else None
+        self.pubkey = ec_key.get_public_key()
+        self.load_data(s)
+
+    def set_password(self, password, encrypt):
+        self.put('use_encryption', bool(password))
+        if encrypt and password:
+            ec_key = self.get_key(password)
+            self.pubkey = ec_key.get_public_key()
+        else:
+            self.pubkey = None
+
+    def get(self, key, default=None):
+        with self.lock:
+            v = self.data.get(key)
+            if v is None:
+                v = default
+            else:
+                v = copy.deepcopy(v)
+        return v
+
+    def put(self, key, value):
+        try:
+            json.dumps(key)
+            json.dumps(value)
+        except:
+            self.print_error("json error: cannot save", key)
+            return
+        with self.lock:
+            if value is not None:
+                if self.data.get(key) != value:
+                    self.modified = True
+                    self.data[key] = copy.deepcopy(value)
+            elif key in self.data:
+                self.modified = True
+                self.data.pop(key)
+
+    # @profiler
+    def write(self):
+        # this ensures that previous versions of electrum won't open the wallet
+        self.put('seed_version', FINAL_SEED_VERSION)
+        with self.lock:
+            self._write()
+
+    def _write(self):
+        if threading.currentThread().isDaemon():
+            self.print_error('warning: daemon thread cannot write wallet')
+            return
+        if not self.modified:
+            return
+        s = json.dumps(self.data, indent=4, sort_keys=True)
+        if self.pubkey:
+            s = encrypt_message(zlib.compress(s), self.pubkey)
+
+        temp_path = "%s.tmp.%s" % (self.path, os.getpid())
+        with open(temp_path, "w") as f:
+            f.write(s)
+            f.flush()
+            os.fsync(f.fileno())
+
+        mode = os.stat(self.path).st_mode if os.path.exists(self.path) else S_IREAD | S_IWRITE
+        # perform atomic write on POSIX systems
+        try:
+            os.rename(temp_path, self.path)
+        except:
+            os.remove(self.path)
+            os.rename(temp_path, self.path)
+        os.chmod(self.path, mode)
+        self.print_error("saved", self.path)
+        self.modified = False
+
+    def requires_split(self):
+        d = self.get('accounts', {})
+        return len(d) > 1
+
+
+
+
+
+
+
+
+    def get_action(self):
+        # todo: plugin
+        pass
+        # action = run_hook('get_action', self)
+        # if action:
+        #     return action
+        # if not self.file_exists():
+        #     return 'new'
+
+    # def get_seed_version(self):
+    #     seed_version = self.get('seed_version')
+    #     if not seed_version:
+    #         seed_version = OLD_SEED_VERSION if len(
+    #             self.get('master_public_key', '')) == 128 else NEW_SEED_VERSION
+    #     if seed_version >= 12:
+    #         return seed_version
+    #     if seed_version not in [OLD_SEED_VERSION, NEW_SEED_VERSION]:
+    #         msg = "Your wallet has an unsupported seed version."
+    #         msg += '\n\nWallet file: %s' % os.path.abspath(self.path)
+    #         if seed_version in [5, 7, 8, 9, 10]:
+    #             msg += "\n\nTo open this wallet, try 'git checkout seed_v%d'" % seed_version
+    #         if seed_version == 6:
+    #             # version 1.9.8 created v6 wallets when an incorrect seed was entered in the restore dialog
+    #             msg += '\n\nThis file was created because of a bug in version 1.9.8.'
+    #             if self.get('master_public_keys') is None and self.get(
+    #                     'master_private_keys') is None and self.get('imported_keys') is None:
+    #                 # pbkdf2 was not included with the binaries, and wallet creation aborted.
+    #                 msg += "\nIt does not contain any keys, and can safely be removed."
+    #             else:
+    #                 # creation was complete if electrum was run from source
+    #                 msg += "\nPlease open this file with Electrum 1.9.8, and move your coins to a new wallet."
+    #         raise BaseException(msg)
+    #     return seed_version

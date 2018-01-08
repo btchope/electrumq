@@ -2,10 +2,11 @@
 from electrumq.tx.script import Script, get_scriptPubKey, multisig_script
 from electrumq.utils import print_error
 from electrumq.utils.base58 import double_sha256, hash_160
-from electrumq.utils.key import EC_KEY
-from electrumq.utils.key_store import xpubkey_to_pubkey
-from electrumq.utils.parser import write_uint32, int_to_hex, write_uint64
-from electrumq.utils.tx import BCDataStream, parse_scriptSig, get_address_from_output_script, \
+from electrumq.secret.key import EC_KEY
+from electrumq.tx.script import xpubkey_to_pubkey
+from electrumq.tx.script import write_uint32, int_to_hex, write_uint64
+from electrumq.tx.script import BCDataStream
+from electrumq.tx.script import parse_scriptSig, get_address_from_output_script, \
     push_script
 
 __author__ = 'zhouqi'
@@ -369,7 +370,12 @@ class Transaction(object):
         self.raw = None
 
     def add_output_list(self, outputs):
-        self._output_list.extend(outputs)
+        for each in outputs:
+            if each.__class__ is tuple:
+                self._output_list.append(Output(*each))
+            else:
+                self._output_list.append(each)
+        # self._output_list.extend(outputs)
         self.raw = None
 
     def is_complete(self):

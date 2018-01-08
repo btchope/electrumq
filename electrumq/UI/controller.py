@@ -22,7 +22,7 @@ from electrumq.network.manager import NetWorkManager
 from electrumq.utils import verification
 from electrumq.utils.configuration import style_path
 from electrumq.utils.parameter import TYPE_ADDRESS
-from electrumq.utils.tx import Output
+from electrumq.tx.tx import Output
 from electrumq.engine.engine import Engine
 from electrumq.wallet.single import SimpleWallet
 from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
@@ -313,8 +313,8 @@ class SendController(QWidget):
             amount = self.send_view.output_value_edit.text()
             verification.check_address(address)
             verification.check_amount(amount)
-            outputs = [Output((TYPE_ADDRESS, address,
-                               int(amount)))]
+            outputs = [Output(TYPE_ADDRESS, address,
+                               int(amount))]
             tx = Engine().current_wallet.make_unsigned_transaction(
                 Engine().current_wallet.get_utxo(),
                 outputs, {})

@@ -6,8 +6,8 @@ from PyQt4.QtCore import QFileInfo, QString
 from PyQt4.QtGui import *
 
 from electrumq.db.sqlite.tx import TxStore
-from electrumq.utils.key import public_key_from_private_key, SecretToASecret
-from electrumq.utils.key_store import SimpleKeyStore
+from electrumq.secret.key import public_key_from_private_key, SecretToASecret
+from electrumq.secret.key_store import SimpleKeyStore
 from electrumq.engine.engine import Engine
 
 __author__ = 'zhouqi'
