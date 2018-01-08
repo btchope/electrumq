@@ -3,13 +3,14 @@ import os
 from os import path
 
 import logging
+from datetime import datetime
 
 __author__ = 'zhouqi'
 
 reged_logger = {}
 
 
-class MyLogFormatter(LogFormatter):
+class MyLogFormatter(logging.LogFormatter):
     converter = datetime.fromtimestamp
 
     def formatTime(self, record, datefmt=None):
