@@ -440,6 +440,9 @@ if __name__ == '__main__':
     key = "hello, world"
     password = 'aaa123'
 
+    key = '5J3mBbAH58CpQ3Y5RNJpUKPE62SQ5tfcvU2JpbnkeyhfsYB1Jcn'
+    password2 = 'MyTestPassphrase'
+
     print "初始明文: ", key
 
     cmsg = pw_encode(key, password=password)
