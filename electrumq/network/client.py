@@ -15,6 +15,7 @@ from electrumq.network import logger
 __author__ = 'zhouqi'
 
 
+# 建立一个长连接，到elemtrum
 class RPCClient:
     ip, port = '176.9.108.141', 50001
     stream = None

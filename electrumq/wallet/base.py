@@ -574,9 +574,8 @@ class WalletStorage():
         d = self.get('accounts', {})
         return len(d) > 1
 
-
-
-
+    def print_error(self, *args, **kwargs):
+        pass
 
 
 

@@ -15,7 +15,7 @@ from datetime import datetime
 from electrumq.UI import logger
 from electrumq.UI.component import AccountIcon, AddressView, BalanceView, \
     FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView, MessageBox
-from electrumq.UI.dialog import NewAccountDialog, TxDetailDialog
+from electrumq.UI.dialog import NewAccountDialog, TxDetailDialog, PasswordDialog
 from electrumq.UI.layout.borderlayout import BorderLayout
 from electrumq.db.sqlite import init
 from electrumq.network.manager import NetWorkManager
@@ -318,7 +318,10 @@ class SendController(QWidget):
             tx = Engine().current_wallet.make_unsigned_transaction(
                 Engine().current_wallet.get_utxo(),
                 outputs, {})
-            Engine().current_wallet.sign_transaction(tx, None)
+            pwd_dig = PasswordDialog()
+            pwd_dig.exec_()
+            pwd = pwd_dig.password()
+            Engine().current_wallet.sign_transaction(tx, pwd)
             tx_detail_dialog = TxDetailDialog(self)
             tx_detail_dialog.tx_detail_view.show_tx(tx)
             tx_detail_dialog.exec_()

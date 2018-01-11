@@ -39,10 +39,43 @@ class NewAccountDialog(QDialog):
         wallet = Engine().init_wallet('simple', wallet_id + '.json')
         s = self.tab_widget.currentWidget().get_secret()
         secret = s.decode('hex')
+        pwd_dig = PasswordDialog()
+        pwd_dig.exec_()
+        pwd = pwd_dig.password()
         wallet.init_key_store(
-            SimpleKeyStore.create(SecretToASecret(secret, True), None))
+            SimpleKeyStore.create(SecretToASecret(secret, True), pwd))
         wallet.sync()
         Engine().new_wallet(wallet_id, 'simple', wallet_id + '.json', wallet)
+        self.close()
+
+
+class PasswordDialog(QDialog):
+    def __init__(self, parent=None):
+        super(PasswordDialog, self).__init__(parent)
+
+        pwd_label = QLabel("Password:")
+        self.pwd_edit = QLineEdit('')
+        self.pwd_edit.setMinimumWidth(50)
+        self.pwd_edit.setMaxLength(8)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(pwd_label)
+        main_layout.addWidget(self.pwd_edit)
+        main_layout.addWidget(button_box)
+        main_layout.addStretch(1)
+        self.setLayout(main_layout)
+
+        self.setWindowTitle("Password")
+
+    def password(self):
+        return str(self.pwd_edit.text())
+
+    def accept(self):
         self.close()
 
 

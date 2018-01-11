@@ -16,7 +16,7 @@ __author__ = 'zhouqi'
 
 BLOCK_INTERVAL = 2016
 
-
+# 块同步
 class BlockChain:
     __metaclass__ = Singleton
 
