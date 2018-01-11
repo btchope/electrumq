@@ -424,6 +424,8 @@ def pw_decode(s, password):
 
 
 class InvalidPassword(Exception):
+    message = 'Incorrect password'
+
     def __str__(self):
         return 'Incorrect password'
         # return _("Incorrect password")
