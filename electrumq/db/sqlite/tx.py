@@ -165,3 +165,22 @@ class TxStore():
               '  FROM outs a ' \
               '  WHERE a.out_address IN ({seq}) GROUP BY a.tx_hash'.format(seq=seq)
         return execute_all(sql, addresses)
+
+    def get_tx(self, tx_hash):
+        sql = 'SELECT tx_hash, tx_ver, tx_locktime, tx_time, block_no, source ' \
+              '  FROM txs WHERE tx_hash=?'
+        return execute_all(sql, (tx_hash,))
+
+    def get_tx_out(self, tx_hash):
+        sql = 'SELECT tx_hash, out_sn, out_script, out_value, out_status, out_address ' \
+              '  FROM outs WHERE tx_hash=?'
+        return execute_all(sql, (tx_hash,))
+
+    def get_tx_in(self, tx_hash):
+        sql = 'SELECT ins.tx_hash, ins.in_sn, ins.prev_tx_hash, ins.prev_out_sn' \
+              '  , ins.in_signature, ins.in_sequence ' \
+              '  , outs.out_address in_address, outs.out_value in_value ' \
+              '  FROM ins LEFT OUTER JOIN outs ' \
+              '    on ins.prev_tx_hash=outs.tx_hash and ins.prev_out_sn=outs.out_sn ' \
+              '  WHERE ins.tx_hash=? '
+        return execute_all(sql, (tx_hash,))

@@ -148,15 +148,19 @@ class HDWalletTab(QWidget):
 
 
 class TxDetailDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, need_send=True):
         super(TxDetailDialog, self).__init__(parent)
 
         self.tx_detail_view = TxDetailView()
 
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        if need_send:
+            button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
+            button_box.accepted.connect(self.accept)
+            button_box.rejected.connect(self.reject)
+        else:
+            button_box = QDialogButtonBox(QDialogButtonBox.Ok)
+            button_box.accepted.connect(self.close)
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.tx_detail_view)
@@ -191,9 +195,16 @@ class TxDetailView(QWidget):
     def show_tx(self, tx):
         self.tx = tx
         for idx, each_in in enumerate(tx.input_list()):
-            in_address = QLabel(each_in.in_address)
+            if each_in.in_address is not None:
+                in_address = QLabel(each_in.in_address)
+            else:
+                in_address = QLabel('---')
+
             self.in_layout.addWidget(in_address, idx, 0)
-            in_value = QLabel(str(each_in.in_value))
+            if each_in.in_value is not None:
+                in_value = QLabel(str(each_in.in_value))
+            else:
+                in_value = QLabel('---')
             self.in_layout.addWidget(in_value, idx, 1)
         for idx, each_out in enumerate(tx.output_list()):
             out_address = QLabel(each_out.out_address)

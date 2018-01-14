@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from electrumq.db.sqlite.tx import TxStore
 from electrumq.tx.script import Script, get_scriptPubKey, multisig_script
 from electrumq.utils import print_error
 from electrumq.utils.base58 import double_sha256, hash_160
@@ -41,6 +42,21 @@ class Output(object):
         _, tx_out.out_address = get_address_from_output_script(
             tx_out.out_script.decode('hex'))
         return tx_out
+
+    @classmethod
+    def get_output_from_db(cls, tx_hash):
+        outs = TxStore().get_tx_out(tx_hash)
+        results = []
+        for out in outs:
+            self = cls()
+            self.tx_hash = out[0]
+            self.out_sn = out[1]
+            self.out_script = out[2]
+            self.out_value = out[3]
+            # self.out_status = out[4]
+            self.out_address = out[5]
+            results.append(self)
+        return results
 
     def pay_script_from_address(self):
         return Script().get_script_pubkey(self.out_address)
@@ -92,6 +108,23 @@ class Input(object):
         tx_in.in_signature = scriptSig.encode('hex')
         tx_in.in_sequence = sequence
         return tx_in
+
+    @classmethod
+    def get_input_from_db(cls, tx_hash):
+        ins = TxStore().get_tx_in(tx_hash)
+        results = []
+        for tx_in in ins:
+            self = cls()
+            self.tx_hash = tx_in[0]
+            self.in_sn = tx_in[1]
+            self.prev_tx_hash = tx_in[2]
+            self.prev_out_sn = tx_in[3]
+            self.in_signature = tx_in[4]
+            self.in_sequence = tx_in[5]
+            self.in_address = tx_in[6]
+            self.in_value = tx_in[7]
+            results.append(self)
+        return results
 
     def get_tx_in_dict(self):
         d = {}
@@ -221,6 +254,24 @@ class Transaction(object):
         self.locktime = locktime
         self.tx_ver = tx_ver
         return self
+
+    @classmethod
+    def get_tx_from_db(cls, tx_hash):
+        tx = TxStore().get_tx(tx_hash)
+        if len(tx) == 0:
+            raise Exception('tx hash not exist')
+        tx = tx[0]
+        self = cls()
+        self.tx_hash = tx[0]
+        self.tx_ver = tx[1]
+        self.tx_locktime = tx[2]
+        self.tx_time = tx[3]
+        self.block_no = tx[4]
+        self.source = tx[5]
+        self._output_list = Output.get_output_from_db(tx_hash)
+        self._input_list = Input.get_input_from_db(tx_hash)
+        return self
+
 
     def serialize(self, estimate_size=False, witness=True):
         """

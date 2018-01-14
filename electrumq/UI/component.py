@@ -8,6 +8,8 @@ from PyQt4.QtGui import QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QWid
     QItemSelectionModel, QAbstractItemView
 
 from electrumq.UI import address_show_format
+from electrumq.UI.dialog import TxDetailDialog
+from electrumq.tx.tx import Transaction
 
 __author__ = 'zhouqi'
 
@@ -218,7 +220,6 @@ class TableView(QWidget):
         pass
 
     def double_click_row(self, row):
-        print 'abc'
         pass
 
 
@@ -240,6 +241,11 @@ class TxTableView(TableView):
         last_idx = self.data_model.rowCount() - 1
         for idx, val in enumerate(row):
             self.data_model.setData(self.data_model.index(last_idx, idx), val)
+
+    def double_click_row(self, row):
+        tx_detail_dialog = TxDetailDialog(self, need_send=False)
+        tx_detail_dialog.tx_detail_view.show_tx(Transaction.get_tx_from_db(self.data_source[row.row()][0]))
+        tx_detail_dialog.exec_()
 
 
 class SendView(QWidget):
