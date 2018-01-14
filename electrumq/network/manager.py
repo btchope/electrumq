@@ -61,6 +61,13 @@ class NetWorkManager:
         else:
             self.client.add_message(message, callback=callback, subscribe=subscribe)
 
+    def http_request(self, url, method, param, callback=None):
+        """
+        异步执行请求
+        :rtype: None
+        """
+        pass
+
     """
     inner method
     """
