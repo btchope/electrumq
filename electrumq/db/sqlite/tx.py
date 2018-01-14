@@ -24,7 +24,7 @@ class TxStore():
         with Connection.gen_db() as conn:
             c = conn.cursor()
             if c.execute('SELECT count(0) FROM txs WHERE tx_hash=?', (tx,)).fetchone()[0] == 0:
-                block_time = None  # c.execute('select block_time from blocks WHERE block_no=?', (block_height,)).fetchone()[0]
+                block_time = c.execute('select block_time from blocks WHERE block_no=?', (block_height,)).fetchone()[0]
                 c.execute('INSERT INTO txs(tx_hash, block_no, tx_time, source) VALUES (?, ?, ?, ?)',
                           (tx, block_height, block_time, 0))
             if c.execute('SELECT count(0) FROM addresses_txs WHERE tx_hash=? AND address=?',
@@ -40,7 +40,7 @@ class TxStore():
                 block_time = None  # c.execute('select block_time from blocks WHERE block_no=?', (block_height,)).fetchone()[0]
                 c.execute(
                     'INSERT INTO txs(tx_hash, tx_ver, tx_locktime, block_no, tx_time, source) VALUES (?, ?, ?, ?, ?, ?)',
-                    (tx_hash, tx.tx_ver, tx.locktime, 0, block_time, 1))
+                    (tx_hash, tx.tx_ver, tx.tx_locktime, 0, block_time, 1))
             for idx, out in enumerate(tx.output_list()):
                 spent = c.execute('SELECT count(0) FROM ins WHERE prev_tx_hash=? AND prev_out_sn=?',
                                   (tx_hash, idx)).fetchone()[0]
@@ -102,7 +102,7 @@ class TxStore():
         with Connection.gen_db() as conn:
             c = conn.cursor()
             c.execute('UPDATE txs SET tx_ver=?,tx_locktime=? WHERE tx_hash=?',
-                      (tx_detail.tx_ver, tx_detail.locktime, tx_hash))
+                      (tx_detail.tx_ver, tx_detail.tx_locktime, tx_hash))
             for idx, tx_out in enumerate(tx_detail.output_list()):
                 spent = c.execute('SELECT count(0) FROM ins WHERE prev_tx_hash=? AND prev_out_sn=?',
                                   (tx_hash, idx)).fetchone()[0]
@@ -140,14 +140,15 @@ class TxStore():
 
     def get_txs(self, address):
         return execute_all(
-            "SELECT b.tx_hash, ifnull(b.tx_time, strftime('%s', 'now')) tx_time FROM addresses_txs a,txs b WHERE a.address=? AND a.tx_hash=b.tx_hash",
+            "SELECT b.tx_hash, ifnull(b.tx_time, strftime('%s', 'now')) tx_time FROM addresses_txs a,txs b WHERE a.address=? AND a.tx_hash=b.tx_hash ORDER BY tx_time desc",
             (address,))
 
     def get_all_txs(self, addresses):
         seq = ','.join(['?'] * len(addresses))
         sql = "SELECT b.tx_hash, ifnull(b.tx_time, strftime('%s', 'now')) tx_time " \
               "  FROM addresses_txs a,txs b " \
-              "  WHERE a.tx_hash=b.tx_hash and a.address in ({seq}) ".format(seq=seq)
+              "  WHERE a.tx_hash=b.tx_hash and a.address in ({seq}) " \
+              "  ORDER BY tx_time desc".format(seq=seq)
         return execute_all(sql, addresses)
 
     def get_all_tx_spent(self, addresses):

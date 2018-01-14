@@ -386,7 +386,7 @@ class BaseWallet(object):
     @gen.coroutine
     def get_tx_callback(self, msg_id, msg, param):
         tx_hash = msg['params'][0]
-        tx = Transaction(param)
+        tx = Transaction.init_from_raw(param)
         try:
             tx.deserialize()
             TxStore().add_tx_detail(tx_hash, tx)

@@ -204,7 +204,14 @@ class Transaction(object):
 
     @classmethod
     def init_from_raw(cls, raw, lazy_load=True):
-        pass
+        tx = Transaction()
+        tx.raw = raw
+        if lazy_load:
+            tx.need_deserialize = True
+        else:
+            tx.deserialize()
+            tx.need_deserialize = False
+        return tx
 
     @classmethod
     def from_io(cls, inputs, outputs, locktime=0, tx_ver=1):

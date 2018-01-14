@@ -3,6 +3,7 @@ import traceback
 
 from electrumq.secret.key import regenerate_key, is_compressed, public_key_from_private_key, \
     InvalidPassword, pw_decode, pw_encode
+from electrumq.tx.script import xpubkey_to_address
 from electrumq.utils.base58 import public_key_to_p2pkh, hash_160_to_bc_address
 
 __author__ = 'zhouqi'
