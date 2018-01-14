@@ -291,7 +291,7 @@ class TabController(QWidget):
         if Engine().current_wallet is not None:
             Engine().current_wallet.wallet_tx_changed_event.append(self.show)
             txs = Engine().current_wallet.get_txs()
-            data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
+            data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), '%f' % (e['tx_delta'] * 1.0 / 100000000)] for e in txs]
             self.tx_table_view.data_source = data_source
             self.tx_table_view.reload()
 

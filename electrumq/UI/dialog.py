@@ -202,13 +202,13 @@ class TxDetailView(QWidget):
 
             self.in_layout.addWidget(in_address, idx, 0)
             if each_in.in_value is not None:
-                in_value = QLabel(str(each_in.in_value))
+                in_value = QLabel(u'%f' % (each_in.in_value * 1.0 / 100000000,))
             else:
                 in_value = QLabel('---')
             self.in_layout.addWidget(in_value, idx, 1)
         for idx, each_out in enumerate(tx.output_list()):
             out_address = QLabel(each_out.out_address)
             self.out_layout.addWidget(out_address, idx, 0)
-            out_value = QLabel(str(each_out.out_value))
+            out_value = QLabel(u'%f' % (each_out.out_value * 1.0 / 100000000,))
             self.out_layout.addWidget(out_value, idx, 1)
         # self.tx_hash.setText(tx['tx_hash'])
