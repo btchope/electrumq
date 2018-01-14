@@ -2,7 +2,7 @@
 import os
 import random
 
-from PyQt4.QtCore import QFileInfo, QString
+from PyQt4.QtCore import QFileInfo, QString, SIGNAL, SLOT
 from PyQt4.QtGui import *
 
 from electrumq.db.sqlite.tx import TxStore
@@ -42,40 +42,61 @@ class NewAccountDialog(QDialog):
         pwd_dig = PasswordDialog()
         pwd_dig.exec_()
         pwd = pwd_dig.password()
-        wallet.init_key_store(
-            SimpleKeyStore.create(SecretToASecret(secret, True), pwd))
-        wallet.sync()
-        Engine().new_wallet(wallet_id, 'simple', wallet_id + '.json', wallet)
-        self.close()
+        if pwd is None or len(pwd) == 0:
+            self.close()
+        else:
+            wallet.init_key_store(
+                SimpleKeyStore.create(SecretToASecret(secret, True), pwd))
+            wallet.sync()
+            Engine().new_wallet(wallet_id, 'simple', wallet_id + '.json', wallet)
+            self.close()
 
 
 class PasswordDialog(QDialog):
     def __init__(self, parent=None):
         super(PasswordDialog, self).__init__(parent)
-
+        self._password = None
         pwd_label = QLabel("Password:")
+        self.tip_label = QLabel('')
+        self.tip_label.setStyleSheet("color:rgb(255,0,0)")
         self.pwd_edit = QLineEdit('')
         self.pwd_edit.setMinimumWidth(50)
-        self.pwd_edit.setMaxLength(8)
+        self.pwd_edit.setMaxLength(20)
 
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
+        button_box.accepted.connect(self.a)
+        button_box.rejected.connect(self.r)
 
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(pwd_label)
-        main_layout.addWidget(self.pwd_edit)
-        main_layout.addWidget(button_box)
-        main_layout.addStretch(1)
-        self.setLayout(main_layout)
+        # self.connect(button_box, SIGNAL('accepted()'), self, SLOT("accept()"))
+        # self.connect(button_box, SIGNAL('rejected()'), self, SLOT("reject()"))
 
+        self.main_layout = QVBoxLayout()
+        self.main_layout.addWidget(pwd_label)
+        self.main_layout.addWidget(self.tip_label)
+        self.main_layout.addWidget(self.pwd_edit)
+        self.main_layout.addWidget(button_box)
+        self.main_layout.addStretch(1)
+        self.setLayout(self.main_layout)
         self.setWindowTitle("Password")
 
     def password(self):
-        return str(self.pwd_edit.text())
+        return self._password
 
-    def accept(self):
+    def a(self):
+        self._password = str(self.pwd_edit.text())
+        if len(self._password) < 6:
+            self.tip_label.setFont(QFont("Roman times", 10, QFont.Bold))
+            self.tip_label.setText(u'密码位数不够')
+        else:
+            isright = Engine().check_password(self._password)
+            if not isright:
+                self.tip_label.setText(u'密码不对')
+            else:
+                self.close()
+
+    def r(self):
+        self._password = None
         self.close()
 
 
@@ -84,9 +105,10 @@ class SimpleWalletTab(QWidget):
         super(SimpleWalletTab, self).__init__(parent)
 
         random_label = QLabel("Random:")
-        self.random_edit = QLineEdit('2012100909090909090909090909090909090909090909090909090909090909')
+        prikey = os.urandom(32).encode('hex')
+        self.random_edit = QLineEdit(prikey)
         self.random_edit.setMinimumWidth(500)
-
+        self.random_edit.setEnabled(False)
         self.random_btn = QPushButton('random again')
         self.random_btn.clicked.connect(self.random)
 

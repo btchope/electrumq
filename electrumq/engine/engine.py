@@ -18,6 +18,7 @@ from electrumq.utils.configuration import log_conf_path, conf_path, dirs
 from electrumq.utils.parameter import set_testnet
 from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
 from electrumq.wallet.single import SimpleWallet
+from electrumq.secret.key import pw_encode, pw_decode
 
 __author__ = 'zhouqi'
 
@@ -73,6 +74,7 @@ class Engine(object):
                 wallet_type = self.conf.get('wallet', 'wallet_type_' + wallet_name)
                 wallet_config_file = v  # self.conf.get('wallet', k)
                 self.wallet_dict[wallet_name] = self.init_wallet(wallet_type, wallet_config_file)
+                self.wallet_dict[wallet_name].sync()
 
         self._current = self.conf.get('wallet', 'current')
         if self._current is not None:
@@ -130,6 +132,18 @@ class Engine(object):
                     return idx
             return 0
 
+    def check_password(self, password):
+        cmsg = self.conf.get('wallet', 'encrypt_msg')
+        new_msg = pw_encode('This is a test Message.', password)
+        if cmsg is None:
+            self.conf.set('wallet', 'encrypt_msg', new_msg)
+            return True
+        else:
+            if pw_decode(cmsg, password) == 'This is a test Message.':
+                self.conf.set('wallet', 'encrypt_msg', new_msg)
+                return True
+            else:
+                return False
 
     new_wallet_event = []
     current_wallet_changed_event = []
