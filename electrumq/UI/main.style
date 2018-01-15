@@ -180,3 +180,11 @@ AddressView > QTextEdit{
 .bigQRCode {
     background-color: red;
 }
+
+QRDialog > QLabel{
+    background-color: #e0e0e0;
+    color: black;
+    align: right;
+    font-size: 14px;
+    font-family: Roman times;
+}

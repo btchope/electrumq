@@ -308,14 +308,25 @@ class QRDialog(QtGui.QDialog):
         self.resize(240, 200)
 
         layout = QVBoxLayout()
-
+        self.address_label = QLabel()
+        self.address_label.setText(self.address_style(address))
         self.qrcode = QLabel(self)
+        layout.addWidget(self.address_label)
         layout.addWidget(self.qrcode)
         self.setLayout(layout)
 
         self.qrcode.setPixmap(
             qrcode.make(address, image_factory=Image).pixmap())
 
+    def address_style(self, address):
+        result = ''
+        if address is None or len(address) == 0:
+            return ''
+        for i in range(len(address)):
+            result += address[i]
+            if i % 4 == 3:
+                result += ' '
+        return result
 
 class MessageBox(QtGui.QMessageBox):
     timeout = 3

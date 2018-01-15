@@ -351,6 +351,7 @@ class ReceiveController(QWidget):
         self.addressTB.setMaximumHeight(20)
         self.addressTB.setMaximumWidth(300)
         self.addressTB.setText(self.address)
+        self.addressTB.setDisabled(True)
         layout.addWidget(self.addressTB)
 
         self.qrcode = QLabel(self)
@@ -359,7 +360,7 @@ class ReceiveController(QWidget):
         self.qrcode.setProperty('class', 'bigQRCode QLabel')
         layout.addWidget(self.qrcode)
         self.qrcode.setPixmap(
-            qrcode.make(self.address, image_factory=Image, box_size=8).pixmap())
+            qrcode.make(self.address, image_factory=Image, box_size=9).pixmap())
         layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.setLayout(layout)
 
