@@ -18,7 +18,7 @@ from electrumq.utils.configuration import log_conf_path, conf_path, dirs
 from electrumq.utils.parameter import set_testnet
 from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
 from electrumq.wallet.single import SimpleWallet
-from electrumq.secret.key import pw_encode, pw_decode
+from electrumq.secret.key import pw_encode, pw_decode, InvalidPassword
 
 __author__ = 'zhouqi'
 
@@ -139,7 +139,11 @@ class Engine(object):
             self.conf.set('wallet', 'encrypt_msg', new_msg)
             return True
         else:
-            if pw_decode(cmsg, password) == 'This is a test Message.':
+            try:
+                msg = pw_decode(cmsg, password)
+            except InvalidPassword:
+                return False
+            if msg == 'This is a test Message.':
                 self.conf.set('wallet', 'encrypt_msg', new_msg)
                 return True
             else:

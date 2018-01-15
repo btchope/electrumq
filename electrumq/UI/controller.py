@@ -306,6 +306,11 @@ class SendController(QWidget):
 
         self.send_view.send_btn.clicked.connect(self.send)
         self.send_view.dest_address_tb.setText('')
+        Engine().current_wallet_changed_event.append(self.init)
+
+    def init(self, **kwargs):
+        self.send_view.dest_address_tb.setText('')
+        self.send_view.output_value_edit.setText('')
 
     def send(self):
         try:
@@ -321,10 +326,13 @@ class SendController(QWidget):
             pwd_dig = PasswordDialog()
             pwd_dig.exec_()
             pwd = pwd_dig.password()
-            Engine().current_wallet.sign_transaction(tx, pwd)
-            tx_detail_dialog = TxDetailDialog(self)
-            tx_detail_dialog.tx_detail_view.show_tx(tx)
-            tx_detail_dialog.exec_()
+            if pwd is not None and len(pwd) != 0:
+                Engine().current_wallet.sign_transaction(tx, pwd)
+                tx_detail_dialog = TxDetailDialog(self)
+                tx_detail_dialog.tx_detail_view.show_tx(tx)
+                tx_detail_dialog.exec_()
+            else:
+                MessageBox(u'发送失败').exec_()
         except Exception as ex:
             MessageBox(ex.message).exec_()
 
