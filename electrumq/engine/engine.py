@@ -20,6 +20,8 @@ from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
 from electrumq.wallet.single import SimpleWallet
 from electrumq.secret.key import pw_encode, pw_decode, InvalidPassword
 
+import json
+
 __author__ = 'zhouqi'
 
 
@@ -82,6 +84,9 @@ class Engine(object):
             self.current_wallet.sync()
         else:
             self.current_wallet = None
+
+        self._rate = 99999
+        self.refresh_rate()
 
     def init_wallet(self, wallet_type, wallet_config_file):
         if wallet_type == 'simple':
@@ -151,6 +156,25 @@ class Engine(object):
 
     new_wallet_event = []
     current_wallet_changed_event = []
+
+    def get_btc2rmb_rate(self):
+        self.refresh_rate()
+        return self._rate
+
+    def set_btc2rmb_rate(self, future):
+        try:
+            response = future.result()
+            msg = json.loads(response)
+            if 'isSuc' in msg and msg['isSuc']:
+                if 'datas' in msg and 'ticker' in msg['datas']:
+                    if 'buy' in msg['datas']['ticker']:
+                        self._rate = msg['datas']['ticker']['buy']
+        except Exception as ex:
+            print ex.message
+
+    def refresh_rate(self):
+        url = 'https://www.btc123.com/api/getTicker?symbol=okcoinbtcusd'
+        NetWorkManager().http_request(url=url, method='GET', callback=self.set_btc2rmb_rate)
 
     '''
     wallet need show

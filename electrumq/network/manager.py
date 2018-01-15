@@ -62,7 +62,7 @@ class NetWorkManager:
         else:
             self.client.add_message(message, callback=callback, subscribe=subscribe)
 
-    def http_request(self, url, method, param, callback=None):
+    def http_request(self, url, method='GET', param=None, callback=None):
         """
         异步执行请求
         :rtype: None
@@ -70,12 +70,13 @@ class NetWorkManager:
         self.ioloop.add_future(self._do_http_request(url, method, param), callback)
 
     @gen.coroutine
-    def _do_http_request(self, url, method, param):
+    def _do_http_request(self, url, method, param=None):
         retry = 5
         while retry > 0:
             try:
+                # if param is not None:
                 request = tornado.httpclient.HTTPRequest(url=url, method=method,
-                                                         body=json.dumps(param),
+                                                         # body=json.dumps(param),
                                                          connect_timeout=20.0,
                                                          request_timeout=60 * 10)
                 response = yield tornado.gen.Task(AsyncHTTPClient().fetch, request)

@@ -223,7 +223,7 @@ class NavController(QWidget):
         if Engine().current_wallet is not None:
             Engine().current_wallet.wallet_tx_changed_event.append(self.show)
             self.address_view.set_address(Engine().current_wallet.address)
-            self.balance_view.set_blance(Engine().current_wallet.balance)
+            self.balance_view.set_blance(Engine().current_wallet.balance, rate=Engine().get_btc2rmb_rate())
 
 
 class DetailController(QWidget):

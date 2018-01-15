@@ -124,11 +124,11 @@ class BalanceView(QWidget):
         fiat_unit_label.setProperty('class', 'balanceUnit QLabel')
         layout.addWidget(fiat_unit_label, 1, 1)
 
-
         self.setLayout(layout)
 
-    def set_blance(self, balance):
+    def set_blance(self, balance, rate=1.0):
         self.btc_balance_label.setText(u'%f' % (balance * 1.0 / 100000000,))
+        self.fiat_balance_label.setText(u'%.2f' % ((balance * 1.0 / 100000000) * float(rate),))
         self.update()
 
 
