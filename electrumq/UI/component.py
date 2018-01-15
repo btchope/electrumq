@@ -310,6 +310,7 @@ class QRDialog(QtGui.QDialog):
         layout = QVBoxLayout()
         self.address_label = QLabel()
         self.address_label.setText(self.address_style(address))
+        self.address_label.setAlignment(Qt.AlignCenter)
         self.qrcode = QLabel(self)
         layout.addWidget(self.address_label)
         layout.addWidget(self.qrcode)
