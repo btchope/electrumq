@@ -193,7 +193,7 @@ HashLabel {
     background-color: #e0e0e0;
     border: 1px;
     font-size: 14px;
-    font-family: Roman times;
+    font-family: Consolas;
     padding: 5px;
 }
 

@@ -237,17 +237,17 @@ class TxDetailView(QWidget):
             else:
                 in_address = HashLabel('---')
 
-            self.in_layout.addWidget(in_address, idx, 0)
+            self.in_layout.addWidget(in_address, idx, 0, 1, 3)
             if each_in.in_value is not None:
                 in_value = QLabel(u'%f' % (each_in.in_value * 1.0 / 100000000,))
             else:
                 in_value = QLabel('---')
-            self.in_layout.addWidget(in_value, idx, 1)
+            self.in_layout.addWidget(in_value, idx, 3)
         for idx, each_out in enumerate(tx.output_list()):
             out_address = HashLabel(each_out.out_address)
-            self.out_layout.addWidget(out_address, idx, 0)
+            self.out_layout.addWidget(out_address, idx, 0, 1, 3)
             out_value = QLabel(u'%f' % (each_out.out_value * 1.0 / 100000000,))
-            self.out_layout.addWidget(out_value, idx, 1)
+            self.out_layout.addWidget(out_value, idx, 3)
         self.tx_hash.setText(tx.tx_hash)
 
     def dt_to_time(self, dt):
