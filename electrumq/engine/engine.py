@@ -85,7 +85,7 @@ class Engine(object):
         else:
             self.current_wallet = None
 
-        self._rate = 99999
+        self._rate = 0.0
         self.refresh_rate()
 
     def init_wallet(self, wallet_type, wallet_config_file):
