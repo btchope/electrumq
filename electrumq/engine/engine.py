@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import json
 from ConfigParser import RawConfigParser, NoOptionError
 from functools import partial
+
 from logging.config import fileConfig
 
 from sortedcontainers import SortedDict
@@ -9,12 +9,14 @@ from sortedcontainers import SortedDict
 from electrumq.blockchain.chain import BlockChain
 from electrumq.db.sqlite import init
 from electrumq.network.manager import NetWorkManager
-from electrumq.secret.key import pw_encode, pw_decode, InvalidPassword
 from electrumq.utils import Singleton
 from electrumq.utils.configuration import log_conf_path, conf_path, dirs
 from electrumq.utils.parameter import set_testnet
-from electrumq.wallet.base import WalletConfig
+from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
 from electrumq.wallet.single import SimpleWallet
+from electrumq.secret.key import pw_encode, pw_decode, InvalidPassword
+
+import json
 
 __author__ = 'zhouqi'
 
