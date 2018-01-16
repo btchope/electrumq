@@ -2,13 +2,15 @@
 import os
 import random
 
-from PyQt4.QtCore import QFileInfo, QString, SIGNAL, SLOT
+from PyQt4.QtCore import QString, Qt, QDateTime, QDate, QTime
 from PyQt4.QtGui import *
 
+import pyperclip
 from electrumq.db.sqlite.tx import TxStore
 from electrumq.secret.key import public_key_from_private_key, SecretToASecret
 from electrumq.secret.key_store import SimpleKeyStore
 from electrumq.engine.engine import Engine
+import time
 
 __author__ = 'zhouqi'
 
@@ -200,27 +202,40 @@ class TxDetailDialog(QDialog):
 class TxDetailView(QWidget):
     def __init__(self):
         super(TxDetailView, self).__init__()
-        main_layout = QHBoxLayout()
-        self.tx_hash = QLabel()
+        main_layout = QVBoxLayout()
+        # self.tx_hash = QLabel()
+        self.tx_time = QLabel()
+        main_layout.addWidget(self.tx_time)
+        line = LineLabel()
+        main_layout.addWidget(line)
+        self.tip0 = QLabel(u'交易id')
+        main_layout.addWidget(self.tip0)
+        self.tx_hash = HashLabel()
         main_layout.addWidget(self.tx_hash)
-        self.in_group = QGroupBox("Inputs")
+        self.tip1 = QLabel(u'交易源信息')
+        main_layout.addWidget(self.tip1)
+        self.in_group = QGroupBox()
         self.in_layout = QGridLayout()
         self.in_group.setLayout(self.in_layout)
         main_layout.addWidget(self.in_group)
-
-        self.out_group = QGroupBox("Outputs")
+        self.tip2 = QLabel(u'交易目的信息')
+        main_layout.addWidget(self.tip2)
+        self.out_group = QGroupBox()
         self.out_layout = QGridLayout()
         self.out_group.setLayout(self.out_layout)
         main_layout.addWidget(self.out_group)
+        main_layout.setMargin(1)
+        main_layout.setSpacing(1)
         self.setLayout(main_layout)
 
     def show_tx(self, tx):
         self.tx = tx
+        self.tx_time.setText(self.dt_to_time(tx.tx_locktime))
         for idx, each_in in enumerate(tx.input_list()):
             if each_in.in_address is not None:
-                in_address = QLabel(each_in.in_address)
+                in_address = HashLabel(each_in.in_address)
             else:
-                in_address = QLabel('---')
+                in_address = HashLabel('---')
 
             self.in_layout.addWidget(in_address, idx, 0)
             if each_in.in_value is not None:
@@ -229,8 +244,44 @@ class TxDetailView(QWidget):
                 in_value = QLabel('---')
             self.in_layout.addWidget(in_value, idx, 1)
         for idx, each_out in enumerate(tx.output_list()):
-            out_address = QLabel(each_out.out_address)
+            out_address = HashLabel(each_out.out_address)
             self.out_layout.addWidget(out_address, idx, 0)
             out_value = QLabel(u'%f' % (each_out.out_value * 1.0 / 100000000,))
             self.out_layout.addWidget(out_value, idx, 1)
-        # self.tx_hash.setText(tx['tx_hash'])
+        self.tx_hash.setText(tx.tx_hash)
+
+    def dt_to_time(self, dt):
+        loacl_time = time.localtime(dt)
+        return time.strftime("%Y-%m-%d %H:%M:%S", loacl_time)
+
+
+class HashLabel(QLabel):
+    def __init__(self, parent=None):
+        super(HashLabel, self).__init__()
+        super(HashLabel, self).setAlignment(Qt.AlignLeft)
+        super(HashLabel, self).setWordWrap(True)
+        if parent is not None:
+            self._value = parent
+            self.setText(parent)
+        self._value = None
+
+    def mousePressEvent(self, e):
+        value = self._value
+        if value is not None and len(value) > 0:
+            pyperclip.copy(value)
+
+    def setText(self, text):
+        self._value = text
+        result = ''
+        for i in range(len(text)):
+            result += text[i]
+            if i % 4 == 3:
+                result += '  '
+        result = result.strip()
+        super(HashLabel, self).setText(result)
+
+
+class LineLabel(QLabel):
+    def __init__(self, height=1):
+        super(LineLabel, self).__init__()
+        super(LineLabel, self).setFixedHeight(height)

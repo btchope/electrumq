@@ -329,6 +329,7 @@ class QRDialog(QtGui.QDialog):
                 result += ' '
         return result
 
+
 class MessageBox(QtGui.QMessageBox):
     timeout = 3
     auto_close = True

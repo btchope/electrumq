@@ -186,4 +186,19 @@ QRDialog > QLabel{
     color: black;
     font-size: 14px;
     font-family: Roman times;
+    padding: 5px;
+}
+
+HashLabel {
+    background-color: #e0e0e0;
+    border: 1px;
+    font-size: 14px;
+    font-family: Roman times;
+    padding: 5px;
+}
+
+LineLabel {
+    background-color: #a0a0a0;
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
