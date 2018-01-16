@@ -178,14 +178,14 @@ AddressView > QTextEdit{
 }
 
 .bigQRCode {
-    background-color: red;
+    background-color: white;
 }
 
 QRDialog > QLabel{
     background-color: #e0e0e0;
     color: black;
     font-size: 14px;
-    font-family: Roman times;
+    font-family: Consolas;
     padding: 5px;
 }
 
