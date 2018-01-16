@@ -1,26 +1,20 @@
 # -*- coding: utf-8 -*-
-import logging
-import os
+import json
 from ConfigParser import RawConfigParser, NoOptionError
 from functools import partial
-
-import sys
 from logging.config import fileConfig
 
-from appdirs import AppDirs
 from sortedcontainers import SortedDict
 
 from electrumq.blockchain.chain import BlockChain
 from electrumq.db.sqlite import init
 from electrumq.network.manager import NetWorkManager
+from electrumq.secret.key import pw_encode, pw_decode, InvalidPassword
 from electrumq.utils import Singleton
 from electrumq.utils.configuration import log_conf_path, conf_path, dirs
 from electrumq.utils.parameter import set_testnet
-from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
+from electrumq.wallet.base import WalletConfig
 from electrumq.wallet.single import SimpleWallet
-from electrumq.secret.key import pw_encode, pw_decode, InvalidPassword
-
-import json
 
 __author__ = 'zhouqi'
 
@@ -156,25 +150,26 @@ class Engine(object):
 
     new_wallet_event = []
     current_wallet_changed_event = []
+    rate_update_event = []
 
-    def get_btc2rmb_rate(self):
-        self.refresh_rate()
+    def get_rate(self, rate_type='btc2cny'):
         return self._rate
 
-    def set_btc2rmb_rate(self, future):
+    def set_rate(self, future):
         try:
             response = future.result()
             msg = json.loads(response)
-            if 'isSuc' in msg and msg['isSuc']:
-                if 'datas' in msg and 'ticker' in msg['datas']:
-                    if 'buy' in msg['datas']['ticker']:
-                        self._rate = msg['datas']['ticker']['buy']
+            self._rate = msg['CNY']['15m']
+            global EVENT_QUEUE
+            if len(self.rate_update_event) > 0:
+                for event in set(self.rate_update_event):
+                    EVENT_QUEUE.put(partial(event))
         except Exception as ex:
             print ex.message
 
     def refresh_rate(self):
-        url = 'https://www.btc123.com/api/getTicker?symbol=okcoinbtcusd'
-        NetWorkManager().http_request(url=url, method='GET', callback=self.set_btc2rmb_rate)
+        url = 'https://blockchain.info/ticker'
+        NetWorkManager().http_request(url=url, method='GET', callback=self.set_rate)
 
     '''
     wallet need show
