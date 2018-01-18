@@ -293,3 +293,6 @@ def close_logger(logger_name):
     logger = logging.getLogger(logger_name)
     for e in logger.handlers:
         logger.removeHandler(e)
+
+if __name__ =='__main__':
+    unittest.main()

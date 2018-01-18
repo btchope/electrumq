@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
-from unittest import TestCase
+import  unittest
 
 from electrumq.tx.tx import Transaction, Input, Output
 from electrumq.utils.base58 import b58decode_check, public_key_to_p2pkh
@@ -12,7 +12,7 @@ from electrumq.utils.parameter import TYPE_ADDRESS, set_testnet
 __author__ = 'zhouqi'
 
 
-class TestData(TestCase):
+class TestData(unittest.TestCase):
     bitcoin_test_case = json.loads(open('./data/bitcoin-util-test.json').read())
 
     def test_create_empty_transaction(self):
@@ -104,3 +104,6 @@ class TestData(TestCase):
 
     def read_json(self, file_name):
         return json.loads(open('./data/%s' % (file_name,)).read())
+
+if __name__ =='__main__':
+    unittest.main()

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from unittest import TestCase
+import unittest
 
 from tornado.testing import AsyncTestCase
 
@@ -19,9 +19,12 @@ class HowToUseWallet(AsyncTestCase):
         super(HowToUseWallet, self).tearDown()
 
 
-class TestWalletSync(TestCase):
+class TestWalletSync(unittest.TestCase):
     def test_base_wallet(self):
         network = NetWorkManager()
         network.start()
         wallet = SimpleWallet(WalletConfig(store_path=dirs.user_data_dir + '/' + '00.json'))
         wallet.sync()
+
+if __name__ =='__main__':
+    unittest.main()

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from unittest import TestCase
+import  unittest
 
 from electrumq.utils.base58 import double_sha256
 from electrumq.secret.key import EC_KEY
@@ -7,7 +7,7 @@ from electrumq.secret.key import EC_KEY
 __author__ = 'zhouqi'
 
 
-class HowToUseKey(TestCase):
+class HowToUseKey(unittest.TestCase):
     def test_sign(self):
         secret = '5HvofFG7K1e2aeWESm5pbCzRHtCSiZNbfLYXBvxyA57DhKHV4U3'
         private_key = '0ecd20654c2e2be708495853e8da35c664247040c00bd10b9b13e5e86e6a808d'
@@ -27,6 +27,5 @@ class HowToUseKey(TestCase):
         private_key = '0ecd20654c2e2be708495853e8da35c664247040c00bd10b9b13e5e86e6a808d'
         public_key = '042daa93315eebbe2cb9b5c3505df4c6fb6caca8b756786098567550d4820c09db988fe9997d049d687292f815ccd6e7fb5c1b1a91137999818d17c73d0f80aef9'
 
-
-
-
+if __name__ =='__main__':
+    unittest.main()

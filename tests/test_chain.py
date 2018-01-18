@@ -59,3 +59,6 @@ class TestBockStore(TestCase):
             BlockStore().connect_raw_header(data[idx * 80 * BLOCK_INTERVAL + i * 80: (
                                                                                      idx + 1) * 80 * BLOCK_INTERVAL + i * 80 + 80],
                                             idx * BLOCK_INTERVAL + i)
+
+if __name__ =='__main__':
+    unittest.main()

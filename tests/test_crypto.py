@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from unittest import TestCase
+import unittest
 
 from ecdsa.util import string_to_number
 
@@ -9,7 +9,7 @@ from electrumq.utils.key import ASecretToSecret, is_compressed
 __author__ = 'zhouqi'
 
 
-class HowToUseKey(TestCase):
+class HowToUseKey(unittest.TestCase):
     def test_sign(self):
         secret = '5HvofFG7K1e2aeWESm5pbCzRHtCSiZNbfLYXBvxyA57DhKHV4U3'
         private_key = '0ecd20654c2e2be708495853e8da35c664247040c00bd10b9b13e5e86e6a808d'
@@ -29,3 +29,6 @@ class HowToUseKey(TestCase):
         self.assertEqual(ASecretToSecret(secret).encode('hex'), private_key)
         self.assertEqual(i2o_ECPublicKey(key, is_compressed(secret)).encode('hex'), public_key)
         # self.assertEqual(i2d_ECPrivateKey(key), is_compressed(secret), private_key)
+
+if __name__ =='__main__':
+    unittest.main()

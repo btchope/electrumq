@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
-from unittest import TestCase
+import unittest
 
 from electrumq.utils.base58 import b58decode_check, public_key_to_p2pkh
 from electrumq.utils.key import EC_KEY, regenerate_key
@@ -11,7 +11,7 @@ from electrumq.utils.tx import Transaction, Input, Output
 __author__ = 'zhouqi'
 
 
-class TestData(TestCase):
+class TestData(unittest.TestCase):
     bitcoin_test_case = json.loads(open('./data/bitcoin-util-test.json').read())
 
     def test_create_empty_transaction(self):
@@ -92,10 +92,11 @@ class TestData(TestCase):
         self.assertEqual(str(tx), '01000000018594c5bdcaec8f06b78b596f31cd292a294fd031e24eec716f43dac91ea7494d000000008a473044022024a1d4c691ee739cb430e0bbc92192af9e85090cfadfc3d9c5fdf3292187c37c02200ba62aeff058bb2185e9357ff51c06874c45192d5fcac6d546a6739c9aaf1a7901410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8ffffffff01a0860100000000001976a9145834479edbbe0539b31ffd3a8f8ebadc2165ed0188ac00000000')
 
 
-
-
     def read_hex(self, file_name):
         return open('./data/%s' % (file_name,)).read().replace('\n', '')
 
     def read_json(self, file_name):
         return json.loads(open('./data/%s' % (file_name,)).read())
+
+if __name__ =='__main__':
+    unittest.main()

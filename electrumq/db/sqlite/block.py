@@ -103,11 +103,13 @@ class BlockStore():
         new_bits = bitsN << 24 | bitsBase
         return new_bits, bitsBase << (8 * (bitsN - 3))
 
+    #校验块头
     def verify_header(self, header, prev_header, bits, target):
         if prev_header is None:
             prev_hash = '0' * 64
         else:
             prev_hash = prev_header.block_hash
+        #对prev_header的 hash 与header的提示信息校验
         if prev_hash != header.block_prev:
             logger.warning("prev hash mismatch: %s vs %s" % (prev_hash, header.block_prev))
             return False

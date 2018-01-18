@@ -57,7 +57,7 @@ class EQApplication(QApplication):
         self.timer = QTimer()
         self.timer.start(50)  # You may change this if you wish.
         self.timer.timeout.connect(self.ui_loop)
-
+    #事件队列
     def ui_loop(self):
         global EVENT_QUEUE
         while not EVENT_QUEUE.empty():

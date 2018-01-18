@@ -56,3 +56,5 @@ class TestConnection(unittest.TestCase):
             c = conn.cursor()
             res = c.execute('select * from test;')
             self.assertEqual(res.fetchall(), [])
+if __name__ =='__main__':
+    unittest.main()

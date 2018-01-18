@@ -11,12 +11,13 @@ __author__ = 'zhouqi'
 
 if __name__ == '__main__':
     try:
+
         app = EQApplication(sys.argv)
         main = EQMainWindow()
         main.raise_()
         main.show()
         main.activateWindow()
-
+        #这个关闭 app 的信号处理函数，如果发现退出命令就退出函数
         signal.signal(signal.SIGTERM, lambda sig, frame: app.quit())
         signal.signal(signal.SIGINT, lambda sig, frame: app.quit())
 
