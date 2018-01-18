@@ -1,19 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9a77cb11-78a3-4e4c-a65c-158e53cd13f5" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/electrumq.py" afterPath="$PROJECT_DIR$/electrumq.py" />
-      <change beforePath="$PROJECT_DIR$/electrumq/UI/controller.py" afterPath="$PROJECT_DIR$/electrumq/UI/controller.py" />
-      <change beforePath="$PROJECT_DIR$/electrumq/db/sqlite/block.py" afterPath="$PROJECT_DIR$/electrumq/db/sqlite/block.py" />
-      <change beforePath="$PROJECT_DIR$/tests/test_chain.py" afterPath="$PROJECT_DIR$/tests/test_chain.py" />
-      <change beforePath="$PROJECT_DIR$/tests/test_crypto.py" afterPath="$PROJECT_DIR$/tests/test_crypto.py" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data.py" afterPath="$PROJECT_DIR$/tests/test_data.py" />
-      <change beforePath="$PROJECT_DIR$/tests/test_key.py" afterPath="$PROJECT_DIR$/tests/test_key.py" />
-      <change beforePath="$PROJECT_DIR$/tests/test_network.py" afterPath="$PROJECT_DIR$/tests/test_network.py" />
-      <change beforePath="$PROJECT_DIR$/tests/test_tx.py" afterPath="$PROJECT_DIR$/tests/test_tx.py" />
-      <change beforePath="$PROJECT_DIR$/tests/test_util.py" afterPath="$PROJECT_DIR$/tests/test_util.py" />
-      <change beforePath="$PROJECT_DIR$/tests/test_wallet.py" afterPath="$PROJECT_DIR$/tests/test_wallet.py" />
-    </list>
+    <list default="true" id="9a77cb11-78a3-4e4c-a65c-158e53cd13f5" name="Default" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -45,7 +33,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="test_data.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="test_data.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tests/test_data.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="206">
@@ -83,11 +71,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="test_tx.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="test_tx.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/tests/test_tx.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="204">
-              <caret line="12" column="0" lean-forward="true" selection-start-line="12" selection-start-column="0" selection-end-line="12" selection-end-column="0" />
+            <state relative-caret-position="265">
+              <caret line="62" column="34" lean-forward="true" selection-start-line="62" selection-start-column="34" selection-end-line="62" selection-end-column="34" />
               <folding>
                 <element signature="e#24#35#0" expanded="true" />
               </folding>
@@ -174,11 +162,10 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="580" />
-    <option name="y" value="290" />
+  <component name="ProjectFrameBounds" extendedState="1">
+    <option name="y" value="23" />
     <option name="width" value="1280" />
-    <option name="height" value="716" />
+    <option name="height" value="734" />
   </component>
   <component name="ProjectView">
     <navigator currentView="ProjectPane" proportions="" version="1">
@@ -357,6 +344,9 @@
     <history-entry file="Unittests_in_test_crypto_py - 2018.01.18 at 19h 41m 29s.xml">
       <configuration name="Unittests in test_crypto.py" configurationId="tests" />
     </history-entry>
+    <history-entry file="Unittests_in_test_crypto_py - 2018.01.18 at 20h 02m 55s.xml">
+      <configuration name="Unittests in test_crypto.py" configurationId="tests" />
+    </history-entry>
     <history-entry file="Unittests_in_test_data_py - 2018.01.18 at 01h 01m 28s.xml">
       <configuration name="Unittests in test_data.py" configurationId="tests" />
     </history-entry>
@@ -366,18 +356,15 @@
     <history-entry file="Unittests_in_test_data_py - 2018.01.18 at 19h 27m 12s.xml">
       <configuration name="Unittests in test_data.py" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_in_test_wallet_py - 2017.12.19 at 20h 25m 18s.xml">
-      <configuration name="Unittests in test_wallet.py" configurationId="tests" />
-    </history-entry>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="1280" height="734" extended-state="6" />
+    <frame x="0" y="23" width="1280" height="734" extended-state="1" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1578125" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25377643" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25377643" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -785,26 +772,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tests/test_tx.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="204">
-          <caret line="12" column="0" lean-forward="true" selection-start-line="12" selection-start-column="0" selection-end-line="12" selection-end-column="0" />
-          <folding>
-            <element signature="e#24#35#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tests/test_network.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-4690">
-          <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
-          <folding>
-            <element signature="e#24#38#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/tests/test_key.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="459">
@@ -823,6 +790,26 @@
             <element signature="e#919#1152#0" expanded="false" />
             <element signature="e#1199#2539#0" expanded="false" />
             <element signature="e#2584#4244#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_network.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-4690">
+          <caret line="1" column="0" lean-forward="false" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
+          <folding>
+            <element signature="e#24#38#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_tx.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="265">
+          <caret line="62" column="34" lean-forward="true" selection-start-line="62" selection-start-column="34" selection-end-line="62" selection-end-column="34" />
+          <folding>
+            <element signature="e#24#35#0" expanded="true" />
           </folding>
         </state>
       </provider>
