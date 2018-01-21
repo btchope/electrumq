@@ -263,7 +263,8 @@ class HashLabel(QLabel):
         if parent is not None:
             self._value = parent
             self.setText(parent)
-        self._value = None
+        else:
+            self._value = None
 
     def mousePressEvent(self, e):
         value = self._value
