@@ -2,5 +2,7 @@ language: python
 rvm:
     - 2.7.14
 install: false
-script: python tests/test.py 
+script:
+  cd tools && pip install PyQt4-4.11.4-cp27-cp27m-win_amd64.whl
+  python tests/test.py
 
