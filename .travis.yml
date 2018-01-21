@@ -3,6 +3,6 @@ rvm:
     - 2.7.14
 install: false
 script:
-  cd tools && pip install PyQt4-4.11.4-cp27-cp27m-win_amd64.whl
-  python tests/test.py
+   - cd tools && pip install PyQt4_gpl_x11-4.12.1.tar.gz
+   - python tests/test.py
 
