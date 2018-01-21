@@ -1,6 +1,6 @@
 language: python
 rvm:
     - 2.7.14
-install: true
+install: false
 script: python tests/test.py 
 
