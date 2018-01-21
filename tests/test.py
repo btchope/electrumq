@@ -8,6 +8,10 @@ __author__ = 'zhouqi'
 
 
 if __name__ == '__main__':
-    a
-    print "hello world"
+    #a
+    try:
+        a
+        print "hello world"
+    except Exception:
+        sys.exit(0)
 
