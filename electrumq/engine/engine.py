@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-import logging
-import os
 from ConfigParser import RawConfigParser, NoOptionError
 from functools import partial
 
-import sys
-from appdirs import AppDirs
+from logging.config import fileConfig
+
 from sortedcontainers import SortedDict
 
 from electrumq.blockchain.chain import BlockChain
@@ -16,6 +14,9 @@ from electrumq.utils.configuration import log_conf_path, conf_path, dirs
 from electrumq.utils.parameter import set_testnet
 from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
 from electrumq.wallet.single import SimpleWallet
+from electrumq.secret.key import pw_encode, pw_decode, InvalidPassword
+
+import json
 
 __author__ = 'zhouqi'
 
@@ -55,7 +56,7 @@ class Engine(object):
 
     def __init__(self):
         set_testnet()
-        # logging.config.fileConfig(log_conf_path)
+        fileConfig(log_conf_path)
         init()
         network = NetWorkManager()
         network.start()
@@ -71,6 +72,7 @@ class Engine(object):
                 wallet_type = self.conf.get('wallet', 'wallet_type_' + wallet_name)
                 wallet_config_file = v  # self.conf.get('wallet', k)
                 self.wallet_dict[wallet_name] = self.init_wallet(wallet_type, wallet_config_file)
+                self.wallet_dict[wallet_name].sync()
 
         self._current = self.conf.get('wallet', 'current')
         if self._current is not None:
@@ -78,6 +80,9 @@ class Engine(object):
             self.current_wallet.sync()
         else:
             self.current_wallet = None
+
+        self._rate = 0.0
+        self.refresh_rate()
 
     def init_wallet(self, wallet_type, wallet_config_file):
         if wallet_type == 'simple':
@@ -128,9 +133,45 @@ class Engine(object):
                     return idx
             return 0
 
+    def check_password(self, password):
+        cmsg = self.conf.get('wallet', 'encrypt_msg')
+        new_msg = pw_encode('This is a test Message.', password)
+        if cmsg is None:
+            self.conf.set('wallet', 'encrypt_msg', new_msg)
+            return True
+        else:
+            try:
+                msg = pw_decode(cmsg, password)
+            except InvalidPassword:
+                return False
+            if msg == 'This is a test Message.':
+                self.conf.set('wallet', 'encrypt_msg', new_msg)
+                return True
+            else:
+                return False
 
     new_wallet_event = []
     current_wallet_changed_event = []
+    rate_update_event = []
+
+    def get_rate(self, rate_type='btc2cny'):
+        return self._rate
+
+    def set_rate(self, future):
+        try:
+            response = future.result()
+            msg = json.loads(response)
+            self._rate = msg['CNY']['15m']
+            global EVENT_QUEUE
+            if len(self.rate_update_event) > 0:
+                for event in set(self.rate_update_event):
+                    EVENT_QUEUE.put(partial(event))
+        except Exception as ex:
+            print ex.message
+
+    def refresh_rate(self):
+        url = 'https://blockchain.info/ticker'
+        NetWorkManager().http_request(url=url, method='GET', callback=self.set_rate)
 
     '''
     wallet need show

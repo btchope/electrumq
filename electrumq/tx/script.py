@@ -6,10 +6,8 @@ import types
 
 from electrumq.utils import print_error
 from electrumq.utils.base58 import hash160_to_p2pkh, hash160_to_p2sh, hash_160, \
-    bc_address_to_type_and_hash_160, public_key_to_p2pkh
-from electrumq.utils.key_store import xpubkey_to_address, xpubkey_to_pubkey
+    bc_address_to_type_and_hash_160, public_key_to_p2pkh, hash_160_to_bc_address
 from electrumq.utils.parameter import TYPE_ADDRESS, TYPE_SCRIPT, TYPE_PUBKEY, Parameter
-from electrumq.utils.parser import op_push
 
 __author__ = 'zhouqi'
 
@@ -579,3 +577,226 @@ def multisig_script(public_keys, m):
     op_n = format(opcodes.OP_1 + n - 1, 'x')
     keylist = [op_push(len(k) / 2) + k for k in public_keys]
     return op_m + ''.join(keylist) + op_n + 'ae'
+
+
+class SerializationError(Exception):
+    """ Thrown when there's a problem deserializing or serializing """
+
+
+class BCDataStream(object):
+    def __init__(self):
+        self.input = None
+        self.read_cursor = 0
+
+    def clear(self):
+        self.input = None
+        self.read_cursor = 0
+
+    def write(self, data):  # Initialize with string of bytes
+        if self.input is None:
+            self.input = data
+        else:
+            self.input += data
+
+    def read_string(self):
+        # Strings are encoded depending on length:
+        # 0 to 252 :  1-byte-length followed by bytes (if any)
+        # 253 to 65,535 : byte'253' 2-byte-length followed by bytes
+        # 65,536 to 4,294,967,295 : byte '254' 4-byte-length followed by bytes
+        # ... and the Bitcoin client is coded to understand:
+        # greater than 4,294,967,295 : byte '255' 8-byte-length followed by bytes of string
+        # ... but I don't think it actually handles any strings that big.
+        if self.input is None:
+            raise SerializationError("call write(bytes) before trying to deserialize")
+
+        try:
+            length = self.read_compact_size()
+        except IndexError:
+            raise SerializationError("attempt to read past end of buffer")
+
+        return self.read_bytes(length)
+
+    def write_string(self, string):
+        # Length-encoded as with read-string
+        self.write_compact_size(len(string))
+        self.write(string)
+
+    def read_bytes(self, length):
+        try:
+            result = self.input[self.read_cursor:self.read_cursor + length]
+            self.read_cursor += length
+            return result
+        except IndexError:
+            raise SerializationError("attempt to read past end of buffer")
+
+    def read_boolean(self):
+        return self.read_bytes(1)[0] != chr(0)
+
+    def read_int16(self):
+        return self._read_num('<h')
+
+    def read_uint16(self):
+        return self._read_num('<H')
+
+    def read_int32(self):
+        return self._read_num('<i')
+
+    def read_uint32(self):
+        return self._read_num('<I')
+
+    def read_int64(self):
+        return self._read_num('<q')
+
+    def read_uint64(self):
+        return self._read_num('<Q')
+
+    def write_boolean(self, val):
+        return self.write(chr(1) if val else chr(0))
+
+    def write_int16(self, val):
+        return self._write_num('<h', val)
+
+    def write_uint16(self, val):
+        return self._write_num('<H', val)
+
+    def write_int32(self, val):
+        return self._write_num('<i', val)
+
+    def write_uint32(self, val):
+        return self._write_num('<I', val)
+
+    def write_int64(self, val):
+        return self._write_num('<q', val)
+
+    def write_uint64(self, val):
+        return self._write_num('<Q', val)
+
+    def read_compact_size(self):
+        size = ord(self.input[self.read_cursor])
+        self.read_cursor += 1
+        if size == 253:
+            size = self._read_num('<H')
+        elif size == 254:
+            size = self._read_num('<I')
+        elif size == 255:
+            size = self._read_num('<Q')
+        return size
+
+    def write_compact_size(self, size):
+        if size < 0:
+            raise SerializationError("attempt to write size < 0")
+        elif size < 253:
+            self.write(chr(size))
+        elif size < 2 ** 16:
+            self.write('\xfd')
+            self._write_num('<H', size)
+        elif size < 2 ** 32:
+            self.write('\xfe')
+            self._write_num('<I', size)
+        elif size < 2 ** 64:
+            self.write('\xff')
+            self._write_num('<Q', size)
+
+    def _read_num(self, format):
+        (i,) = struct.unpack_from(format, self.input, self.read_cursor)
+        self.read_cursor += struct.calcsize(format)
+        return i
+
+    def _write_num(self, format, num):
+        s = struct.pack(format, num)
+        self.write(s)
+
+
+def read_uint16(content, offset=0):
+    return struct.unpack_from('<H', content, offset)[0]
+
+
+def read_uint32(content, offset=0):
+    return struct.unpack_from('<I', content, offset)[0]
+
+
+def read_uint64(content, offset=0):
+    return struct.unpack_from('<Q', content, offset)[0]
+
+
+def read_compact_size(content, offset=0):
+    size = ord(content[offset])
+    offset += 1
+    if size == 253:
+        size = read_uint16(content, offset)
+        offset += 2
+    elif size == 254:
+        size = read_uint32(content, offset)
+        offset += 4
+    elif size == 255:
+        size = read_uint64(content, offset)
+        offset += 8
+    return size, offset
+
+
+def write_uint16(num):
+    return struct.pack('<H', num)
+
+
+def write_uint32(num):
+    return struct.pack('<I', num)
+
+
+def write_uint64(num):
+    return struct.pack('<Q', num)
+
+
+def write_compact_size(size):
+    if size < 0:
+        raise EOFError("attempt to write size < 0")
+    elif size < 253:
+        return chr(size)
+    elif size < 2 ** 16:
+        return '\xfd' + write_uint16(size)
+    elif size < 2 ** 32:
+        return '\xfe' + write_uint32(size)
+    elif size < 2 ** 64:
+        return '\xff' + write_uint64(size)
+    else:
+        raise EOFError("attempt to write size > int64")
+
+
+def op_push(i):
+    if i < 0x4c:
+        return chr(i).encode('hex')
+    elif i < 0xff:
+        return '4c' + chr(i).encode('hex')
+    elif i < 0xffff:
+        return '4d' + write_uint16(i).encode('hex')
+    else:
+        return '4e' + write_uint32(i).encode('hex')
+
+
+def xpubkey_to_address(x_pubkey):
+    address = None
+    if x_pubkey[0:2] == 'fd':
+        addrtype = ord(x_pubkey[2:4].decode('hex'))
+        hash160 = x_pubkey[4:].decode('hex')
+        address = hash_160_to_bc_address(hash160, addrtype)
+        return x_pubkey, address
+    if x_pubkey[0:2] in ['02', '03', '04']:
+        pubkey = x_pubkey
+    # elif x_pubkey[0:2] == 'ff':
+    #     xpub, s = BIP32KeyStore.parse_xpubkey(x_pubkey)
+    #     pubkey = BIP32KeyStore.get_pubkey_from_xpub(xpub, s)
+    # elif x_pubkey[0:2] == 'fe':
+    #     mpk, s = OldKeyStore.parse_xpubkey(x_pubkey)
+    #     pubkey = OldKeyStore.get_pubkey_from_mpk(mpk, s[0], s[1])
+    else:
+        raise BaseException("Cannot parse pubkey")
+    if pubkey:
+        address = public_key_to_p2pkh(pubkey.decode('hex'))
+    return pubkey, address
+
+
+def xpubkey_to_pubkey(x_pubkey):
+    pubkey, address = xpubkey_to_address(x_pubkey)
+    return pubkey
+
+def int_to_hex(size):
+    return write_compact_size(size).encode('hex')

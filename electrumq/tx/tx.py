@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
+from electrumq.db.sqlite.tx import TxStore
 from electrumq.tx.script import Script, get_scriptPubKey, multisig_script
 from electrumq.utils import print_error
 from electrumq.utils.base58 import double_sha256, hash_160
-from electrumq.utils.key import EC_KEY
-from electrumq.utils.key_store import xpubkey_to_pubkey
-from electrumq.utils.parser import write_uint32, int_to_hex, write_uint64
-from electrumq.utils.tx import BCDataStream, parse_scriptSig, get_address_from_output_script, \
+from electrumq.secret.key import EC_KEY
+from electrumq.tx.script import xpubkey_to_pubkey
+from electrumq.tx.script import write_uint32, int_to_hex, write_uint64
+from electrumq.tx.script import BCDataStream
+from electrumq.tx.script import parse_scriptSig, get_address_from_output_script, \
     push_script
 
 __author__ = 'zhouqi'
@@ -20,8 +22,16 @@ class Output(object):
     out_sn = None
     out_value = None
     out_address = None
-    # address_type = None
+    address_type = None
     out_script = None
+
+    def __init__(self, address_type=None, out_address=None, out_value=None):
+        super(Output, self).__init__()
+        self.out_address = out_address
+        self.address_type = address_type
+        self.out_value = out_value
+        if self.out_address is not None:
+            self.out_script = self.pay_script_from_address()
 
     @classmethod
     def init_from_raw(cls, vds, out_sn):
@@ -32,6 +42,21 @@ class Output(object):
         _, tx_out.out_address = get_address_from_output_script(
             tx_out.out_script.decode('hex'))
         return tx_out
+
+    @classmethod
+    def get_output_from_db(cls, tx_hash):
+        outs = TxStore().get_tx_out(tx_hash)
+        results = []
+        for out in outs:
+            self = cls()
+            self.tx_hash = out[0]
+            self.out_sn = out[1]
+            self.out_script = out[2]
+            self.out_value = out[3]
+            # self.out_status = out[4]
+            self.out_address = out[5]
+            results.append(self)
+        return results
 
     def pay_script_from_address(self):
         return Script().get_script_pubkey(self.out_address)
@@ -58,6 +83,17 @@ class Input(object):
 
     tx_out = None
 
+    def __init__(self, tx_in_dict=None):
+        super(Input, self).__init__()
+
+        if tx_in_dict is not None:
+            self.prev_tx_hash = tx_in_dict['prevout_hash']
+            self.prev_out_sn = tx_in_dict['prevout_n']
+            self.in_signature = tx_in_dict['scriptSig']
+            self.in_value = tx_in_dict['value']
+            self.in_address = tx_in_dict['address']
+            self.height = tx_in_dict['height']
+
     @classmethod
     def init_from_raw(cls, vds, in_sn):
         tx_in = Input()
@@ -72,6 +108,23 @@ class Input(object):
         tx_in.in_signature = scriptSig.encode('hex')
         tx_in.in_sequence = sequence
         return tx_in
+
+    @classmethod
+    def get_input_from_db(cls, tx_hash):
+        ins = TxStore().get_tx_in(tx_hash)
+        results = []
+        for tx_in in ins:
+            self = cls()
+            self.tx_hash = tx_in[0]
+            self.in_sn = tx_in[1]
+            self.prev_tx_hash = tx_in[2]
+            self.prev_out_sn = tx_in[3]
+            self.in_signature = tx_in[4]
+            self.in_sequence = tx_in[5]
+            self.in_address = tx_in[6]
+            self.in_value = tx_in[7]
+            results.append(self)
+        return results
 
     def get_tx_in_dict(self):
         d = {}
@@ -148,6 +201,17 @@ class Input(object):
         else:
             raise TypeError('Unknown txin type', self.in_dict['type'])
 
+    def estimated_input_size(self):
+        '''Return an estimated of serialized input size in bytes.'''
+        # todo:
+        return 34
+        # script = self.input_script(True)
+        # return len(self.serialize_input(script)) / 2
+
+    @property
+    def is_coinbase(self):
+        return self.prev_tx_hash == '00' * 32
+
 
 class Transaction(object):
     tx_hash = None
@@ -173,7 +237,41 @@ class Transaction(object):
 
     @classmethod
     def init_from_raw(cls, raw, lazy_load=True):
-        pass
+        tx = Transaction()
+        tx.raw = raw
+        if lazy_load:
+            tx.need_deserialize = True
+        else:
+            tx.deserialize()
+            tx.need_deserialize = False
+        return tx
+
+    @classmethod
+    def from_io(cls, inputs, outputs, locktime=0, tx_ver=1):
+        self = cls()
+        self._input_list = inputs
+        self._output_list = outputs
+        self.locktime = locktime
+        self.tx_ver = tx_ver
+        return self
+
+    @classmethod
+    def get_tx_from_db(cls, tx_hash):
+        tx = TxStore().get_tx(tx_hash)
+        if len(tx) == 0:
+            raise Exception('tx hash not exist')
+        tx = tx[0]
+        self = cls()
+        self.tx_hash = tx[0]
+        self.tx_ver = tx[1]
+        self.tx_locktime = tx[2]
+        self.tx_time = tx[3]
+        self.block_no = tx[4]
+        self.source = tx[5]
+        self._output_list = Output.get_output_from_db(tx_hash)
+        self._input_list = Input.get_input_from_db(tx_hash)
+        return self
+
 
     def serialize(self, estimate_size=False, witness=True):
         """
@@ -298,5 +396,77 @@ class Transaction(object):
 
     def __str__(self):
         return self.serialize()
+
+
+    def estimated_size(self):
+        """
+        Return an estimated tx size in bytes.
+        """
+        return len(self.serialize(True)) / 2 if not self.is_complete() or self.raw is None else len(
+            self.raw) / 2  # ASCII hex string
+
+
+    def input_list(self):
+        self.deserialize()
+        return self._input_list
+
+    def output_list(self):
+        self.deserialize()
+        return self._output_list
+
+    def input_value(self):
+        return sum(x.in_value for x in self.input_list())
+
+    def output_value(self):
+        return sum(e.out_value for e in self.output_list())
+
+    def get_fee(self):
+        return self.input_value() - self.output_value()
+
+    def add_input_list(self, inputs):
+        self._input_list.extend(inputs)
+        self.raw = None
+
+    def add_output_list(self, outputs):
+        for each in outputs:
+            if each.__class__ is tuple:
+                self._output_list.append(Output(*each))
+            else:
+                self._output_list.append(each)
+        # self._output_list.extend(outputs)
+        self.raw = None
+
+    def is_complete(self):
+        s, r = self.signature_count()
+        return r == s
+
+    def signature_count(self):
+        r = 0
+        s = 0
+        for txin in self.input_list():
+            if txin.is_coinbase:
+                continue
+            signatures = filter(None, txin.in_dict.get('signatures', []))
+            s += len(signatures)
+            r += txin.in_dict.get('num_sig', -1)
+        return s, r
+
+    def bip_li01_sort(self):
+        # See https://github.com/kristovatlas/rfc/blob/master/bips/bip-li01.mediawiki
+        self._input_list.sort(key=lambda i: (i.prev_tx_hash, i.prev_out_sn))
+        for idx, each in enumerate(self._input_list):
+            if each.in_sn is None:
+                each.in_sn = idx
+        self._output_list.sort(key=lambda o: (o.out_value, o.out_script))
+        for idx, each in enumerate(self._output_list):
+            if each.out_sn is None:
+                each.out_sn = idx
+
+    def txid(self):
+        all_segwit = all(x.is_segwit_input() for x in self.input_list())
+        if not all_segwit and not self.is_complete():
+            return None
+        ser = self.serialize(witness=False)
+        return double_sha256(ser.decode('hex'))[::-1].encode('hex')
 
 

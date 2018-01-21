@@ -15,14 +15,14 @@ from datetime import datetime
 from electrumq.UI import logger
 from electrumq.UI.component import AccountIcon, AddressView, BalanceView, \
     FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView, MessageBox
-from electrumq.UI.dialog import NewAccountDialog, TxDetailDialog
+from electrumq.UI.dialog import NewAccountDialog, TxDetailDialog, PasswordDialog
 from electrumq.UI.layout.borderlayout import BorderLayout
 from electrumq.db.sqlite import init
 from electrumq.network.manager import NetWorkManager
 from electrumq.utils import verification
 from electrumq.utils.configuration import style_path
 from electrumq.utils.parameter import TYPE_ADDRESS
-from electrumq.utils.tx import Output
+from electrumq.tx.tx import Output
 from electrumq.engine.engine import Engine
 from electrumq.wallet.single import SimpleWallet
 from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
@@ -210,6 +210,7 @@ class NavController(QWidget):
 
         self.show()
         Engine().current_wallet_changed_event.append(self.show)
+        Engine().rate_update_event.append(self.update_balance)
         if Engine().current_wallet is not None:
             Engine().current_wallet.wallet_tx_changed_event.append(self.show)
 
@@ -223,7 +224,12 @@ class NavController(QWidget):
         if Engine().current_wallet is not None:
             Engine().current_wallet.wallet_tx_changed_event.append(self.show)
             self.address_view.set_address(Engine().current_wallet.address)
-            self.balance_view.set_blance(Engine().current_wallet.balance)
+            self.balance_view.set_blance(Engine().current_wallet.balance, rate=Engine().get_rate())
+
+    def update_balance(self):
+        if Engine().current_wallet is not None:
+            self.balance_view.set_blance(Engine().current_wallet.balance,
+                                         rate=Engine().get_rate())
 
 
 class DetailController(QWidget):
@@ -291,7 +297,7 @@ class TabController(QWidget):
         if Engine().current_wallet is not None:
             Engine().current_wallet.wallet_tx_changed_event.append(self.show)
             txs = Engine().current_wallet.get_txs()
-            data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), e['tx_delta']] for e in txs]
+            data_source = [[e['tx_hash'], self.dt_to_qdt(e['tx_time']), '%f' % (e['tx_delta'] * 1.0 / 100000000)] for e in txs]
             self.tx_table_view.data_source = data_source
             self.tx_table_view.reload()
 
@@ -306,22 +312,33 @@ class SendController(QWidget):
 
         self.send_view.send_btn.clicked.connect(self.send)
         self.send_view.dest_address_tb.setText('')
+        Engine().current_wallet_changed_event.append(self.init)
+
+    def init(self, **kwargs):
+        self.send_view.dest_address_tb.setText('')
+        self.send_view.output_value_edit.setText('')
 
     def send(self):
         try:
-            address = self.send_view.dest_address_tb.text()
+            address = str(self.send_view.dest_address_tb.text())
             amount = self.send_view.output_value_edit.text()
             verification.check_address(address)
             verification.check_amount(amount)
-            outputs = [Output((TYPE_ADDRESS, address,
-                               int(amount)))]
+            outputs = [Output(TYPE_ADDRESS, address,
+                               int(amount))]
             tx = Engine().current_wallet.make_unsigned_transaction(
                 Engine().current_wallet.get_utxo(),
                 outputs, {})
-            Engine().current_wallet.sign_transaction(tx, None)
-            tx_detail_dialog = TxDetailDialog(self)
-            tx_detail_dialog.tx_detail_view.show_tx(tx)
-            tx_detail_dialog.exec_()
+            pwd_dig = PasswordDialog()
+            pwd_dig.exec_()
+            pwd = pwd_dig.password()
+            if pwd is not None and len(pwd) != 0:
+                Engine().current_wallet.sign_transaction(tx, pwd)
+                tx_detail_dialog = TxDetailDialog(self)
+                tx_detail_dialog.tx_detail_view.show_tx(tx)
+                tx_detail_dialog.exec_()
+            else:
+                MessageBox(u'发送失败').exec_()
         except Exception as ex:
             MessageBox(ex.message).exec_()
 
@@ -340,6 +357,7 @@ class ReceiveController(QWidget):
         self.addressTB.setMaximumHeight(20)
         self.addressTB.setMaximumWidth(300)
         self.addressTB.setText(self.address)
+        self.addressTB.setDisabled(True)
         layout.addWidget(self.addressTB)
 
         self.qrcode = QLabel(self)
@@ -348,7 +366,7 @@ class ReceiveController(QWidget):
         self.qrcode.setProperty('class', 'bigQRCode QLabel')
         layout.addWidget(self.qrcode)
         self.qrcode.setPixmap(
-            qrcode.make(self.address, image_factory=Image, box_size=8).pixmap())
+            qrcode.make(self.address, image_factory=Image, box_size=9).pixmap())
         layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.setLayout(layout)
 

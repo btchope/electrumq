@@ -8,6 +8,8 @@ from PyQt4.QtGui import QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QWid
     QItemSelectionModel, QAbstractItemView
 
 from electrumq.UI import address_show_format
+from electrumq.UI.dialog import TxDetailDialog
+from electrumq.tx.tx import Transaction
 
 __author__ = 'zhouqi'
 
@@ -122,11 +124,11 @@ class BalanceView(QWidget):
         fiat_unit_label.setProperty('class', 'balanceUnit QLabel')
         layout.addWidget(fiat_unit_label, 1, 1)
 
-
         self.setLayout(layout)
 
-    def set_blance(self, balance):
+    def set_blance(self, balance, rate=1.0):
         self.btc_balance_label.setText(u'%f' % (balance * 1.0 / 100000000,))
+        self.fiat_balance_label.setText(u'%.2f' % ((balance * 1.0 / 100000000) * float(rate),))
         self.update()
 
 
@@ -218,7 +220,6 @@ class TableView(QWidget):
         pass
 
     def double_click_row(self, row):
-        print 'abc'
         pass
 
 
@@ -240,6 +241,11 @@ class TxTableView(TableView):
         last_idx = self.data_model.rowCount() - 1
         for idx, val in enumerate(row):
             self.data_model.setData(self.data_model.index(last_idx, idx), val)
+
+    def double_click_row(self, row):
+        tx_detail_dialog = TxDetailDialog(self, need_send=False)
+        tx_detail_dialog.tx_detail_view.show_tx(Transaction.get_tx_from_db(self.data_source[row.row()][0]))
+        tx_detail_dialog.exec_()
 
 
 class SendView(QWidget):
@@ -302,13 +308,26 @@ class QRDialog(QtGui.QDialog):
         self.resize(240, 200)
 
         layout = QVBoxLayout()
-
+        self.address_label = QLabel()
+        self.address_label.setText(self.address_style(address))
+        self.address_label.setAlignment(Qt.AlignCenter)
         self.qrcode = QLabel(self)
+        layout.addWidget(self.address_label)
         layout.addWidget(self.qrcode)
         self.setLayout(layout)
 
         self.qrcode.setPixmap(
             qrcode.make(address, image_factory=Image).pixmap())
+
+    def address_style(self, address):
+        result = ''
+        if address is None or len(address) == 0:
+            return ''
+        for i in range(len(address)):
+            result += address[i]
+            if i % 4 == 3:
+                result += ' '
+        return result
 
 
 class MessageBox(QtGui.QMessageBox):
