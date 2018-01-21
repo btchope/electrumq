@@ -307,17 +307,22 @@ class SendController(QWidget):
         self.send_view.send_btn.clicked.connect(self.send)
         self.send_view.dest_address_tb.setText('')
 
+    # 发送金额的发送模块
     def send(self):
         try:
+            #获得金额和地址
             address = self.send_view.dest_address_tb.text()
             amount = self.send_view.output_value_edit.text()
+            #调校验机制进行校验
             verification.check_address(address)
             verification.check_amount(amount)
+            #构造输出数据单元
             outputs = [Output((TYPE_ADDRESS, address,
                                int(amount)))]
             tx = Engine().current_wallet.make_unsigned_transaction(
                 Engine().current_wallet.get_utxo(),
                 outputs, {})
+            #签名
             Engine().current_wallet.sign_transaction(tx, None)
             tx_detail_dialog = TxDetailDialog(self)
             tx_detail_dialog.tx_detail_view.show_tx(tx)

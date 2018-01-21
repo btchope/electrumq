@@ -64,7 +64,7 @@ FEE_TARGETS = [25, 10, 5, 2]
 COINBASE_MATURITY = 100
 COIN = 100000000
 
-# supported types of transction outputs
+# supported types of transction outputs  能够支持的交易类型，目前支持3种
 TYPE_ADDRESS = 0
 TYPE_PUBKEY = 1
 TYPE_SCRIPT = 2

@@ -30,6 +30,7 @@ class Output(object):
 
     def __init__(self, tx_out_dict=None):
         super(Output, self).__init__()
+        #初始化交易对象的变量
         if tx_out_dict is not None:
             self.out_address = tx_out_dict[1]
             self.address_type = tx_out_dict[0]

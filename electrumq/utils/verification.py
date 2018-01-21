@@ -6,6 +6,7 @@ __author__ = 'zhouqi'
 
 
 def check_address(address):
+    #合法地址判断
     if not is_address(address):
         raise VerificationException(u'不是合法的地址')
 
