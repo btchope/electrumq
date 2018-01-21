@@ -1,9 +1,8 @@
 language: python
 rvm:
     - 2.7.14
-install: false
+install: true
 script:
-   - python -m pip install --upgrade --force pip
-   - cd tools && pip install PyQt4_gpl_x11-4.12.1.tar.gz
-   - python tests/test.py
+   - cd tools && sh deploy.sh
+   - HOME/miniconda3/bin/python tests/test.py
 
