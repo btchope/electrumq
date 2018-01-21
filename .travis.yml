@@ -34,3 +34,5 @@ install:
     - popd
     # Builds Complete
     - popd
+scrpit: 
+    - python tests/test.py
