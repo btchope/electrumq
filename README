@@ -12,3 +12,5 @@ https://conda.io/docs/using/envs.html#create-an-environment
 启动虚拟环境
 
 source activate electrumq
+
+test
