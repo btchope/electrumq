@@ -68,10 +68,14 @@ class EQMainWindow(QMainWindow):
     def __init__(self, **kwargs):
         super(EQMainWindow, self).__init__()
         self.view = MainController()
+        # 设置窗口图标
+        icon = QIcon()
+        icon.addPixmap(QPixmap("imgs/icon_16.png"), QIcon.Normal, QIcon.Off)
         self.view.setContentsMargins(0, 0, 0, 0)
         self.setObjectName(_fromUtf8("MainWindow"))
         self.resize(*DEFAULT_MAIN_SIZE)
         self.setCentralWidget(self.view)
+        self.view.setWindowIcon(icon)
 
 
 class MainController(QWidget):
