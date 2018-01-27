@@ -28,6 +28,8 @@ from electrumq.engine.engine import Engine
 from electrumq.wallet.single import SimpleWallet
 from electrumq.wallet.base import EVENT_QUEUE, WalletConfig
 
+from electrumq.resources import resources
+
 __author__ = 'zhouqi'
 
 try:

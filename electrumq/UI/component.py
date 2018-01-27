@@ -361,5 +361,5 @@ class MessageBox(QtGui.QMessageBox):
 
 class FinalIcon(QIcon):
     def __init__(self, type=1):
-       super(FinalIcon, self).__init__()
-       self.addPixmap(QPixmap("electrumq/UI/imgs/icon_1024.png"), QIcon.Normal, QIcon.Off)
+        super(FinalIcon, self).__init__()
+        self.addPixmap(QPixmap(":/images/icon_1024.png"), QIcon.Normal, QIcon.Off)
