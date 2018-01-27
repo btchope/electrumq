@@ -147,7 +147,8 @@ class BaseWallet(object):
         # 3. change address
         change_addrs = self._get_change_address(change_addr, inputs)
         # 4. Fee estimator
-        fee_estimator = self._get_fee_estimator(config, fixed_fee)# 5. choose input and change
+        fee_estimator = self._get_fee_estimator(config, fixed_fee)
+        # 5. choose input and change
         tx = self._make_unsign_tx(change_addrs, config, fee_estimator, inputs, outputs, spend_all)
         # 6. Sort the inputs and outputs deterministically
         tx.bip_li01_sort()

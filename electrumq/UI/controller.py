@@ -70,7 +70,7 @@ class EQMainWindow(QMainWindow):
         self.view = MainController()
         # 设置窗口图标
         icon = QIcon()
-        icon.addPixmap(QPixmap("imgs/icon_16.png"), QIcon.Normal, QIcon.Off)
+        icon.addPixmap(QPixmap("imgs/icon_1024.png"), QIcon.Normal, QIcon.Off)
         self.view.setContentsMargins(0, 0, 0, 0)
         self.setObjectName(_fromUtf8("MainWindow"))
         self.resize(*DEFAULT_MAIN_SIZE)
