@@ -1,0 +1,204 @@
+QWidget {
+    margin: 0px;
+    padding:0px;
+}
+
+/* account controller */
+AccountController > QWidget {
+    background-color: #303030;
+}
+
+.accountIcon {
+    background-color: #303030;
+    color: white;
+    max-width:120;
+    min-width:120;
+
+    margin: 10 0 10 0;
+    padding: 5 0 5 0;
+
+    border-style: solid;
+    border-top-width:0;
+
+    border-left-width:6;
+    border-left-color:#303030;
+
+    border-right-width:6;
+    border-right-color:#303030;
+    border-bottom-width:0;
+
+    font: bold 14px;
+}
+
+.accountIcon:checked {
+    background-color: #303030;
+    color: white;
+    max-width:120;
+    min-width:120;
+
+    border-style: solid;
+    border-top-width:0;
+
+    border-left-width:5;
+    border-left-color: #ff5e5e;
+
+    border-right-width:5;
+    border-right-color:#303030;
+    border-bottom-width:0;
+}
+
+.addAccount {
+    background-color: #303030;
+    color: white;
+    margin: 15 0 15 0;
+    max-width:120;
+    min-width:120;
+    border-style: none;
+    font: bold 14px;
+}
+
+
+/* nav controller */
+NavController > QWidget {
+    background-color: white;
+}
+
+NavController .addressDesc {
+    background-color: white;
+    color: black;
+    font: bold 12px;
+}
+
+MainAddressView {
+    background-color: black;
+}
+
+MainAddressView .address {
+    background-color: #eff0f0;
+
+    font-family: Monaco;
+    font: 12px;
+
+    border-style: solid;
+    border-width: 1px;
+    border-color: #e0e0e0;
+}
+
+MainAddressView > QPushButton {
+    background-color: white;
+
+    font: 12px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #e0e0e0;
+}
+
+MainAddressView > QPushButton::pressed {
+    background-color: #e0e0e0;
+}
+
+NavController .balanceDesc {
+    background-color: white;
+    color: black;
+    font: bold 12px;
+}
+
+NavController .balanceAmt {
+    background-color: white;
+    color: black;
+    font: 12px;
+}
+
+NavController .balanceUnit {
+    background-color: white;
+    color: #e0e0e0;
+    font: 12px;
+}
+
+.navFunc {
+    background-color: #303030;
+    color: white;
+    max-width: 130px;
+    min-width: 130px;
+    border-style: none;
+    font: 12px;
+    padding: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.navFunc:checked {
+    background-color: #ff5e5e;
+}
+
+.navFunc:pressed {
+    background-color: #ff5e5e;
+}
+
+/* detail controller*/
+
+DetailController > QWidget {
+    background-color: white;
+}
+
+/* tx table controller*/
+TxFilterView > QWidget {
+    background-color: #f0f0f0;
+    max-height: 30;
+    min-height: 30;
+}
+
+TxTableView > QTreeView {
+    show-decoration-selected: 0;
+    outline: none;
+    background-color: white;
+    alternate-background-color: #f0f0f0;
+}
+
+TxTableView > QTreeView::item {
+    height: 30px;
+}
+
+TxTableView > QTreeView > QHeaderView {
+    height: 30px;
+    background-color: white;
+}
+
+/* receive */
+AddressView {
+    background-color: black;
+}
+
+AddressView > QTextEdit{
+    background-color: black;
+}
+
+AddressView > QTextEdit{
+    background-color: black;
+}
+
+.bigQRCode {
+    background-color: white;
+}
+
+QRDialog > QLabel{
+    background-color: #e0e0e0;
+    color: black;
+    font-size: 14px;
+    font-family: Consolas;
+    padding: 5px;
+}
+
+HashLabel {
+    background-color: #e0e0e0;
+    border: 1px;
+    font-size: 14px;
+    font-family: Consolas;
+    padding: 5px;
+}
+
+LineLabel {
+    background-color: #a0a0a0;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}

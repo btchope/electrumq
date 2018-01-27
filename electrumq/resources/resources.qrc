@@ -3,4 +3,7 @@
         <file alias="icon_16.png">images/icon_16.png</file>
         <file alias="icon_1024.png">images/icon_1024.png</file>
     </qresource>
+    <qresource prefix="/styles">
+        <file alias="main.style">styles/main.style</file>
+    </qresource>
 </RCC>
