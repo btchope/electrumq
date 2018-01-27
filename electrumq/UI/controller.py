@@ -340,11 +340,12 @@ class SendController(QWidget):
             pwd = pwd_dig.password()
             if pwd is not None and len(pwd) != 0:
                 Engine().current_wallet.sign_transaction(tx, pwd)
+                tx.tx_hash = tx.txid()
                 tx_detail_dialog = TxDetailDialog(self)
                 tx_detail_dialog.tx_detail_view.show_tx(tx)
                 tx_detail_dialog.exec_()
-            else:
-                MessageBox(u'发送失败').exec_()
+            # else:
+            #     MessageBox(u'发送失败').exec_()
         except Exception as ex:
             MessageBox(ex.message).exec_()
 

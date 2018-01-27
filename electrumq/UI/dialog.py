@@ -22,7 +22,7 @@ class NewAccountDialog(QDialog):
         self.tab_widget = QTabWidget()
         self.tab_widget.addTab(SimpleWalletTab(), "Simple Wallet")
         self.tab_widget.addTab(HDWalletTab(), "HD Wallet")
-
+        self.tab_widget.addTab(ImportWalletTab(), 'Import Wallet')
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
         button_box.accepted.connect(self.accept)
@@ -128,6 +128,24 @@ class SimpleWalletTab(QWidget):
 
     def random(self):
         self.random_edit.setText(os.urandom(32).encode('hex'))
+
+
+class ImportWalletTab(QWidget):
+    def __init__(self, parent=None):
+        super(ImportWalletTab, self).__init__(parent)
+
+        random_label = QLabel(u"私钥")
+        self.random_edit = QLineEdit('')
+        self.random_edit.setMinimumWidth(500)
+
+        mainLayout = QVBoxLayout()
+        mainLayout.addWidget(random_label)
+        mainLayout.addWidget(self.random_edit)
+        mainLayout.addStretch(1)
+        self.setLayout(mainLayout)
+
+    def get_secret(self):
+        return str(self.random_edit.text())
 
 
 class HDWalletTab(QWidget):

@@ -429,3 +429,13 @@ class InvalidPassword(Exception):
     def __str__(self):
         return 'Incorrect password'
         # return _("Incorrect password")
+
+
+if __name__ == '__main__':
+    prikey = 'cNf3RbvLD83idZVhbPmouYB9fZxT4umbuvDXaahpZADc3qEweMGc'
+    password = '123321'
+    print prikey
+    msg = pw_encode(s=prikey, password=password)
+    print msg
+    pp = 'OtZO1KHXWBu0kzFKfeKFKtgqzOe3An0miB/ihzwYD6h9RGkc50DFehpA5m7C2XkoM3LyOSoIncZJa2S5KbWiR/44mSRh4gj7Y9sJL60TUSo='
+    print pw_decode(password=password, s=pp)
