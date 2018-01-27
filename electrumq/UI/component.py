@@ -5,7 +5,7 @@ import pyperclip
 from PyQt4.QtCore import QDateTime, QDate, QTime, Qt
 from PyQt4.QtGui import QVBoxLayout, QPushButton, QSpacerItem, QSizePolicy, QWidget, QHBoxLayout, \
     QTextEdit, QLabel, QFrame, QTreeView, QStandardItemModel, QLineEdit, QGridLayout, QTableView, \
-    QItemSelectionModel, QAbstractItemView
+    QItemSelectionModel, QAbstractItemView, QIcon, QPixmap
 
 from electrumq.UI import address_show_format
 from electrumq.UI.dialog import TxDetailDialog
@@ -357,3 +357,9 @@ class MessageBox(QtGui.QMessageBox):
         self.current_time += 1
         if self.current_time >= self.timeout:
             self.done(0)
+
+
+class FinalIcon(QIcon):
+    def __init__(self, type=1):
+       super(FinalIcon, self).__init__()
+       self.addPixmap(QPixmap("electrumq/UI/imgs/icon_1024.png"), QIcon.Normal, QIcon.Off)

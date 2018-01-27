@@ -14,7 +14,8 @@ from datetime import datetime
 
 from electrumq.UI import logger
 from electrumq.UI.component import AccountIcon, AddressView, BalanceView, \
-    FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView, MessageBox
+    FuncList, TxFilterView, TxTableView, SendView, Image, QRDialog, MainAddressView, \
+    MessageBox, FinalIcon
 from electrumq.UI.dialog import NewAccountDialog, TxDetailDialog, PasswordDialog
 from electrumq.UI.layout.borderlayout import BorderLayout
 from electrumq.db.sqlite import init
@@ -69,13 +70,12 @@ class EQMainWindow(QMainWindow):
         super(EQMainWindow, self).__init__()
         self.view = MainController()
         # 设置窗口图标
-        icon = QIcon()
-        icon.addPixmap(QPixmap("imgs/icon_1024.png"), QIcon.Normal, QIcon.Off)
+
         self.view.setContentsMargins(0, 0, 0, 0)
         self.setObjectName(_fromUtf8("MainWindow"))
         self.resize(*DEFAULT_MAIN_SIZE)
         self.setCentralWidget(self.view)
-        self.view.setWindowIcon(icon)
+        self.view.setWindowIcon(FinalIcon())
 
 
 class MainController(QWidget):
