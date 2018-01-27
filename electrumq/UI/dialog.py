@@ -22,7 +22,7 @@ class NewAccountDialog(QDialog):
         self.tab_widget = QTabWidget()
         self.tab_widget.addTab(SimpleWalletTab(), "Simple Wallet")
         self.tab_widget.addTab(HDWalletTab(), "HD Wallet")
-
+        self.tab_widget.addTab(ImportWalletTab(), 'Import Wallet')
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
         button_box.accepted.connect(self.accept)
@@ -124,6 +124,32 @@ class SimpleWalletTab(QWidget):
     def get_secret(self):
         qs = QString()
 
+        return str(self.random_edit.text())
+
+    def random(self):
+        self.random_edit.setText(os.urandom(32).encode('hex'))
+
+
+class ImportWalletTab(QWidget):
+    def __init__(self, parent=None):
+        super(ImportWalletTab, self).__init__(parent)
+
+        random_label = QLabel("Random:")
+        prikey = os.urandom(32).encode('hex')
+        self.random_edit = QLineEdit(prikey)
+        self.random_edit.setMinimumWidth(500)
+        self.random_edit.setEnabled(False)
+        self.random_btn = QPushButton('random again')
+        self.random_btn.clicked.connect(self.random)
+
+        mainLayout = QVBoxLayout()
+        mainLayout.addWidget(random_label)
+        mainLayout.addWidget(self.random_edit)
+        mainLayout.addWidget(self.random_btn)
+        mainLayout.addStretch(1)
+        self.setLayout(mainLayout)
+
+    def get_secret(self):
         return str(self.random_edit.text())
 
     def random(self):
