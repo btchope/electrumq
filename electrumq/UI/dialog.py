@@ -7,7 +7,8 @@ from PyQt4.QtGui import *
 
 import pyperclip
 from electrumq.db.sqlite.tx import TxStore
-from electrumq.secret.key import public_key_from_private_key, SecretToASecret
+from electrumq.secret.key import public_key_from_private_key, \
+    SecretToASecret, ASecretToSecret, pw_decode
 from electrumq.secret.key_store import SimpleKeyStore
 from electrumq.engine.engine import Engine
 import time
@@ -138,14 +139,35 @@ class ImportWalletTab(QWidget):
         self.random_edit = QLineEdit('')
         self.random_edit.setMinimumWidth(500)
 
+        superGroup = QGroupBox(u"高级")
+
+        self.haspwd = QCheckBox(u"有密码")
+        self.haspwd.setChecked(True)
+
+        self.pwd_edit = QLineEdit('')
+
+        superLayout = QHBoxLayout()
+        superLayout.addWidget(self.haspwd)
+        superLayout.addWidget(self.pwd_edit)
+        superGroup.setLayout(superLayout)
+
         mainLayout = QVBoxLayout()
         mainLayout.addWidget(random_label)
         mainLayout.addWidget(self.random_edit)
+        mainLayout.addWidget(superGroup)
         mainLayout.addStretch(1)
         self.setLayout(mainLayout)
 
     def get_secret(self):
-        return str(self.random_edit.text())
+        prikey = str(self.random_edit.text())
+        if self.haspwd.isChecked():
+            pwd = str(self.pwd_edit.text())
+            prikey = pw_decode(prikey, password=pwd)
+        sercet = ASecretToSecret(prikey)
+
+        if sercet:
+            return str(sercet.encode('hex'))
+        raise Exception('Error sercet')
 
 
 class HDWalletTab(QWidget):
