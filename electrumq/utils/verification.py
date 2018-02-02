@@ -19,6 +19,8 @@ def check_amount(amount):
         int(amount)
     except Exception as ex:
         raise VerificationException(u'不是合法的金额')
+    if int(amount) == 0:
+        raise VerificationException(u'发送金额不能0')
 
 
 if __name__ == '__main__':
