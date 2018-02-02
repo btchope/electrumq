@@ -19,7 +19,7 @@ import sys
 version = '0.0.1'
 
 name = "ElectrumQ"
-mainscript = 'ui.py'
+mainscript = 'electrumq.py'
 
 if sys.version_info[:3] < (2, 6, 0):
     # print_error("Error: " + name + " requires Python version >= 2.6.0...")
@@ -38,7 +38,7 @@ if sys.platform == 'darwin':
         options=dict(py2app=dict(argv_emulation=False,
                                  includes=['PyQt4.QtCore', 'PyQt4.QtGui', 'PyQt4.QtWebKit', 'PyQt4.QtNetwork', 'sip'],
                                  packages=['electrumq', 'packages'],
-                                 # iconfile='electrum.icns',
+                                 iconfile='ElectrumQ.icns',
                                  plist=plist,
                                  resources=[])),
     )

@@ -13,6 +13,8 @@
       </array>
     </dict>
   </array>
+  <key>CFBundleIconFile</key>
+  <string>ElectrumQ.icns</string>
   <key>LSArchitecturePriority</key>
   <array>
     <string>x86_64</string>
