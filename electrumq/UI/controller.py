@@ -108,7 +108,10 @@ class MainController(QWidget):
         self.widget.setLayout(layout)
         self.setWindowTitle("ElectrumQ")
 
-        self.widget.setStyleSheet(open('./electrumq/resources/styles/main.style').read())
+        stream = QtCore.QFile(':/styles/main.style')
+        stream.open(QtCore.QIODevice.ReadOnly)
+        self.widget.setStyleSheet(QtCore.QTextStream(stream).readAll())
+        # self.widget.setStyleSheet(open('./electrumq/resources/styles/main.style').read())
 
     def show_tab(self):
         self.detail_ctr.show_tab()

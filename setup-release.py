@@ -16,7 +16,7 @@ import sys
 
 # from lib.util import print_error
 # from lib.version import ELECTRUM_VERSION as version
-version = '0.0.1'
+version = '0.0.2'
 
 name = "ElectrumQ"
 mainscript = 'electrumq.py'
