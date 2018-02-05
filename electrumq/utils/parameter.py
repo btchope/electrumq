@@ -17,7 +17,8 @@ class Parameter(object):
     XPRV_HEADER = 0x0488ade4
     XPUB_HEADER = 0x0488b21e
 
-    HEADERS_URL = 'http://127.0.0.1:8866/files/blockchain_headers'
+    # HEADERS_URL = 'http://127.0.0.1:8866/files/blockchain_headers'
+    HEADERS_URL = "https://headers.electrum.org/blockchain_headers"
 
     ELECTRUM_VERSION = '2.8.3'  # version of the client package
     PROTOCOL_VERSION = '0.10'  # protocol version requested
@@ -88,8 +89,8 @@ def set_testnet():
     Parameter().ADDRTYPE_P2WPKH = 3
     Parameter().XPRV_HEADER = 0x04358394
     Parameter().XPUB_HEADER = 0x043587cf
-    # Parameter().HEADERS_URL = "https://headers.electrum.org/testnet_headers"
-    Parameter().HEADERS_URL = 'http://127.0.0.1:8866/files/testnet_headers'
+    Parameter().HEADERS_URL = "https://headers.electrum.org/testnet_headers"
+    # Parameter().HEADERS_URL = 'http://127.0.0.1:8866/files/testnet_headers'
 
     # Parameter().DEFAULT_PORTS = {'t': '51001', 's': '51002'}
     # Parameter().DEFAULT_SERVERS = {
