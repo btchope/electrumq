@@ -270,7 +270,7 @@ class TxDetailView(QWidget):
 
     def show_tx(self, tx):
         self.tx = tx
-        self.tx_time.setText(self.dt_to_time(tx.tx_locktime))
+        self.tx_time.setText(self.dt_to_time(tx.tx_time))
         for idx, each_in in enumerate(tx.input_list()):
             if each_in.in_address is not None:
                 in_address = HashLabel(each_in.in_address)

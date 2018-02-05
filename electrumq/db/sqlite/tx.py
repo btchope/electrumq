@@ -156,7 +156,7 @@ class TxStore():
         sql = 'SELECT b.tx_hash,sum(a.out_value) spent' \
               '  FROM outs a, ins b ' \
               '  WHERE a.tx_hash=b.prev_tx_hash and a.out_sn=b.prev_out_sn and a.out_address IN ({seq}) ' \
-              '  GROUP BY a.tx_hash'.format(seq=seq)
+              '  GROUP BY b.tx_hash'.format(seq=seq)
         return execute_all(sql, addresses)
 
     def get_all_tx_receive(self, addresses):
