@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
+
 from electrumq.db.sqlite import Connection, execute_all, execute_one
 from electrumq.utils import Singleton
 from electrumq.utils.base58 import Hash
@@ -37,7 +39,7 @@ class TxStore():
         with Connection.gen_db() as conn:
             c = conn.cursor()
             if c.execute('SELECT count(0) FROM txs WHERE tx_hash=?', (tx_hash,)).fetchone()[0] == 0:
-                block_time = None  # c.execute('select block_time from blocks WHERE block_no=?', (block_height,)).fetchone()[0]
+                block_time = datetime.now()  # c.execute('select block_time from blocks WHERE block_no=?', (block_height,)).fetchone()[0]
                 c.execute(
                     'INSERT INTO txs(tx_hash, tx_ver, tx_locktime, block_no, tx_time, source) VALUES (?, ?, ?, ?, ?, ?)',
                     (tx_hash, tx.tx_ver, tx.tx_locktime, 0, block_time, 1))
