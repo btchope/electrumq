@@ -9,7 +9,9 @@ from setuptools import setup
 
 APP = ['electrumq.py']
 DATA_FILES = []
-OPTIONS = {}
+OPTIONS = {
+    'iconfile': 'ElectrumQ.icns'
+}
 
 setup(
     app=APP,
